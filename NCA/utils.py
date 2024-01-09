@@ -90,7 +90,7 @@ def key_array_gen(key,shape):
 	key_array = jax.random.randint(key,shape=shape,minval=0,maxval=2_147_483_647,dtype="uint32")
 	return key_array
 
-def key_pytree_gen(key,s):
+def key_pytree_gen(key,shape):
 	"""
 	
 	
@@ -106,7 +106,8 @@ def key_pytree_gen(key,s):
 	key_array : uint32[shape,2]
 		array of random keys
 	"""
-	shape = list(s)
+	print(shape)
+	shape = list(shape)
 	shape.append(2)
 	key_array = jax.random.randint(key,shape=shape,minval=0,maxval=2_147_483_647,dtype="uint32")
 	key_array = list(key_array)
