@@ -110,8 +110,8 @@ class DataAugmenter(object):
 			key=jax.random.PRNGKey(int(time.time()))
 		x = self.shift(x,am,key=key)
 		y = self.shift(y,am,key=key)
-		print(x.shape)
-		print(x)
+		print(x[0].shape)
+		print(len(x))
 		x = self.noise(x,0.01,key=key)
 		y = self.noise(y,0.01,key=jax.random.fold_in(key,2*i))
 		self.PREVIOUS_KEY = key
