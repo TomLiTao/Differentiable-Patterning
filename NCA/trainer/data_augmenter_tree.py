@@ -262,9 +262,11 @@ class DataAugmenter(object):
 			noisy data
 
 		"""
-		key_array = key_pytree_gen(key, (len(data),data[0].shape[0]))
+		key_array = key_pytree_gen(key, [len(data)])
+		#print(data[0].shape)
 		#noisy = am*jax.random.uniform(key,shape=data.shape) + (1-am)*data
 		noisy = jax.tree_util.tree_map(lambda x,key:am*jax.random.uniform(key,shape=x.shape) + (1-am)*x,data,key_array)
+		
 		if not full:
 			noisy = jax.tree_util.tree_map(lambda x,y:x.at[:,self.OBS_CHANNELS:].set(y[:,self.OBS_CHANNELS:]),noisy,data)
 		return noisy

@@ -6,7 +6,7 @@ CHANNELS=16
 
 data = load_emoji_sequence(["crab.png","alien_monster.png","alien_monster.png"],downsample=2)
 t=64
-iters=500
+iters=2000
 
 
 
