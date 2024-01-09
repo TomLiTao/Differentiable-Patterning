@@ -3,7 +3,7 @@ import jax
 import time
 import equinox as eqx
 from jax.experimental import mesh_utils
-from NCA.utils import key_array_gen
+from NCA.utils import key_pytree_gen
 import itertools
 class DataAugmenter(object):
 	
@@ -248,7 +248,7 @@ class DataAugmenter(object):
 		
 		Parameters
 		----------
-		data : float32[BATCHES,N,CHANNELS,WIDTH,HEIGHT]
+		data : PyTree BATCHES [float32[N,CHANNELS,WIDTH,HEIGHT]]
 			data to augment.
 		am : float in (0,1)
 			amount of noise, with 0 being none and 1 being pure noise
@@ -258,12 +258,12 @@ class DataAugmenter(object):
 			Jax random number key. The default is jax.random.PRNGKey(int(time.time())).
 		Returns
 		-------
-		noisy : float32[BATCHES,N,CHANNELS,WIDTH,HEIGHT]
+		noisy : PyTree BATCHES [float32[N,CHANNELS,WIDTH,HEIGHT]]
 			noisy data
 
 		"""
-		key_array = key_array_gen(key, len(data))
-		noisy = am*jax.random.uniform(key,shape=data.shape) + (1-am)*data
+		key_array = key_pytree_gen(key, len(data))
+		#noisy = am*jax.random.uniform(key,shape=data.shape) + (1-am)*data
 		noisy = jax.tree_util.tree_map(lambda x,key:am*jax.random.uniform(key,shape=x.shape) + (1-am)*x,data,key_array)
 		if not full:
 			noisy = jax.tree_util.tree_map(lambda x,y:x.at[:,self.OBS_CHANNELS:].set(y[:,self.OBS_CHANNELS:]),noisy,data)
