@@ -2,10 +2,9 @@ import jax
 import jax.numpy as jnp
 import equinox as eqx
 import time
-from pathlib import Path
-from typing import Union
+from Common.model.abstract_model import AbstractModel # Inherit model loading and saving
 
-class NCA(eqx.Module):
+class NCA(AbstractModel):
 	layers: list
 	KERNEL_STR: list
 	N_CHANNELS: int
@@ -120,8 +119,6 @@ class NCA(eqx.Module):
 			]
 		
 		
-		
-		
 		# Initialise final layer to zero
 		w_zeros = jnp.zeros((self.N_CHANNELS,self.N_WIDTH*self.N_FEATURES,1,1))
 		b_zeros = jnp.zeros((self.N_CHANNELS,1,1))
@@ -155,19 +152,13 @@ class NCA(eqx.Module):
 
 		"""
 		
-
 		dx = x
-
 		for layer in self.layers:
 			dx = layer(dx)
 		sigma = jax.random.bernoulli(key,p=self.FIRE_RATE,shape=dx.shape)
 		x_new = x + sigma*dx
-
-		#x_new = augment_callback(x_new)
-		#print(x_new.shape)
-		#print(boundary_callback)
 		return boundary_callback(x_new)
-		#return x + dx
+
 	
 	def partition(self):
 		"""
@@ -188,86 +179,6 @@ class NCA(eqx.Module):
 		diff = eqx.tree_at(where,diff,None)
 		static = eqx.tree_at(where,static,kernel,is_leaf=lambda x: x is None)
 		return diff, static
-	
-	def combine(self,diff,static):
-		"""
-		Wrapper for eqx.combine
-
-		Parameters
-		----------
-		diff : PyTree
-			PyTree of same structure as NCA, with all non trainable parameters set to None
-		static : PyTree
-			PyTree of same structure as NCA, with all trainable parameters set to None
-
-		"""
-		self = eqx.combine(diff,static)
-		
-
-	def save(self, path: Union[str, Path], overwrite: bool = False):
-		"""
-		Wrapper for saving NCA via pickle. Taken from https://github.com/google/jax/issues/2116
-
-		Parameters
-		----------
-		path : Union[str, Path]
-			path to filename.
-		overwrite : bool, optional
-			Overwrite existing filename. The default is False.
-
-		Raises
-		------
-		RuntimeError
-			file already exists.
-
-		Returns
-		-------
-		None.
-
-		"""
-		suffix = ".eqx"
-		path = Path(path)
-		if path.suffix != suffix:
-			path = path.with_suffix(suffix)
-			path.parent.mkdir(parents=True, exist_ok=True)
-		if path.exists():
-			if overwrite:
-				path.unlink()
-			else:
-				raise RuntimeError(f'File {path} already exists.')
-		eqx.tree_serialise_leaves(path,self)
-		#with open(path, 'wb') as file:	
-			#pickle.dump(self, file)
-	
-	def load(self, path: Union[str, Path]):
-		"""
-		
-
-		Parameters
-		----------
-		path : Union[str, Path]
-			path to filename.
-
-		Raises
-		------
-		ValueError
-			Not a file or incorrect file type.
-
-		Returns
-		-------
-		NCA
-			NCA loaded from pickle.
-
-		"""
-		suffix = ".eqx"
-		path = Path(path)
-		if not path.is_file():
-			raise ValueError(f'Not a file: {path}')
-		if path.suffix != suffix:
-			raise ValueError(f'Not a {suffix} file: {path}')
-		#with open(path, 'rb') as file:
-		#	data = pickle.load(file)
-		return eqx.tree_deserialise_leaves(path,self)
 		
 	def run(self,iters,x,callback,key=jax.random.PRNGKey(int(time.time()))):
 		trajectory = []

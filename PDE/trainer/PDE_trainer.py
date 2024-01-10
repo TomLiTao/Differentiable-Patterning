@@ -4,9 +4,9 @@ import optax
 import equinox as eqx
 import datetime
 import time
-from PDE.trainer.data_augmenter_pde import DataAugmenterPDE
-import NCA_JAX.trainer.loss as loss
-from NCA_JAX.model.boundary import NCA_boundary
+from PDE.trainer.data_augmenter_pde import DataAugmenter
+import Common.trainer.loss as loss
+from NCA.model.boundary import NCA_boundary
 from PDE.trainer.tensorboard_log import PDE_Train_log
 from PDE.trainer.optimiser import non_negative_diffusion
 from PDE.solver.semidiscrete_solver import PDE_solver
@@ -19,7 +19,7 @@ class PDE_Trainer(object):
 			     PDE_solver,
 				 data,
 				 model_filename=None,
-				 DATA_AUGMENTER = DataAugmenterPDE,
+				 DATA_AUGMENTER = DataAugmenter,
 				 BOUNDARY_MASK = None, 
 				 SHARDING = None, 
 				 directory="models/"):

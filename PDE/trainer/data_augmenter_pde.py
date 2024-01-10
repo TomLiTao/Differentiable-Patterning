@@ -1,8 +1,8 @@
 import jax
 import time
-from NCA_JAX.trainer.data_augmenter_tree import DataAugmenter
+from Common.trainer.abstract_data_augmenter_tree import DataAugmenterAbstract
 
-class DataAugmenterPDE(DataAugmenter):
+class DataAugmenter(DataAugmenterAbstract):
 	"""
 		Inherits the methods of DataAugmenter, but overwrites the batch cloning in the init
 	"""

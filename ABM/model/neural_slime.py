@@ -2,11 +2,11 @@ import jax
 import jax.numpy as np
 import equinox as eqx
 from ABM.model.agent_nn_vel import agent_nn
+from Common.model.abstract_model import AbstractModel # Inherit save, load, partition and combine
 import time
-from pathlib import Path
-from typing import Union
 
-class NeuralSlime(eqx.Module):
+
+class NeuralSlime(AbstractModel):
 	Agent_nn: agent_nn
 	N_AGENTS: int
 	GRID_SIZE: int
@@ -17,9 +17,7 @@ class NeuralSlime(eqx.Module):
 	gaussian_blur: int
 	decay_rate: float
 	PERIODIC: bool
-	#pheremone_lattice: jax.Array 
-	#agent_pos: jax.Array
-	#agent_vel: jax.Array
+
 
 	def __init__(self,
 			     N_AGENTS,
@@ -207,80 +205,6 @@ class NeuralSlime(eqx.Module):
 		agents = self.update_positions(agents)
 		return agents,pheremone_lattice
 	
-	def partition(self):
-		diff,static = eqx.partition(self,eqx.is_array)
-		return diff,static
-
-	def combine(self,diff,static):
-		self = eqx.combine(diff,static)
-
-	def save(self, path: Union[str, Path], overwrite: bool = False):
-		"""
-		Wrapper for saving NCA via pickle. Taken from https://github.com/google/jax/issues/2116
-
-		Parameters
-		----------
-		path : Union[str, Path]
-			path to filename.
-		overwrite : bool, optional
-			Overwrite existing filename. The default is False.
-
-		Raises
-		------
-		RuntimeError
-			file already exists.
-
-		Returns
-		-------
-		None.
-
-		"""
-		suffix = ".eqx"
-		path = Path(path)
-		if path.suffix != suffix:
-			path = path.with_suffix(suffix)
-			path.parent.mkdir(parents=True, exist_ok=True)
-		if path.exists():
-			if overwrite:
-				path.unlink()
-			else:
-				raise RuntimeError(f'File {path} already exists.')
-		eqx.tree_serialise_leaves(path,self)
-		#with open(path, 'wb') as file:	
-			#pickle.dump(self, file)
-	
-	def load(self, path: Union[str, Path]):
-		"""
-		
-
-		Parameters
-		----------
-		path : Union[str, Path]
-			path to filename.
-
-		Raises
-		------
-		ValueError
-			Not a file or incorrect file type.
-
-		Returns
-		-------
-		NCA
-			NCA loaded from pickle.
-
-		"""
-		suffix = ".eqx"
-		path = Path(path)
-		if not path.is_file():
-			raise ValueError(f'Not a file: {path}')
-		if path.suffix != suffix:
-			raise ValueError(f'Not a {suffix} file: {path}')
-		#with open(path, 'rb') as file:
-		#	data = pickle.load(file)
-		return eqx.tree_deserialise_leaves(path,self)
-		
-
-
 
 
 

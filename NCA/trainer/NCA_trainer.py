@@ -3,10 +3,10 @@ import jax.numpy as jnp
 import optax
 import equinox as eqx
 import datetime
-import NCA.trainer.loss as loss
+import Common.trainer.loss as loss
 from NCA.trainer.tensorboard_log import NCA_Train_log
-from NCA.trainer.data_augmenter_tree import DataAugmenter
-from NCA.utils import key_pytree_gen
+from NCA.trainer.data_augmenter_nca import DataAugmenter
+from Common.utils import key_pytree_gen
 from NCA.model.boundary import NCA_boundary
 from tqdm import tqdm
 import time
