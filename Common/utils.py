@@ -71,6 +71,8 @@ def load_pickle(path: Union[str, Path]):
 
 
 
+
+
 def key_array_gen(key,shape):
 	"""
 	Parameters
@@ -141,6 +143,28 @@ def grad_norm(grad):
 	grad.layers[5] = eqx.tree_at(w_where,grad.layers[5],w2)
 	grad.layers[5] = eqx.tree_at(b_where,grad.layers[5],b2)
 	return grad
+
+def load_textures(filename_sequence,impath_textures="../Data/dtd/images/",downsample=2,crop_square=False):
+  images = []
+  sizes = []
+  for filename in filename_sequence:
+    im = skimage.io.imread(impath_textures+filename)[::downsample,::downsample]
+    if crop_square:
+      s= min(im.shape[0],im.shape[1])
+      im = im[:s,:s]
+      sizes.append(s)
+      #im = im[np.newaxis] / 255.0
+
+    im = im/255.0
+    images.append(im)
+  if crop_square:
+    min_s = min(sizes)
+    for i,im in enumerate(images):
+      images[i] = im[:min_s,:min_s]
+  data = np.array(images)
+  data = data[np.newaxis]
+  data = np.einsum("btxyc->btcxy",data)
+  return data    
 
 def load_emoji_sequence(filename_sequence,impath_emojis="../Data/Emojis/",downsample=2,crop_square=False):
 	"""
