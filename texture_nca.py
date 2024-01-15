@@ -1,10 +1,10 @@
 from NCA.model.NCA_model import NCA
 from NCA.trainer.NCA_trainer import NCA_Trainer
 from Common.utils import load_textures
-from Common.trainer import abstract_data_augmenter_tree
+from Common.trainer.abstract_data_augmenter_tree import DataAugmenterAbstract
 import jax
 
-class DataAugmenter(abstract_data_augmenter_tree):
+class DataAugmenterCustom(DataAugmenterAbstract):
 	def data_init(self,SHARDING = None):
 		"""
 		Chain together various data augmentations to perform at intialisation of NCA training
@@ -81,7 +81,8 @@ nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=True)
 opt = NCA_Trainer(nca,
 				  data,
 				  #model_filename="micropattern_radii_sized_b"+str(B)+"_r1e-2_v2_"+str(index),
-				  model_filename="emoji_texture_nca_test_6")
+				  model_filename="emoji_texture_nca_test_6",
+				  DATA_AUGMENTER=DataAugmenterCustom)
 				 # BOUNDARY_MASK=masks,
 				    
 
