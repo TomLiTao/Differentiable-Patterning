@@ -3,6 +3,7 @@ from NCA.trainer.NCA_trainer import NCA_Trainer
 from Common.utils import load_textures
 from Common.trainer.abstract_data_augmenter_tree import DataAugmenterAbstract
 import jax
+import time
 
 class DataAugmenterCustom(DataAugmenterAbstract):
 	def data_init(self,SHARDING = None):
