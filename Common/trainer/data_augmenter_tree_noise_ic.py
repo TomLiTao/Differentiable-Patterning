@@ -14,7 +14,7 @@ class DataAugmenterNoise(DataAugmenterAbstract):
         data = self.duplicate_batches(data, 4)
         key = jax.random.PRNGKey(int(time.time()))
         #keys = jax.random.split(key,len(data))
-        keys = key_pytree_gen(key,(len(data)))
+        keys = key_pytree_gen(key,[len(data),])
         set_x0_noise = lambda x,key:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=1))	
         data = jax.tree_util.tree_map(set_x0_noise,data,keys)
         self.save_data(data)
