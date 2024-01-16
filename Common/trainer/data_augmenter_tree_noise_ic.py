@@ -9,7 +9,10 @@ class DataAugmenterNoise(DataAugmenterAbstract):
     """
     def data_init(self,*args):
         data = self.return_saved_data()
-        data = self.duplicate_batches(data, 4)		
+        data = self.duplicate_batches(data, 4)
+        key = jax.random.PRNGKey(int(time.time()))
+        set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=1))	
+        data = jax.tree_util.tree_map(set_x0_noise,data)
         self.save_data(data)
         return None
     
@@ -39,7 +42,7 @@ class DataAugmenterNoise(DataAugmenterAbstract):
         else:
             key = jax.random.PRNGKey(int(time.time()))
             self.PREVIOUS_KEY = key
-        x_true,_ =self.split_x_y(1)
+        x_true,y_true =self.split_x_y(1)
         propagate_xn = lambda x:x.at[1:].set(x[:-1])
         set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=1))	
         x = jax.tree_util.tree_map(propagate_xn,x) # Set initial condition at each X[n] at next iteration to be final state from X[n-1] of this iteration
