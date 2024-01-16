@@ -12,17 +12,13 @@ class DataAugmenterCustom(DataAugmenterAbstract):
 
 		"""
 		data = self.return_saved_data()
-		data = self.duplicate_batches(data, 4)
-		#data = self.pad(data, 10)
-
-		
+		data = self.duplicate_batches(data, 4)		
 		self.save_data(data)
 		return None
 
 	def data_callback(self,x,y,i):
 		"""
 		Called after every training iteration to perform data augmentation and processing		
-
 
 		Parameters
 		----------
@@ -41,19 +37,14 @@ class DataAugmenterCustom(DataAugmenterAbstract):
 			Final states
 
 		"""
-
 		x_true,_ =self.split_x_y(1)
-				
 		propagate_xn = lambda x:x.at[1:].set(x[:-1])
-		reset_x0 = lambda x,x_true:x.at[0].set(x_true[0])
-		
+		reset_x0 = lambda x,x_true:x.at[0].set(x_true[0])	
 		x = jax.tree_util.tree_map(propagate_xn,x) # Set initial condition at each X[n] at next iteration to be final state from X[n-1] of this iteration
 		x = jax.tree_util.tree_map(reset_x0,x,x_true) # Keep first initial x correct
-		
 		if i < 500:		
 			for b in range(len(x)//2):
 				x[b*2] = x[b*2].at[:,:self.OBS_CHANNELS].set(x_true[b*2][:,:self.OBS_CHANNELS]) # Set every other batch of intermediate initial conditions to correct initial conditions
-		
 		if hasattr(self, "PREVIOUS_KEY"):
 			key = jax.random.fold_in(self.PREVIOUS_KEY,i)
 		else:
@@ -63,16 +54,10 @@ class DataAugmenterCustom(DataAugmenterAbstract):
 		return x,y
 		
 
-
-
-
-
-
-
 CHANNELS=16
 
 #data = load_emoji_sequence(["crab.png","alien_monster.png","alien_monster.png"],downsample=2)
-data = load_textures(["dotted/dotted_0109.jpg","braided/braided_0075.jpg"],downsample=4,crop_square=True)
+data = load_textures(["dotted/dotted_0109.jpg","braided/braided_0075.jpg","braided/braided_0135.jpg"],downsample=2,crop_square=True)
 t=64
 iters=2000
 
@@ -82,9 +67,9 @@ nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=True)
 opt = NCA_Trainer(nca,
 				  data,
 				  #model_filename="micropattern_radii_sized_b"+str(B)+"_r1e-2_v2_"+str(index),
-				  model_filename="emoji_texture_nca_test_6",
+				  model_filename="emoji_texture_nca_test_8",
 				  DATA_AUGMENTER=DataAugmenterCustom)
-				 # BOUNDARY_MASK=masks,
+				  #BOUNDARY_MASK=masks,
 				    
 
 opt.train(t,iters,WARMUP=10)
