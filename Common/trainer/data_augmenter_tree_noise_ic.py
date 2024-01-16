@@ -7,7 +7,7 @@ class DataAugmenterNoise(DataAugmenterAbstract):
     Args:
         DataAugmenterAbstract (_type_): _description_
     """
-    def data_init(self):
+    def data_init(self,*args):
         data = self.return_saved_data()
         data = self.duplicate_batches(data, 4)		
         self.save_data(data)
