@@ -47,6 +47,6 @@ class DataAugmenterNoise(DataAugmenterAbstract):
         if i < 500:		
             for b in range(len(x)//2):
                 x[b*2] = x[b*2].at[1:,:self.OBS_CHANNELS].set(x_true[b*2][1:,:self.OBS_CHANNELS]) # Set every other batch of intermediate initial conditions to correct initial conditions
-        key = jax.random.foldin(key,i)
+        key = jax.random.fold_in(key,i)
         x = self.noise(x,0.005,key=key) # Add little noise to next steps for stability
         return x,y
