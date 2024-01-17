@@ -4,8 +4,8 @@ import time
 class DataAugmenterSubsampleNoiseTexture(DataAugmenterAbstract):
     def __init__(self, data_true, hidden_channels=0):
         super().__init__(data_true, hidden_channels)
-        self.sample_size = 16
-        self.resample_freq = 4
+        self.sample_size = 32
+        self.resample_freq = 8
 
     def data_init(self,*args):
         data = self.return_saved_data()
