@@ -23,7 +23,7 @@ class DataAugmenterSubsampleNoiseTexture(DataAugmenterAbstract):
         return x0,y0
     def split_x_y(self, N_steps=1,key=jax.random.PRNGKey(int(time.time()))):
         x,y = super().split_x_y(N_steps)
-        set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=1))
+        set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=0.1))
         x = jax.tree_util.tree_map(set_x0_noise,x)
         return x,y
         
@@ -50,7 +50,7 @@ class DataAugmenterSubsampleNoiseTexture(DataAugmenterAbstract):
             y = jax.tree_util.tree_map(sample,y_true,x_inds,y_inds)
         else:
             propagate_xn = lambda x:x.at[1:].set(x[:-1])
-            set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=1))
+            set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=0.1))
             x = jax.tree_util.tree_map(propagate_xn,x) # Set initial condition at each X[n] at next iteration to be final state from X[n-1] of this iteration
             x = jax.tree_util.tree_map(set_x0_noise,x) 
         
