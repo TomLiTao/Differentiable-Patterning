@@ -19,8 +19,14 @@ class DataAugmenterSubsampleNoiseTexture(DataAugmenterAbstract):
         x0 = jax.tree_util.tree_map(init_sample,x0)
         y0 = jax.tree_util.tree_map(init_sample,y0)
         print("X0 shape: "+str(x0[0].shape))
+        
         return x0,y0
-    
+    def split_x_y(self, N_steps=1,key=jax.random.PRNGKey(int(time.time()))):
+        x,y = super().split_x_y(N_steps)
+        set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=1))
+        x = jax.tree_util.tree_map(set_x0_noise,x)
+        return x,y
+        
     def data_callback(self, x, y, i):
 
         if hasattr(self, "PREVIOUS_KEY"):
@@ -38,7 +44,7 @@ class DataAugmenterSubsampleNoiseTexture(DataAugmenterAbstract):
                 x_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),shape=(1,),minval=0,maxval=x[j].shape[-2]-self.sample_size)[0])
                 y_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),shape=(1,),minval=0,maxval=x[j].shape[-1]-self.sample_size)[0])
             sample = lambda x,xi,yi: x[:,:,xi:xi+self.sample_size,yi:yi+self.sample_size]
-            x_true,y_true =self.split_x_y(1)
+            x_true,y_true =self.split_x_y(1,key=key)
 
             x = jax.tree_util.tree_map(sample,x_true,x_inds,y_inds)
             y = jax.tree_util.tree_map(sample,y_true,x_inds,y_inds)
