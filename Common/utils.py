@@ -144,13 +144,13 @@ def grad_norm(grad):
 	grad.layers[5] = eqx.tree_at(b_where,grad.layers[5],b2)
 	return grad
 
-def load_textures(filename_sequence,impath_textures="../Data/dtd/images/",downsample=2,crop_square=False):
+def load_textures(filename_sequence,impath_textures="../Data/dtd/images/",downsample=2,crop_square=False,crop_factor=1):
   images = []
   sizes = []
   for filename in filename_sequence:
     im = skimage.io.imread(impath_textures+filename)[::downsample,::downsample]
     if crop_square:
-      s= min(im.shape[0],im.shape[1])
+      s= min(im.shape[0],im.shape[1])//crop_factor
       im = im[:s,:s]
       sizes.append(s)
       #im = im[np.newaxis] / 255.0
