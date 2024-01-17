@@ -48,7 +48,10 @@ class DataAugmenterAbstract(object):
 		data = self.return_saved_data()
 		self.save_data(data)
 		return None
-		
+	
+	def data_load(self):	
+		x0,y0 = self.split_x_y(1)
+		return x0,y0
 	
 	def data_callback(self,x,y,i):
 		"""

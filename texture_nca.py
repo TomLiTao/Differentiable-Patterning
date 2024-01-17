@@ -19,7 +19,7 @@ nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=True)
 opt = NCA_Trainer(nca,
 				  data,
 				  #model_filename="micropattern_radii_sized_b"+str(B)+"_r1e-2_v2_"+str(index),
-				  model_filename="emoji_texture_nca_test_18",
+				  model_filename="emoji_texture_nca_test_19",
 				  DATA_AUGMENTER=DataAugmenterSubsampleNoiseTexture)
 				  #BOUNDARY_MASK=masks,
 				    

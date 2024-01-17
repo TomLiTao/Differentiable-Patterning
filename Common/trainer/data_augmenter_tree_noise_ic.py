@@ -18,8 +18,9 @@ class DataAugmenterNoise(DataAugmenterAbstract):
         set_x0_noise = lambda x,key:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=1))	
         data = jax.tree_util.tree_map(set_x0_noise,data,keys)
         self.save_data(data)
-        x0,y0 = self.split_x_y(1)
-        return x0,y0
+        return None
+    
+
     
     def data_callback(self, x, y, i):
         """

@@ -7,16 +7,20 @@ class DataAugmenterSubsampleNoiseTexture(DataAugmenterAbstract):
         self.sample_size = 16
         self.resample_freq = 4
 
-    def data_init(self):
+    def data_init(self,*args):
         data = self.return_saved_data()
         data = self.duplicate_batches(data, 4)
         self.save_data(data)
-        x0,y0 = self.split_x_y(1)
 
-        init_sample = lambda x:x.at[:,:,:self.sample_size,:self.sample_size]
+
+    def data_load(self):
+        x0,y0 = self.split_x_y(1)
+        init_sample = lambda x:x[:,:,:self.sample_size,:self.sample_size]
         x0 = jax.tree_util.tree_map(init_sample,x0)
         y0 = jax.tree_util.tree_map(init_sample,y0)
+        print("X0 shape: "+str(x0[0].shape))
         return x0,y0
+    
     def data_callback(self, x, y, i):
 
         if hasattr(self, "PREVIOUS_KEY"):
@@ -31,9 +35,9 @@ class DataAugmenterSubsampleNoiseTexture(DataAugmenterAbstract):
             x_inds = []
             y_inds = []
             for j in range(len(x)):
-                x_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),minval=0,maxval=x[i].shape[-2]-self.sample_size))
-                y_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),minval=0,maxval=x[i].shape[-1]-self.sample_size))
-            sample = lambda x,xi,yi: x.at[:,:,xi:xi+self.sample_size,yi:yi+self.sample_size]
+                x_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),shape=(1,),minval=0,maxval=x[j].shape[-2]-self.sample_size)[0])
+                y_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),shape=(1,),minval=0,maxval=x[j].shape[-1]-self.sample_size)[0])
+            sample = lambda x,xi,yi: x[:,:,xi:xi+self.sample_size,yi:yi+self.sample_size]
             x_true,y_true =self.split_x_y(1)
 
             x = jax.tree_util.tree_map(sample,x_true,x_inds,y_inds)

@@ -59,8 +59,8 @@ class DataAugmenter(DataAugmenterAbstract):
 
 		
 		self.save_data(data)
-		x0,y0 = self.split_x_y(1)
-		return x0,y0
+		return None
+	
 		
 	#@eqx.filter_jit
 	def data_callback(self,x,y,i):
