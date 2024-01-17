@@ -18,7 +18,8 @@ class DataAugmenterNoise(DataAugmenterAbstract):
         set_x0_noise = lambda x,key:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=1))	
         data = jax.tree_util.tree_map(set_x0_noise,data,keys)
         self.save_data(data)
-        return None
+        x0,y0 = self.split_x_y(1)
+        return x0,y0
     
     def data_callback(self, x, y, i):
         """
@@ -42,7 +43,8 @@ class DataAugmenterNoise(DataAugmenterAbstract):
 
 		"""
         if hasattr(self, "PREVIOUS_KEY"):
-            key = jax.random.fold_in(self.PREVIOUS_KEY,i)
+            self.PREVIOUS_KEY = jax.random.fold_in(self.PREVIOUS_KEY,i)
+            key = self.PREVIOUS_KEY
         else:
             key = jax.random.PRNGKey(int(time.time()))
             self.PREVIOUS_KEY = key
@@ -56,4 +58,6 @@ class DataAugmenterNoise(DataAugmenterAbstract):
                 x[b*2] = x[b*2].at[1:,:self.OBS_CHANNELS].set(x_true[b*2][1:,:self.OBS_CHANNELS]) # Set every other batch of intermediate initial conditions to correct initial conditions
         key = jax.random.fold_in(key,i)
         x = self.noise(x,0.005,key=key) # Add little noise to next steps for stability
+        
+        
         return x,y

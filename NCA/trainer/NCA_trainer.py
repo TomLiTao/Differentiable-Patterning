@@ -67,8 +67,8 @@ class NCA_Trainer(object):
 		
 		# Set up data and data augmenter class
 		self.DATA_AUGMENTER = DATA_AUGMENTER(data,self.CHANNELS-self.OBS_CHANNELS)
-		self.DATA_AUGMENTER.data_init(self.SHARDING)
-		self.data = self.DATA_AUGMENTER.return_saved_data()
+		#self.DATA_AUGMENTER.data_init(self.SHARDING)
+		#self.data = self.DATA_AUGMENTER.return_saved_data()
 		self.BATCHES = len(self.data)
 		print("Batches = "+str(self.BATCHES))
 		# Set up boundary augmenter class
@@ -255,7 +255,8 @@ class NCA_Trainer(object):
 		
 		
 		# Split data into x and y
-		x,y = self.DATA_AUGMENTER.split_x_y(1)
+		x,y = self.DATA_AUGMENTER.data_init()
+		#x,y = self.DATA_AUGMENTER.split_x_y(1)
 		
 		#print(x[0].shape)
 		best_loss = 100000000
