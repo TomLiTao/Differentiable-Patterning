@@ -69,7 +69,7 @@ class NCA_Trainer(object):
 		self.DATA_AUGMENTER = DATA_AUGMENTER(data,self.CHANNELS-self.OBS_CHANNELS)
 		#self.DATA_AUGMENTER.data_init(self.SHARDING)
 		#self.data = self.DATA_AUGMENTER.return_saved_data()
-		self.BATCHES = len(self.data)
+		self.BATCHES = len(data)
 		print("Batches = "+str(self.BATCHES))
 		# Set up boundary augmenter class
 		# length of BOUNDARY_MASK PyTree should be same as number of batches
