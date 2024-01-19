@@ -77,7 +77,7 @@ class NCA_Train_log(Train_log):
 				h = hidden_channels.shape[-1]
 				hidden_channels_r = np.reshape(hidden_channels,(hidden_channels.shape[0],3,w*(hidden_channels.shape[1]//3),h))
 				#tf.summary.image('Trajectory batch 0, hidden channels',np.einsum("ncxy->nxyc",hidden_channels_r),step=i,max_outputs=x.shape[0])
-				tf.summary.image('Trajectory batch 0, hidden channels',np.einsum("ncxy->nxyc",hidden_channels_r),step=i,max_outputs=N)
+				tf.summary.image('Trajectory batch 0, hidden channels',np.einsum("ncxy->nxyc",hidden_channels_r),step=i,max_outputs=x[b].shape[0])
 	
 	
 	# def tb_training_loop_log_sequence(self,losses,x,i,nca,write_images=True):
