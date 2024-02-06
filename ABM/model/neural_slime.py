@@ -72,15 +72,20 @@ class NeuralSlime(AbstractModel):
 		self.gaussian_blur=gaussian_blur
 		self.decay_rate = decay_rate
 		self.PERIODIC = PERIODIC
-	def init_state(self,key=jax.random.PRNGKey(int(time.time()))):
+	def init_state(self,key=jax.random.PRNGKey(int(time.time())),zero_pheremone=True):
 		_w=2
+		#print(key)
 		key1,key2,key3,key4 = jax.random.split(key,4)
 		agent_pos = jax.random.uniform(key1,shape=[2,self.N_AGENTS],minval=_w,maxval=self.GRID_SIZE-_w)
 		agent_vel = jax.random.uniform(key2,shape=[2,self.N_AGENTS],minval=-1,maxval=1)
-		pheremone_lattice = np.zeros((self.N_CHANNELS,self.GRID_SIZE,self.GRID_SIZE))
-		return (agent_pos,agent_vel),pheremone_lattice
+		if zero_pheremone:
+			pheremone_lattice = np.zeros((self.N_CHANNELS,self.GRID_SIZE,self.GRID_SIZE))
+		else:
+			pheremone_lattice = jax.random.uniform(key3,shape=[self.N_CHANNELS,self.GRID_SIZE,self.GRID_SIZE],minval=0,maxval=1)
+		state = ((agent_pos,agent_vel),pheremone_lattice) 
+		return state
 	@eqx.filter_jit
-	def update_positions(self,agents):
+	def _update_positions(self,agents):
 		"""
 		Updates positions of all agents. Implements periodic boundary condition
 
@@ -99,7 +104,7 @@ class NeuralSlime(AbstractModel):
 		else:
 			return np.clip(agents[0]+agents[1]*self.dt,a_min=0,a_max=self.GRID_SIZE),agents[1]
 	@eqx.filter_jit
-	def sense_pheremones(self,agents,pheremone_lattice):
+	def _sense_pheremones(self,agents,pheremone_lattice):
 		"""
 		Detect pheremones in front of each agent
 	
@@ -160,7 +165,7 @@ class NeuralSlime(AbstractModel):
 		sense_zone_vec = jax.vmap(sense_zone_ind,(0,0,None),(0))
 		return sense_zone_vec(agents[0].T,agents[1].T,0),sense_zone_vec(agents[0].T,agents[1].T,self.sensor_angle),sense_zone_vec(agents[0].T,agents[1].T,-self.sensor_angle)
 	@eqx.filter_jit	
-	def pheremone_diffuse(self,pheremone_lattice):
+	def _pheremone_diffuse(self,pheremone_lattice):
 		"""
 		NOTE: VMAP THIS OVER PHEREMONE CHANNELS		
 
@@ -180,32 +185,45 @@ class NeuralSlime(AbstractModel):
 		else:
 			x = np.linspace(-self.gaussian_blur, self.gaussian_blur, 2*self.gaussian_blur+1)
 			window = jax.scipy.stats.norm.pdf(x) * jax.scipy.stats.norm.pdf(x[:, None])
-			return jax.scipy.signal.convolve2d(pheremone_lattice, window, mode='same',boundary="fill")
+			am = 0.1
+
+			return am*jax.scipy.signal.convolve2d(pheremone_lattice, window, mode='same',boundary="fill") + (1-am)*pheremone_lattice
 	
 	@eqx.filter_jit
-	def pheremone_decay(self,pheremone_lattice):
+	def _pheremone_decay(self,pheremone_lattice):
 		return pheremone_lattice*self.decay_rate
 	
 	@eqx.filter_jit
-	def update_velocities_and_pheremones(self,agents,pheremone_weights,pheremone_lattice):
-		v_agent_nn = jax.vmap(self.Agent_nn,in_axes=0,out_axes=(1,1),axis_name="N_AGENTS") # vmap over agents 
+	def _update_velocities_and_pheremones(self,agents,pheremone_weights,pheremone_lattice):
+		v_agent_nn = jax.vmap(self.Agent_nn,in_axes=0,out_axes=(0,0),axis_name="N_AGENTS") # vmap over agents 
 		agent_vel,d_pheremones = v_agent_nn(pheremone_weights)
-		#agent_vel = agent_vel.T
+
+		agent_vel = agent_vel.T
+		d_pheremones = d_pheremones.T
 		pos = np.rint(agents[0]).astype(int)
-		smooth_func = jax.vmap(self.pheremone_diffuse,in_axes=0,out_axes=0,axis_name="pheremones")
+		smooth_func = jax.vmap(self._pheremone_diffuse,in_axes=0,out_axes=0,axis_name="pheremones")
 		
 		pheremone_lattice = pheremone_lattice.at[:,pos[0],pos[1]].set(jax.nn.relu(pheremone_lattice[:,pos[0],pos[1]]+self.dt*d_pheremones))
 		pheremone_lattice = smooth_func(pheremone_lattice)
-		pheremone_lattice = self.pheremone_decay(pheremone_lattice)
+		pheremone_lattice = self._pheremone_decay(pheremone_lattice)
 		return (agents[0],agent_vel),pheremone_lattice
 	@eqx.filter_jit
-	def __call__(self,agents,pheremone_lattice):
-		pheremone_weights = self.sense_pheremones(agents, pheremone_lattice)
-		agents,pheremone_lattice = self.update_velocities_and_pheremones(agents, pheremone_weights, pheremone_lattice)
-		agents = self.update_positions(agents)
-		return agents,pheremone_lattice
+	def __call__(self,state):
+		agents,pheremone_lattice = state
+		pheremone_weights = self._sense_pheremones(agents, pheremone_lattice)
+		agents,pheremone_lattice = self._update_velocities_and_pheremones(agents, pheremone_weights, pheremone_lattice)
+		agents = self._update_positions(agents)
+		state = (agents,pheremone_lattice)
+		return state
 	
 
-
+	# @eqx.filter_jit
+	# def __call__(self,state):
+	# 	((agents_p,agents_v),pheremone_lattice) = state
+	# 	pheremone_weights = self._sense_pheremones((agents_p,agents_v), pheremone_lattice)
+	# 	(agents_p,agents_v),pheremone_lattice = self._update_velocities_and_pheremones((agents_p,agents_v), pheremone_weights, pheremone_lattice)
+	# 	(agents_p,agents_v) = self._update_positions((agents_p,agents_v))
+	# 	state = ((agents_p,agents_v),pheremone_lattice)
+	# 	return state
 
 

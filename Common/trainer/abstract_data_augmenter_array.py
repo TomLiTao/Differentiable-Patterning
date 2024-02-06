@@ -4,6 +4,7 @@ import time
 import equinox as eqx
 from jax.experimental import mesh_utils
 
+
 class DataAugmenterAbstract(object):
 	
 	def __init__(self,data_true,hidden_channels=0):
@@ -47,7 +48,9 @@ class DataAugmenterAbstract(object):
 		
 		self.save_data(data)
 		return None
-		
+	def data_load(self):
+		x0,y0 = self.split_x_y(1)
+		return x0,y0
 	#@eqx.filter_jit
 	def data_callback(self,x,y,i):
 		"""

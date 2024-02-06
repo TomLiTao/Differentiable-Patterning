@@ -4,34 +4,35 @@ import optax
 import equinox as eqx
 import datetime
 import time
-from PDE.trainer.data_augmenter_pde import DataAugmenterPDE # Fine to use this for now
-import NCA.trainer.loss as loss
-#from ABM.model.neural_slime import NeuralSlime
-#from NCA_JAX.model.boundary import NCA_boundary
-#from PDE.trainer.tensorboard_log import PDE_Train_log
-#from PDE.trainer.optimiser import non_negative_diffusion
-#from PDE.solver.semidiscrete_solver import PDE_solver
-#import diffrax
+from ABM.trainer.data_augmenter_abm import DataAugmenter
+import Common.trainer.loss as loss
+from ABM.trainer.tensorboard_log import ABM_Train_log
+from Common.utils import key_array_gen
 from tqdm import tqdm
 
 class SlimeTrainer(object):
 	"""
-	Train random initial configurations of slime mold agents to produce an image
+	Train ant colony to match point cloud mnist dataset
 	"""
 	def __init__(self,
 			     nslime,
-				 data,
+				 int_list,
+				 BATCHES,
+				 N_agents,
 				 model_filename,
-				 DATA_AUGMENTER = DataAugmenterPDE,
+				 DATA_AUGMENTER = DataAugmenter,
 				 directory = "models/"):
 		self.nslime = nslime
-		#self.OBS_CHANNELS = self.nslime.N_CHANNELS
-		self.OBS_CHANNELS = data[0].shape[1]
+		self.OBS_CHANNELS = 1#
+		self.CHANNELS = self.nslime.N_CHANNELS
+		#self.OBS_CHANNELS = data[0].shape[1]
 		print("Observable Channels: "+str(self.OBS_CHANNELS))
 		# Set up data and data augmenter class
-		self.DATA_AUGMENTER = DATA_AUGMENTER(data)
-		self.DATA_AUGMENTER.data_init()
-		self.BATCHES = len(data)
+		self.DATA_AUGMENTER = DATA_AUGMENTER(int_list,BATCHES,self.nslime.GRID_SIZE,N_agents=N_agents,channels=self.CHANNELS)
+		#self.DATA_AUGMENTER.data_init()
+		data = self.DATA_AUGMENTER.return_saved_data()
+		
+		self.BATCHES = BATCHES
 		print("Batches = "+str(self.BATCHES))
 		if model_filename is None:
 			self.model_filename = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -40,36 +41,64 @@ class SlimeTrainer(object):
 			self.model_filename = model_filename
 			self.IS_LOGGING = True
 			self.LOG_DIR = "logs/"+self.model_filename+"/train"
-			#self.LOGGER = NCA_Train_log(self.LOG_DIR, data)
+			self.LOGGER = ABM_Train_log(self.LOG_DIR, data)
 			print("Logging training to: "+self.LOG_DIR)
 		self.directory = directory
 		self.MODEL_PATH = directory+self.model_filename
 		print("Saving model to: "+self.MODEL_PATH)
 		
-	def loss_func(self,x,y,key):
+	def loss_func(self,X,Y,key=jax.random.PRNGKey(int(time.time()))):
 		"""
-		NOTE: VMAP THIS OVER BATCHES TO HANDLE DIFFERENT SIZES OF GRID IN EACH BATCH
+		
 	
 		Parameters
 		----------
-		x : float32 array [N,CHANNELS,_,_]
-			pheremone state
-		y : float32 array [N,OBS_CHANNELS,_,_]
-			data
+		X : (([B,N,N_agents,2],[B,N,N_agents,2]),[B,N,CHANNELS,_,_])
+			agent positions, velocities and pheremone lattice
+		y :  (([B,N,N_agents,2],[B,N,N_agents,2]),[B,N,CHANNELS,_,_])
+			Data to train to
 		Returns
 		-------
-		loss : float32 array [N]
-			loss for each timestep of trajectory
+		loss : float32 
+			loss 
 		"""
-		#x_obs = x[:self.OBS_CHANNELS]
-		#y_obs = y[:self.OBS_CHANNELS]
-		#x_obs = x_obs[jnp.newaxis]
-		#y_obs = y_obs[jnp.newaxis]
-		#return loss.vgg(x_obs,y_obs,key)
-		x_obs = x[:self.OBS_CHANNELS]
-		y_obs = y[:self.OBS_CHANNELS]
-		return loss.euclidean(x_obs,y_obs)
+		alpha = 0.1
+		((p_x,v_x),ph_x) = X
+		((p_y,v_y),ph_y) = Y
+		
+		v_pos_loss = jax.vmap(loss.sinkhorn_divergence_loss,in_axes=(0,0),out_axes=0)
+		vv_pos_loss = jax.vmap(v_pos_loss,in_axes=(0,0),out_axes=0)
+
+		v_ph_loss = jax.vmap(lambda x,y:loss.euclidean(x[:self.OBS_CHANNELS],y[:self.OBS_CHANNELS]),in_axes=(0,0),out_axes=0)
+		vv_ph_loss = jax.vmap(v_ph_loss,in_axes=(0,0),out_axes=0)
+		
+		pos_loss = vv_pos_loss(p_x,p_y)
+		ph_loss = vv_ph_loss(ph_x,ph_y)
+		print(pos_loss.shape)
+		print(ph_loss.shape)
+
+		return pos_loss*alpha+ph_loss*(1-alpha)
+		#return vv_loss_func(p_x,p_y)
+		#def _loss_func(x,y,key):
+		#	x_obs = x[:,:self.OBS_CHANNELS]
+		#	y_obs = y[:,:self.OBS_CHANNELS]
+		#	#x_obs = x_obs[jnp.newaxis]
+			#y_obs = y_obs[jnp.newaxis]
+		#	return loss.vgg(x_obs,y_obs,key)
+		#v_loss_func = jax.vmap(lambda x,y:_loss_func(x,y,key),in_axes=(0,0),out_axes=0)
+		#vv_loss_func = jax.vmap(v_loss_func,in_axes=(0,0),out_axes=0)
+		#return v_loss_func(x,y)
+			
+		# def _loss_func(x,y):
+		# 	x_obs = x[:self.OBS_CHANNELS]
+		# 	y_obs = y[:self.OBS_CHANNELS]
+		# 	return loss.euclidean(x_obs,y_obs)
+
+		
+		# return vv_loss_func(x,y)
+		
 	
+
 	def train(self,
 		      t,
 			  iters,
@@ -77,58 +106,107 @@ class SlimeTrainer(object):
 			  WARMUP=64,
 			  key=jax.random.PRNGKey(int(time.time()))):
 		
-		
-		def make_step(nslime,target,t,opt_state,key):
-			
+		@eqx.filter_jit
+		def make_step(nslime,Y,X,t,opt_state,key):
+			"""_summary_
+
+			Args:
+				nslime: eqx.Module callable ((agent_pos,agent_vel),pheremones)->((agent_pos,agent_vel),pheremones)) 
+					Ant colony model that updates agent positions, velocities and the underlying pheremone lattice
+				Y: ((agent_pos,agent_vel),pheremones)
+					True data that nslime is being trained to reproduce. 
+					Each element of Y is vmapped over 2 additional axes:
+						agent_pos:  f32[B,N_steps,2,N_points]
+						agent_vel:  f32[B,N_steps,2,N_points]
+						pheremones: f32[B,N_steps,channels,grid_size,grid_size]
+
+
+				X: ((agent_pos,agent_vel),pheremones)
+					State of ant colony model after previous training iteration.
+					Each element of X is vmapped over 2 additional axes:
+						agent_pos:  f32[B,N_steps,2,N_agents]
+						agent_vel:  f32[B,N_steps,2,N_agents]
+						pheremones: f32[B,N_steps,channels,grid_size,grid_size]
+					
+						NOTE: N_agents isn't the same as N_points. Using OT losses means
+						that the number of agents doesn't have to match that of data, and
+						in the datasets being used, the number of points varies
+
+				t: int
+					Number of update steps between each timestep of model
+				opt_state (_type_): _description_
+				key (_type_): _description_
+
+			Returns:
+				_type_: _description_
+			"""
 			@eqx.filter_value_and_grad(has_aux=True)
-			def compute_loss(nslime_diff,nslime_static,target,t,key):
+			def compute_loss(nslime_diff,nslime_static,Y,X,t,key):
 				nslime = eqx.combine(nslime_diff,nslime_static)
-				#v_nslime = jax.vmap(nslime,in_axes=(0,0),out_axes=0,axis_name="N")
-				def nslime_step_wrapper(carry,j):# function of type a,b->a
-					agents,pheremone_lattice=carry
-					agents,pheremone_lattice = nslime(agents,pheremone_lattice)
-					return (agents,pheremone_lattice),None
-				agents,pheremone_lattice=nslime.init_state()
 				
-				(agents,pheremone_lattice),_=jax.lax.scan(nslime_step_wrapper,(agents,pheremone_lattice),xs=jnp.arange(t//2))
-				loss_1 = self.loss_func(pheremone_lattice, target,key)
-				(agents,pheremone_lattice),_=jax.lax.scan(nslime_step_wrapper,(agents,pheremone_lattice),xs=jnp.arange(t//2))
-				loss_2 = self.loss_func(pheremone_lattice, target,key)
-				mean_loss = jnp.mean(loss_1+loss_2)
-				return mean_loss,(pheremone_lattice,loss_1+loss_2)
+				def _nslime_run_wrapper(X,nslime):
+					def _nslime_step_wrapper(X,j):# function of type a,b->a
+						X = nslime(X)
+						return X,None
+					X,_=jax.lax.scan(_nslime_step_wrapper,X,xs=jnp.arange(t))
+					return X
+				
+				#v_init_nslime = jax.vmap(lambda key:nslime.init_state(key,zero_pheremone=True),in_axes=(0),out_axes=(0,0))
+				#vv_init_nslime = jax.vmap(v_init_nslime,in_axes=(0),out_axes=(0,0))
+		
+				v_run = jax.vmap(_nslime_run_wrapper,in_axes=(0,None),out_axes=(0,0))
+				vv_run = jax.vmap(v_run,in_axes=(0,None),out_axes=(0,0))
+				
+				#keys = key_array_gen(key,(len(X),X[0].shape[0]))
+				
+				#X = vv_init_nslime(keys)
+				X = vv_run(X,nslime)
+				def _norm(X):
+					((p,v),ph) = X
+					return ((p/float(nslime.GRID_SIZE),v/float(nslime.GRID_SIZE)),ph)	
+				losses = self.loss_func(_norm(X),_norm(Y))
+				mean_loss = jnp.mean(jnp.array(losses))
+				return mean_loss,(X,losses)
 			
 			nslime_diff,nslime_static = nslime.partition()
-			loss_x,grads = compute_loss(nslime_diff,nslime_static,target,t,key)
+			loss_x,grads = compute_loss(nslime_diff,nslime_static,Y,X,t,key)
+			
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, nslime_diff)
 			nslime = eqx.apply_updates(nslime,updates)
 			return nslime,opt_state,loss_x
 		
 		# Initialise Training
 		nslime = self.nslime
-		agents,pheremone_lattice=nslime.init_state()
-		print("Pheremone Lattice: ")
-		print(pheremone_lattice.shape)
 		nslime_diff,nslime_static = nslime.partition()
 		if optimiser is None:
-			schedule = optax.exponential_decay(5e-2, transition_steps=iters, decay_rate=0.99)
-			self.OPTIMISER = optax.adamw(schedule)
+			schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
+			self.OPTIMISER = optax.noisy_sgd(schedule)
 			#self.OPTIMISER = non_negative_diffusion(learn_rate=1e-2,iters=iters)
 		else:
 			self.OPTIMISER = optimiser
 		opt_state = self.OPTIMISER.init(nslime_diff)
 		
+
 		best_loss = 100000000
 		loss_thresh = 1e16
 		model_saved = False
 		error = 0
 		error_at = 0
-		target = self.DATA_AUGMENTER.return_true_data()[0][0]
-		print("Data format: ")
-		print(target.shape)
+		#Y = self.DATA_AUGMENTER.return_saved_data()
+		X,Y = self.DATA_AUGMENTER.data_load()
+		print(X[1].shape)
+		print(X[0][0].shape)
+		
+		
+		#print("Data format: ")
+		#print("Number of batches: "+str(len(Y)))
+		#print("Batch structure:"+str(Y[0].shape))
 		for i in tqdm(range(iters)):
 			key = jax.random.fold_in(key,i)
-			nslime,opt_state,(mean_loss,(x,loss))= make_step(nslime,target,t,opt_state,key)
+			nslime,opt_state,(mean_loss,(X,losses))= make_step(nslime,Y,X,t,opt_state,key)
 			
+			if self.IS_LOGGING:
+				self.LOGGER.tb_training_loop_log_sequence(jnp.array([losses]), X, i, nslime)
 			
 			
 			
@@ -138,7 +216,7 @@ class SlimeTrainer(object):
 				error = 1
 				error_at=i
 				break
-			elif any(list(map(lambda x: jnp.any(jnp.isnan(x)), x))):
+			elif any(list(map(lambda X: jnp.any(jnp.isnan(X)), X[1]))): # Only check for NaNs in pheremone lattice
 				error = 2
 				error_at=i
 				break

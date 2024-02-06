@@ -2,7 +2,7 @@ import jax
 import jax.numpy as np
 import equinox as eqx
 from ABM.model.neural_slime import NeuralSlime
-from ABM.model.agent_nn_vel import agent_nn
+from ABM.model.agent_nn_angle import agent_nn
 
 class NeuralChemotaxis(NeuralSlime):
 	
@@ -11,7 +11,7 @@ class NeuralChemotaxis(NeuralSlime):
 		self.Agent_nn = agent_nn(self.N_CHANNELS)
 		
 	@eqx.filter_jit
-	def sense_pheremones(self,agents,pheremone_lattice):
+	def _sense_pheremones(self,agents,pheremone_lattice):
 		"""
 		Detect pheremones and gradients of pheremones at agent location
 	
@@ -36,52 +36,114 @@ class NeuralChemotaxis(NeuralSlime):
 		
 		def sense_zone_ind(pos,vel):
 			"""
-			
+			Sense pheremones and gradients of them at a given agent position and direction
+
+			VMAP THIS OVER AGENTS
 	
 			Parameters
 			----------
-			pos : array[n_agents,2]
-				transposed positions
-			vel : array[n_agents,2]
-				transposed velocities
-			angle_offset : float
-				angle  for sensor region position. clockwise from velocity direction
+			pos : array[2]
+				 positions
+			vel : array[2]
+				velocities
+			
 	
 			Returns
 			-------
-			pheremone_weight : array[n_agents]
-				sum of pheremones at sensor for each agent
+			weights
+				sum of local pheremones
+			w_x
+				gradient of local pheremones along anterior direction
+			w_y 
+				gradient of local pheremones along lateral direction
 	
 			"""
 			sobel_x = np.array([[-1,-2,-1],[0,0,0],[1,2,1]])
 			sobel_y = sobel_x.T
-			#c_angle = np.arctan2(vel[1],vel[0]) + angle_offset
+			c_angle = np.arctan2(vel[1],vel[0])
+			cos_angle = np.cos(c_angle) #vel[0]/(np.sqrt(vel[0]**2+vel[1]**2+0.0000001))
+			sin_angle = np.sin(c_angle) #vel[1]/(np.sqrt(vel[0]**2+vel[1]**2+0.0000001))
+			p_x = cos_angle*sobel_x + sin_angle*sobel_y
+			p_y = cos_angle*sobel_y - sin_angle*sobel_x
 			c = np.rint(pos).astype(int)
 			if self.PERIODIC:
 				x_ind = np.stack((c[0]-1,c[0],c[0]+1))%self.GRID_SIZE
 				y_ind = np.stack((c[1]-1,c[1],c[1]+1))%self.GRID_SIZE	
 				_xs,_ys = np.meshgrid(x_ind,y_ind)
-				weights = np.sum(pheremone_lattice[:,_xs,_ys],axis=(1,2))
-				w_x = np.sum(pheremone_lattice[:,_xs,_ys]*sobel_x,axis=(1,2))
-				w_y = np.sum(pheremone_lattice[:,_xs,_ys]*sobel_y,axis=(1,2))
+				weights = np.sum(pheremone_lattice[:,_xs,_ys],axis=(1,2)) # [:] over channels
+				w_x = np.sum(pheremone_lattice[:,_xs,_ys]*p_x,axis=(1,2)) # [:] over channels
+				w_y = np.sum(pheremone_lattice[:,_xs,_ys]*p_y,axis=(1,2)) # [:] over channels
 			else:
 				padwidth=1#2*np.rint(self.sensor_length).astype(int)
 				x_ind = np.stack((c[0]-1,c[0],c[0]+1)) + padwidth
 				y_ind = np.stack((c[1]-1,c[1],c[1]+1)) + padwidth
 				_xs,_ys = np.meshgrid(x_ind,y_ind)
 				padded_pheremone_lattice = np.pad(pheremone_lattice,((0,0),(padwidth,padwidth),(padwidth,padwidth)),constant_values=0.0)
-				weights = np.sum(padded_pheremone_lattice[:,_xs,_ys],axis=(1,2))
-				w_x = np.sum(pheremone_lattice[:,_xs,_ys]*sobel_x,axis=(1,2))
-				w_y = np.sum(pheremone_lattice[:,_xs,_ys]*sobel_y,axis=(1,2))
+				weights = np.sum(padded_pheremone_lattice[:,_xs,_ys],axis=(1,2)) # [:] over channels
+				w_x = np.sum(pheremone_lattice[:,_xs,_ys]*p_x,axis=(1,2)) # [:] over channels
+				w_y = np.sum(pheremone_lattice[:,_xs,_ys]*p_y,axis=(1,2)) # [:] over channels
 			return weights,w_x,w_y
 	
-		v_sense = jax.vmap(sense_zone_ind,(0,0),(0,0,0))
+		v_sense = jax.vmap(sense_zone_ind,(0,0),(0,0,0),axis_name="N_AGENTS")
+		#print(agents.shape)
 		weights,w_x,w_y =v_sense(agents[0].T,agents[1].T)
 		return weights,w_x,w_y
 	
 	@eqx.filter_jit
-	def __call__(self,agents,pheremone_lattice):
-		pheremone_weights = self.sense_pheremones(agents, pheremone_lattice)
-		agents,pheremone_lattice = self.update_velocities_and_pheremones(agents, pheremone_weights, pheremone_lattice)
-		agents = self.update_positions(agents)
-		return agents,pheremone_lattice
+	def _update_velocities_and_pheremones(self,agents,pheremone_weights,pheremone_lattice):
+		v_agent_nn = jax.vmap(self.Agent_nn,in_axes=0,out_axes=(1,1,1),axis_name="N_AGENTS") # vmap over agents 
+		d_v_mag,d_pheremones,d_angle = v_agent_nn(pheremone_weights)
+		pos = np.rint(agents[0]).astype(int)
+		if self.PERIODIC:
+			vel = agents[1]
+		else:
+			boundary_mask = np.logical_or(pos==0,pos==self.GRID_SIZE)
+
+			vel = np.where(boundary_mask,-agents[1],agents[1])
+		
+		
+		v_angle = np.arctan2(vel[1],vel[0])
+		v_mag = np.sqrt(vel[1]**2+vel[0]**2)
+		#print(c_angle.shape)
+		#print(d_angle.shape)
+		v_angle = v_angle+self.dt*d_angle[:,0]
+		v_mag = np.clip(v_mag+self.dt*d_v_mag,a_min=-10*self.dt,a_max=10*self.dt)
+		agent_vel = np.array([np.cos(v_angle),np.sin(v_angle)])*v_mag
+		
+		
+		
+		smooth_func = jax.vmap(self._pheremone_diffuse,in_axes=0,out_axes=0,axis_name="pheremones")
+		pheremone_lattice = pheremone_lattice.at[:,pos[0],pos[1]].set(jax.nn.relu(pheremone_lattice[:,pos[0],pos[1]]+self.dt*d_pheremones))
+		pheremone_lattice = smooth_func(pheremone_lattice)
+		pheremone_lattice = self._pheremone_decay(pheremone_lattice)
+		return (agents[0],agent_vel),pheremone_lattice
+	
+	# @eqx.filter_jit
+	# def __call__(self,state):
+	# 	print("State: ")
+	# 	print(state)
+	# 	agents,pheremone_lattice = state
+	# 	print("Agents: ")
+	# 	print(agents)
+	# 	pheremone_weights = self._sense_pheremones(agents, pheremone_lattice)
+	# 	agents,pheremone_lattice = self._update_velocities_and_pheremones(agents, pheremone_weights, pheremone_lattice)
+	# 	agents = self._update_positions(agents)
+	# 	state = (agents,pheremone_lattice)
+	# 	return state
+
+	@eqx.filter_jit
+	def __call__(self,state):
+		#print("State: ")
+		#print(state)
+		((agents_p,agents_v),pheremone_lattice) = state
+		#print("Agent position: ")
+		#print(agents_p)
+		#print("Agent velocity: ")
+		#print(agents_v)
+		#print("Pheremone lattice: ")
+		#print(pheremone_lattice)
+		pheremone_weights = self._sense_pheremones((agents_p,agents_v), pheremone_lattice)
+		((agents_p,agents_v),pheremone_lattice) = self._update_velocities_and_pheremones((agents_p,agents_v), pheremone_weights, pheremone_lattice)
+		(agents_p,agents_v) = self._update_positions((agents_p,agents_v))
+		state = ((agents_p,agents_v),pheremone_lattice)
+		return state

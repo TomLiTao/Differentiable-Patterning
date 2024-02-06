@@ -246,7 +246,7 @@ class DataAugmenterAbstract(object):
 
 		Returns
 		-------
-		data : float32[N,B*BATCHES,CHANNELS,WIDTH,HEIGHT]
+		data : float32[B*BATCHES,N,CHANNELS,WIDTH,HEIGHT]
 			data augmented along batch axis
 
 		"""

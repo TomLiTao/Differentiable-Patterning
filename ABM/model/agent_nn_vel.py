@@ -59,11 +59,14 @@ class agent_nn(eqx.Module):
 	def __call__(self,X):
 		for L in self.layers:
 			X = L(X)
+		#print(X.shape)
 		v = X
 		dp= X
 		for L in self.layers_pheremone:
 			dp = L(dp)
 		for L in self.layers_velocity:
 			v = L(v)
+		#print(v.shape)
+		#print(dp.shape)
 		return v,dp
 		
