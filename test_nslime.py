@@ -41,7 +41,7 @@ optimiser = optax.adamw(schedule)
 
 
 
-trainer = SlimeTrainer(nslime,[0,1],BATCHES=1,N_agents=N_agents,model_filename="ant_sinkhorn_test_16")
+trainer = SlimeTrainer(nslime,[0,1],BATCHES=1,N_agents=N_agents,model_filename="ant_sinkhorn_test_16",alpha=1.0)
 trainer.train(timesteps,iters,WARMUP=warmup,optimiser=optimiser)
 nslime = trainer.nslime
 

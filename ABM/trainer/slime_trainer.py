@@ -21,10 +21,12 @@ class SlimeTrainer(object):
 				 N_agents,
 				 model_filename,
 				 DATA_AUGMENTER = DataAugmenter,
+				 alpha = 0.1,
 				 directory = "models/"):
 		self.nslime = nslime
 		self.OBS_CHANNELS = 1#
 		self.CHANNELS = self.nslime.N_CHANNELS
+		self.alpha = alpha
 		#self.OBS_CHANNELS = data[0].shape[1]
 		print("Observable Channels: "+str(self.OBS_CHANNELS))
 		# Set up data and data augmenter class
@@ -62,7 +64,7 @@ class SlimeTrainer(object):
 		loss : float32 
 			loss 
 		"""
-		alpha = 0.1
+		self.alpha = 0.1
 		((p_x,v_x),ph_x) = X
 		((p_y,v_y),ph_y) = Y
 		
@@ -77,7 +79,7 @@ class SlimeTrainer(object):
 		print(pos_loss.shape)
 		print(ph_loss.shape)
 
-		return pos_loss*alpha+ph_loss*(1-alpha)
+		return pos_loss*self.alpha+ph_loss*(1-self.alpha)
 		#return vv_loss_func(p_x,p_y)
 		#def _loss_func(x,y,key):
 		#	x_obs = x[:,:self.OBS_CHANNELS]
