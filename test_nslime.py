@@ -20,8 +20,10 @@ import matplotlib.pyplot as plt
 
 
 timesteps = 128
-resolution = 128
+resolution = 64
 warmup=10
+init_val = 1e-3
+peak_val = 5e-3
 
 cooldown = 60
 iters=5*warmup+5*cooldown
@@ -31,11 +33,11 @@ nslime = NeuralChemotaxis(N_agents, resolution, 16,dt=0.1,decay_rate=0.98,PERIOD
 
 
 #schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
-schedule = optax.sgdr_schedule([{"init_value":0.01, "peak_value":0.04, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":0.01},
-                                {"init_value":0.01, "peak_value":0.03, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":0.005},
-                                {"init_value":0.005, "peak_value":0.02, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":0.002},
-                                {"init_value":0.002, "peak_value":0.003, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":0.001},
-                                {"init_value":0.001, "peak_value":0.002, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":0.0005},])
+schedule = optax.sgdr_schedule([{"init_value":init_val, "peak_value":peak_val, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val},
+                                {"init_value":init_val, "peak_value":peak_val, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/2.0},
+                                {"init_value":init_val/2.0, "peak_value":peak_val/2.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/4.0},
+                                {"init_value":init_val/4.0, "peak_value":peak_val/4.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/8.0},
+                                {"init_value":init_val/8.0, "peak_value":peak_val/8.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/16.0},])
 optimiser = optax.adamw(schedule)
 
 
