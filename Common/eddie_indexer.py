@@ -135,7 +135,7 @@ def index_to_model_exploration_parameters(index):
     return LOSS,LOSS_STR,TASK,LAYER,KERNEL,ACTIVATION
     
 
-def index_to_emoji_activations_and_kernels(index):
+def index_to_activations_and_kernels(index):
 	
 	
 	
@@ -145,7 +145,7 @@ def index_to_emoji_activations_and_kernels(index):
 			   ["ID","LAP","AV"],
 			   ["ID","DIFF","LAP"],
 			   ["ID","DIFF"]]
-	activations=["linear","relu","swish","tanh","leaky_relu"]
+	activations=["linear","relu","swish","tanh","leaky_relu","gelu"]
 	
 	L1 = len(kernels)
 	L2 = len(activations)

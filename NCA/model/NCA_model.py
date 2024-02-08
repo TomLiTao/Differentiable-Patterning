@@ -77,6 +77,14 @@ class NCA(AbstractModel):
 			ACTIVATION = jax.nn.relu
 		elif ACTIVATION_STR == "tanh":
 			ACTIVATION = jax.nn.tanh
+		elif ACTIVATION_STR == "swish":
+			ACTIVATION = jax.nn.swish
+		elif ACTIVATION_STR == "linear":
+			ACTIVATION = lambda x:x
+		elif ACTIVATION_STR == "leaky_relu":
+			ACTIVATION = jax.nn.leaky_relu
+		elif ACTIVATION_STR == "gelu":
+			ACTIVATION = jax.nn.gelu
 		else:
 			ACTIVATION = None
 		

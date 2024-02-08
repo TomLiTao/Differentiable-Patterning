@@ -117,8 +117,9 @@ class NCA_Trainer(object):
 		"""
 		x_obs = x[:,:self.OBS_CHANNELS]
 		y_obs = y[:,:self.OBS_CHANNELS]
+		return self._loss_func(x_obs,y_obs,key)
 		#return loss.vgg(x_obs,y_obs,key)
-		return loss.l2(x_obs,y_obs)
+		#return loss.l2(x_obs,y_obs)
 		#return loss.random_sampled_euclidean(x_obs, y_obs, key, SAMPLES=SAMPLES)
 	@eqx.filter_jit
 	def intermediate_reg(self,x,full=True):
@@ -149,7 +150,8 @@ class NCA_Trainer(object):
 			  optimiser=None,
 			  STATE_REGULARISER=1.0,
 			  WARMUP=64,
-			  LOSS_SAMPLING = 64,			        
+			  LOSS_SAMPLING = 64,
+			  LOSS_FUNC_STR = "euclidean",	        
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
 		Perform t steps of NCA on x, compare output to y, compute loss and gradients of loss wrt model parameters, and update parameters.
@@ -174,6 +176,16 @@ class NCA_Trainer(object):
 		None
 		"""
 		
+		if LOSS_FUNC_STR=="l2":
+			self._loss_func = loss.l2
+		elif LOSS_FUNC_STR=="vgg":
+			self._loss_func = loss.vgg
+		elif LOSS_FUNC_STR=="euclidean":
+			self._loss_func = loss.euclidean
+		elif LOSS_FUNC_STR=="spectral":
+			self._loss_func = loss.spectral
+
+
 		@eqx.filter_jit
 		def make_step(nca,x,y,t,opt_state,key):
 			"""
@@ -228,8 +240,7 @@ class NCA_Trainer(object):
 					return (key,x,reg_log),None
 
 				(key,x,reg_log),_ = jax.lax.scan(nca_step,(key,x,reg_log),xs=jnp.arange(t))
-				#(key,x),_ = eqx.internal.scan(nca_step,(key,x),xs=jnp.arange(t),kind="checkpointed",checkpoints="all")
-				#(key,x,_) = eqx.internal.while_loop(cond_func,nca_step,(key,x,0),kind="checkpointed",max_steps=t)
+				
 				loss_key = key_pytree_gen(key, (len(x),))
 				losses = v_loss_func(x, y, loss_key)
 				mean_loss = jnp.mean(losses)+STATE_REGULARISER*(jnp.mean(reg_log)/t)
@@ -239,7 +250,7 @@ class NCA_Trainer(object):
 			loss_x,grads = compute_loss(nca_diff,nca_static,x,y,t,key)
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, nca_diff)
 			nca = eqx.apply_updates(nca,updates)
-			return nca,opt_state,loss_x#loss_x[0],loss_x[1]
+			return nca,opt_state,loss_x
 		
 		nca = self.NCA_model
 		nca_diff,nca_static = nca.partition()
@@ -247,18 +258,16 @@ class NCA_Trainer(object):
 		# Set up optimiser
 		if optimiser is None:
 			schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
-			self.OPTIMISER = optax.adamw(schedule)
+			self.OPTIMISER = optax.adam(schedule)
 			#self.OPTIMISER = optax.chain(optax.clip_by_block_rms(1.0),self.OPTIMISER)
 		else:
 			self.OPTIMISER = optimiser
 		opt_state = self.OPTIMISER.init(nca_diff)
 		
-		
 		# Split data into x and y
 		x,y = self.DATA_AUGMENTER.data_load()
-		#x,y = self.DATA_AUGMENTER.split_x_y(1)
 		
-		#print(x[0].shape)
+		
 		best_loss = 100000000
 		loss_thresh = 1e16
 		model_saved = False
@@ -270,11 +279,6 @@ class NCA_Trainer(object):
 			
 			if self.IS_LOGGING:
 				self.LOGGER.tb_training_loop_log_sequence(losses, x, i, nca)
-			
-			# Check if NaN
-			#assert not jnp.isnan(mean_loss), "|-|-|-|-|-|-  Loss reached NaN at step "+str(i)+" -|-|-|-|-|-|"
-			#assert not any(list(map(lambda x: jnp.any(jnp.isnan(x)), x))), "|-|-|-|-|-|-  X reached NaN at step "+str(i)+" -|-|-|-|-|-|"
-			#assert mean_loss<loss_thresh, "|-|-|-|-|-|-  Loss exceded "+str(loss_thresh)+" at step "+str(i)+", optimisation probably diverging  -|-|-|-|-|-|"
 			
 			if jnp.isnan(mean_loss):
 				error = 1
