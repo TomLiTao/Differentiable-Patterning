@@ -1,9 +1,7 @@
 from NCA.model.NCA_model import NCA
 from NCA.trainer.NCA_trainer import NCA_Trainer
 from Common.utils import load_emoji_sequence
-from Common.eddie_indexer import index_to_channel_sample
-#from Common.trainer.data_augmenter_tree_noise_ic import DataAugmenterNoise
-#from Common.trainer.data_augmenter_tree_subsample import DataAugmenterSubsampleNoiseTexture
+from Common.eddie_indexer import index_to_channel
 import time
 import jax.random as jr
 import optax
@@ -18,7 +16,7 @@ key_model,key_trainer = jr.split(key,2)
 N_BATCHES = 4
 TRAIN_ITERS = 4000
 LEARN_RATE = 1e-2
-N_CHANNELS,SAMPLING = index_to_channel_sample(index)
+N_CHANNELS,SAMPLING = index_to_channel(index)
 FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)+"_sampling_v1"
 
 

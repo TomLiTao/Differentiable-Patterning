@@ -174,3 +174,17 @@ def index_to_channel_sample(index):
 	N_CHANNELS = channels[indices[0]]
 	SAMPLING = samplings[indices[1]]
 	return N_CHANNELS,SAMPLING
+
+
+def index_to_channel(index):
+	channels = [4,6,8,10,12,14,16,32]
+	SAMPLING=64
+	N_CHANNELS = channels[index]
+	return N_CHANNELS,SAMPLING
+	
+
+def index_to_sample(index):
+	N_CHANNELS = 16
+	samplings = [1,2,4,8,16,32,128]
+	SAMPLING=samplings[index]
+	return N_CHANNELS,SAMPLING
