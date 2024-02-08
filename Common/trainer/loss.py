@@ -15,7 +15,7 @@ from lpips_j.lpips import LPIPS
 lpips = LPIPS()
 
 @jax.jit
-def l2(x,y):
+def l2(x,y,key):
 	"""
 		Parameters
 		----------
@@ -31,7 +31,7 @@ def l2(x,y):
 		"""
 	return jnp.sum(((x-y)**2),axis=[-1,-2,-3])
 @jax.jit
-def euclidean(x,y):
+def euclidean(x,y,key):
 	"""
 		General format of loss functions here:
 
@@ -94,7 +94,7 @@ def random_sampled_euclidean(x,y,key,SAMPLES=64):
 
 
 @eqx.filter_jit
-def spectral(x,y):
+def spectral(x,y,key):
 	""" 
 		l2 norm in fourier space (discarding phase information)
 
