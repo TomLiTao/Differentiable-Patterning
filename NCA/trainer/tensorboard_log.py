@@ -11,36 +11,9 @@ class NCA_Train_log(Train_log):
 		Class for logging training behaviour of NCA_Trainer classes, using tensorboard
 	"""
 
-
-	# def __init__(self,log_dir,data,RGB_mode="RGB"):
-	# 	"""
-	# 		Initialises the tensorboard logging of training.
-	# 		Writes some initial information. Very similar to setup_tb_log_single, but designed for sequence modelling
-
-	# 	"""
-
-	# 	self.LOG_DIR = log_dir
-	# 	self.RGB_mode = RGB_mode
-		
-		
-	# 	train_summary_writer = tf.summary.create_file_writer(self.LOG_DIR)
-		
-	# 	#--- Log the target image and initial condtions
-	# 	with train_summary_writer.as_default():
-	# 		for b in range(len(data)):
-	# 			if self.RGB_mode=="RGB":
-	# 				#tf.summary.image('True sequence RGB',np.einsum("ncxy->nxyc",data[0,:,:3,...]),step=0,max_outputs=data.shape[0])
-	# 				tf.summary.image('True sequence RGB',np.einsum("ncxy->nxyc",data[b][:,:3,...]),step=b,max_outputs=data[b].shape[0])
-	# 			elif self.RGB_mode=="RGBA":
-	# 				#tf.summary.image('True sequence RGBA',np.einsum("ncxy->nxyc",data[0,:,:4,...]),step=0,max_outputs=data.shape[0])
-	# 				tf.summary.image('True sequence RGBA',np.einsum("ncxy->nxyc",data[b][:,:4,...]),step=b,max_outputs=data[b].shape[0])
-			
-	# 	self.train_summary_writer = train_summary_writer
-
 	def log_model_parameters(self,nca,i):
 		#Log weights and biasses of model every 10 training epochs
 		with self.train_summary_writer.as_default():
-			weight_matrix_image = []
 			w1 = nca.layers[3].weight[:,:,0,0]
 			w2 = nca.layers[5].weight[:,:,0,0]
 			b2 = nca.layers[5].bias[:,0,0]
