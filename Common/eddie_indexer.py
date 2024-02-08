@@ -145,7 +145,7 @@ def index_to_emoji_activations_and_kernels(index):
 			   ["ID","LAP","AV"],
 			   ["ID","DIFF","LAP"],
 			   ["ID","DIFF"]]
-	activations=["linear","relu","swish","tanh"]
+	activations=["linear","relu","swish","tanh","leaky_relu"]
 	
 	L1 = len(kernels)
 	L2 = len(activations)
@@ -167,7 +167,7 @@ def index_to_emoji_symmetry_parameters(index):
 	
 def index_to_channel_sample(index):
 	channels = [4,6,8,10,12,14,16,32]
-	samplings = [1,2,4,8,16,32,64,128]
+	samplings = [1,2,4,8,16,32,64]
 	L1 = len(channels)
 	L2 = len(samplings)
 	indices = np.unravel_index(index,(L1,L2))
