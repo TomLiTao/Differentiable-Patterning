@@ -151,7 +151,7 @@ class NCA_Trainer(object):
 			  STATE_REGULARISER=1.0,
 			  WARMUP=64,
 			  LOSS_SAMPLING = 64,
-			  LOSS_FUNC_STR = "euclidean",	        
+			  LOSS_FUNC_STR = "l2",	        
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
 		Perform t steps of NCA on x, compare output to y, compute loss and gradients of loss wrt model parameters, and update parameters.
