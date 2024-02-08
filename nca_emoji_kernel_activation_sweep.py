@@ -34,6 +34,7 @@ nca = NCA(N_CHANNELS=N_CHANNELS,
           KERNEL_STR=KERNEL_STR,
           ACTIVATION_STR=ACT_STR,
           PERIODIC=False,
+          FIRE_RATE=0.5,
           key=key_model)
 opt = NCA_Trainer(nca,data,model_filename=FILENAME)
 opt.train(SAMPLING,TRAIN_ITERS,optimiser=optimiser,key=key_trainer)

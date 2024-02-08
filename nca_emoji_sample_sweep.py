@@ -25,6 +25,6 @@ optimiser = optax.adam(schedule)
 
 data = load_emoji_sequence(["alien_monster.png","microbe.png","rooster_1f413.png","rooster_1f413.png"],downsample=1)
 
-nca = NCA(N_CHANNELS=N_CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],PERIODIC=False,key=key_model)
+nca = NCA(N_CHANNELS=N_CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],PERIODIC=False,key=key_model,FIRE_RATE=0.5)
 opt = NCA_Trainer(nca,data,model_filename=FILENAME)
 opt.train(SAMPLING,TRAIN_ITERS,optimiser=optimiser,key=key_trainer)
