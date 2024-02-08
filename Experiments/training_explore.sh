@@ -4,7 +4,6 @@
 #$ -cwd
 #$ -l h_rt=24:00:00
 
-
 #$ -q gpu -l gpu=1 -pe sharedmem 4 -l h_vmem=64G
 
 
