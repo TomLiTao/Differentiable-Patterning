@@ -117,8 +117,8 @@ class NCA_Trainer(object):
 		"""
 		x_obs = x[:,:self.OBS_CHANNELS]
 		y_obs = y[:,:self.OBS_CHANNELS]
-		return loss.vgg(x_obs,y_obs,key)
-		
+		#return loss.vgg(x_obs,y_obs,key)
+		return loss.l2(x_obs,y_obs)
 		#return loss.random_sampled_euclidean(x_obs, y_obs, key, SAMPLES=SAMPLES)
 	@eqx.filter_jit
 	def intermediate_reg(self,x,full=True):
