@@ -15,7 +15,7 @@ key = jr.fold_in(key,index)
 key_model,key_trainer = jr.split(key,2)
 N_BATCHES = 4
 TRAIN_ITERS = 4000
-LEARN_RATE = 1e-2
+LEARN_RATE = 1e-3
 N_CHANNELS,SAMPLING = index_to_channel(index)
 FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)+"_sampling_v1"
 

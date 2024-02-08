@@ -15,13 +15,14 @@ key = jr.fold_in(key,index)
 key_model,key_trainer = jr.split(key,2)
 N_BATCHES = 4
 TRAIN_ITERS = 4000
-LEARN_RATE = 1e-2
+LEARN_RATE = 1e-3
 N_CHANNELS = 16
 SAMPLING = 64
 
 KERNEL_STR,ACT_STR = index_to_activations_and_kernels(index)
 
-FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)+"_sampling_v1"
+KERNEL_STR_PRINT = "_".join(KERNEL_STR)
+FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)+"_sampling_"+ACT_STR+"_activation_"+KERNEL_STR_PRINT+"_kernels_v1"
 
 
 schedule = optax.exponential_decay(LEARN_RATE, transition_steps=TRAIN_ITERS, decay_rate=0.99)
