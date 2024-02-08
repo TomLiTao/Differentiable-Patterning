@@ -69,6 +69,7 @@ def sinkhorn_divergence_loss(x,y):
 
 	"""
 
+
 	geom = pointcloud.PointCloud(x,y)
 	ot = sinkhorn_divergence.sinkhorn_divergence(
 		geom,
@@ -92,8 +93,28 @@ def random_sampled_euclidean(x,y,key,SAMPLES=64):
 	return jnp.sqrt(jnp.mean((x_sub-y_sub)**2,axis=0))
 
 
+@eqx.filter_jit
+def spectral(x,y):
+	""" 
+		l2 norm in fourier space (discarding phase information)
 
-	
+		Parameters
+		----------
+		x : float32 [...,CHANNELS,WIDTH,HEIGHT]
+			predictions
+		y : float32 [...,CHANNELS,WIDTH,HEIGHT]
+			true data
+
+		Returns
+		-------
+		loss : float32 array [...]
+			loss reduced over channel and spatial axes
+	"""
+	fx = jnp.fft.rfft2(x)
+	fy = jnp.fft.rfft2(y)
+	fx = jnp.abs(fx)
+	fy = jnp.abs(fy)
+	return l2(fx,fy)
         
 @eqx.filter_jit
 def vgg(x,y, key):
