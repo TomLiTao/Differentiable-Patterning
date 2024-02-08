@@ -15,7 +15,7 @@ key = jr.fold_in(key,index)
 key_model,key_trainer = jr.split(key,2)
 N_BATCHES = 4
 TRAIN_ITERS = 4000
-LEARN_RATE = 1e-3
+LEARN_RATE = 1e-2
 N_CHANNELS = 16
 SAMPLING = 64
 
