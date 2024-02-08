@@ -29,7 +29,7 @@ def l2(x,y,key):
 		loss : float32 array [...]
 			loss reduced over channel and spatial axes
 		"""
-	return jnp.sum(((x-y)**2),axis=[-1,-2,-3])
+	return jnp.mean(((x-y)**2),axis=[-1,-2,-3])
 @jax.jit
 def euclidean(x,y,key):
 	"""
