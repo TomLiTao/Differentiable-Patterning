@@ -14,7 +14,7 @@ key = jr.PRNGKey(int(time.time()))
 key = jr.fold_in(key,index)
 key_model,key_trainer = jr.split(key,2)
 N_BATCHES = 4
-TRAIN_ITERS = 4000
+TRAIN_ITERS = 8000
 LEARN_RATE = 1e-2
 N_CHANNELS,SAMPLING = index_to_sample(index)
 FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)+"_sampling_v1"
@@ -23,8 +23,16 @@ FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)
 schedule = optax.exponential_decay(LEARN_RATE, transition_steps=TRAIN_ITERS, decay_rate=0.99)
 optimiser = optax.adam(schedule)
 
-data = load_emoji_sequence(["alien_monster.png","microbe.png","rooster_1f413.png","rooster_1f413.png"],downsample=1)
+data = load_emoji_sequence(["alien_monster.png","microbe.png","rooster_1f413.png","rooster_1f413.png"],downsample=2)
 
-nca = NCA(N_CHANNELS=N_CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],PERIODIC=False,key=key_model,FIRE_RATE=0.5)
+nca = NCA(N_CHANNELS=N_CHANNELS,
+          KERNEL_STR=["ID","LAP","DIFF"],
+          PERIODIC=False,
+          key=key_model,
+          FIRE_RATE=0.5)
 opt = NCA_Trainer(nca,data,model_filename=FILENAME)
-opt.train(SAMPLING,TRAIN_ITERS,optimiser=optimiser,key=key_trainer)
+opt.train(SAMPLING,
+          TRAIN_ITERS,
+          optimiser=optimiser,
+          LOG_EVERY=40,
+          key=key_trainer)

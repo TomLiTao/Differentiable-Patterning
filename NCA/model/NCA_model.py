@@ -188,7 +188,7 @@ class NCA(AbstractModel):
 		static = eqx.tree_at(where,static,kernel,is_leaf=lambda x: x is None)
 		return diff, static
 		
-	def run(self,iters,x,callback,key=jax.random.PRNGKey(int(time.time()))):
+	def run(self,iters,x,callback=lambda x:x,key=jax.random.PRNGKey(int(time.time()))):
 		trajectory = []
 		trajectory.append(x)
 		for i in range(iters):

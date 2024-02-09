@@ -35,7 +35,7 @@ class Train_log(object):
             
         self.train_summary_writer = train_summary_writer
 
-    def tb_training_loop_log_sequence(self,losses,x,i,model,write_images=True):
+    def tb_training_loop_log_sequence(self,losses,x,i,model,write_images=True,LOG_EVERY=10):
 
 
         BATCHES = losses.shape[0]
@@ -50,7 +50,7 @@ class Train_log(object):
                 tf.summary.histogram("Loss of each timestep, batch "+str(b),losses[b],step=i)
                 tf.summary.scalar("Loss of averaged over each timestep,  batch "+str(b),np.mean(losses[b]),step=i)
 
-        if i%10==0:
+        if i%LOG_EVERY==0:
             self.log_model_parameters(model,i)
             if write_images:
                 self.log_model_outputs(x,i)

@@ -151,6 +151,8 @@ class NCA_Trainer(object):
 			  STATE_REGULARISER=1.0,
 			  WARMUP=64,
 			  LOSS_SAMPLING = 64,
+			  LOG_EVERY=40,
+			  WRITE_IMAGES=True,
 			  LOSS_FUNC_STR = "l2",	        
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
@@ -278,7 +280,7 @@ class NCA_Trainer(object):
 			nca,opt_state,(mean_loss,(x,losses)) = make_step(nca, x, y, t, opt_state,key)
 			
 			if self.IS_LOGGING:
-				self.LOGGER.tb_training_loop_log_sequence(losses, x, i, nca)
+				self.LOGGER.tb_training_loop_log_sequence(losses, x, i, nca,write_images=WRITE_IMAGES,LOG_EVERY=LOG_EVERY)
 			
 			if jnp.isnan(mean_loss):
 				error = 1
