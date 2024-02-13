@@ -15,13 +15,13 @@ key = jr.fold_in(key,index)
 key_model,key_trainer = jr.split(key,2)
 N_BATCHES = 4
 TRAIN_ITERS = 8000
-LEARN_RATE = 1e-2
+LEARN_RATE = 5e-3
 N_CHANNELS,SAMPLING = index_to_sample(index)
-FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)+"_sampling_v1"
+FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)+"_sampling_v3"
 
 
 schedule = optax.exponential_decay(LEARN_RATE, transition_steps=TRAIN_ITERS, decay_rate=0.99)
-optimiser = optax.adam(schedule)
+optimiser = optax.adamw(schedule)
 
 data = load_emoji_sequence(["alien_monster.png","microbe.png","rooster_1f413.png","rooster_1f413.png"],downsample=2)
 
