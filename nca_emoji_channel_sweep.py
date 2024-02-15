@@ -17,11 +17,13 @@ N_BATCHES = 4
 TRAIN_ITERS = 8000
 LEARN_RATE = 5e-3
 N_CHANNELS,SAMPLING = index_to_channel(index)
-FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)+"_sampling_v3"
+FILENAME = "model_exploration/emoji_"+str(N_CHANNELS)+"_channels_"+str(SAMPLING)+"_sampling_v4"
 
 
 schedule = optax.exponential_decay(LEARN_RATE, transition_steps=TRAIN_ITERS, decay_rate=0.99)
-optimiser = optax.adamw(schedule)
+optimiser = optax.chain(optax.scale_by_param_block_norm(),
+                        optax.adamw(schedule))
+#optimiser = optax.adamw(schedule)
 
 data = load_emoji_sequence(["alien_monster.png","microbe.png","rooster_1f413.png","rooster_1f413.png"],downsample=2)
 
