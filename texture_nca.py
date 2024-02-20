@@ -8,22 +8,25 @@ import optax
 
 
 CHANNELS=16
-
-#data = load_emoji_sequence(["crab.png","alien_monster.png","alien_monster.png"],downsample=2)
-data = load_textures(["dotted/dotted_0109.jpg","honeycombed/honeycombed_0078.jpg","grid/grid_0002.jpg"],downsample=3,crop_square=True,crop_factor=1)
 t=64
 iters=2000
 
+
+data = load_textures(["dotted/dotted_0109.jpg","honeycombed/honeycombed_0078.jpg","grid/grid_0002.jpg"],downsample=3,crop_square=True,crop_factor=1)
 schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
-optimiser = optax.adam(schedule)
+optimiser = optax.chain(optax.scale_by_param_block_norm(),
+                        optax.adamw(schedule))
 
 nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=True)
 opt = NCA_Trainer(nca,
 				  data,
-				  #model_filename="micropattern_radii_sized_b"+str(B)+"_r1e-2_v2_"+str(index),
 				  model_filename="emoji_texture_nca_test_28",
 				  DATA_AUGMENTER=DataAugmenterSubsampleNoiseTexture)
-				  #BOUNDARY_MASK=masks,
+				  
 				    
 
-opt.train(t,iters,WARMUP=10)#,optimiser=optimiser)
+opt.train(t,
+          iters,
+          WARMUP=10,
+          optimiser=optimiser,
+          LOSS_FUNC_STR="vgg")
