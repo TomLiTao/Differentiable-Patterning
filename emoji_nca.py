@@ -14,6 +14,15 @@ CHANNELS=16
 t=64
 iters=2000
 
+class data_augmenter_subclass(DataAugmenter):
+    #Redefine how data is pre-processed before training
+    def data_init(self):
+        data = self.return_saved_data()
+        data = self.duplicate_batches(data, 2)
+        data = self.pad(data, 10) 		
+        self.save_data(data)
+        return None
+
 data = load_emoji_sequence(["crab.png","alien_monster.png","butterfly.png","butterfly.png"],downsample=2)
 #data = load_textures(["dotted/dotted_0109.jpg","honeycombed/honeycombed_0078.jpg","grid/grid_0002.jpg"],downsample=3,crop_square=True,crop_factor=1)
 schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
@@ -25,7 +34,7 @@ print(nca)
 opt = NCA_Trainer(nca,
 				  data,
 				  model_filename="gate_emoji_nca_test_1",
-				  DATA_AUGMENTER=DataAugmenter)
+				  DATA_AUGMENTER=data_augmenter_subclass)
 				  
 				    
 
