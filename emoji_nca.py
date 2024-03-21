@@ -10,7 +10,7 @@ import optax
 
 
 
-CHANNELS=16
+CHANNELS=24
 t=64
 iters=2000
 
@@ -23,7 +23,7 @@ class data_augmenter_subclass(DataAugmenter):
         self.save_data(data)
         return None
 
-data = load_emoji_sequence(["crab.png","alien_monster.png","butterfly.png","butterfly.png"],downsample=2)
+data = load_emoji_sequence(["crab.png","crab.png","alien_monster.png","alien_monster.png"],downsample=2)
 #data = load_textures(["dotted/dotted_0109.jpg","honeycombed/honeycombed_0078.jpg","grid/grid_0002.jpg"],downsample=3,crop_square=True,crop_factor=1)
 schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
@@ -33,7 +33,7 @@ nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=True)
 print(nca)
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="gate_emoji_nca_test_2",
+				  model_filename="gate_emoji_nca_test_3",
 				  DATA_AUGMENTER=data_augmenter_subclass)
 				  
 				    
