@@ -14,13 +14,18 @@ class agent_nn(eqx.Module):
 		key1,key2,key3,key4,key5,key6,key7 = jax.random.split(key,7)
 		self.N_CHANNELS=N_CHANNELS
 		def flat_func(x):
-			return jnp.array(x).flatten()
+			#a = jnp.array(x).flatten()
+			x,_ = jax.tree_util.tree_flatten(x)
+			x = jnp.concatenate(x)
+			print(x)
+
+			return x
 		self.layers = [flat_func,
-				       eqx.nn.Linear(in_features=3*self.N_CHANNELS,	# Reads local pheremone concentrations and combines them together
+				       eqx.nn.Linear(in_features=3*self.N_CHANNELS + 2,	# Reads local pheremone concentrations and combines them together
 							         out_features=self.N_CHANNELS,
 									 use_bias=True,
 									 key=key1),
-				       jax.nn.gelu
+				       jax.nn.relu
 # 					   eqx.nn.Linear(in_features=self.N_CHANNELS,	# Reads local pheremone concentrations and combines them together
 # 							         out_features=self.N_CHANNELS,
 # 									 use_bias=True,
@@ -32,7 +37,7 @@ class agent_nn(eqx.Module):
 							         out_features=self.N_CHANNELS,
 									 use_bias=True,
 									 key=key2),
-					   jax.nn.gelu,
+					   jax.nn.relu,
 					    eqx.nn.Linear(in_features=self.N_CHANNELS, 	# Updates the pheremone concentrations at agent position
 							         out_features=self.N_CHANNELS,
 									 use_bias=True,
@@ -43,12 +48,12 @@ class agent_nn(eqx.Module):
 							         out_features=self.N_CHANNELS,
 									 use_bias=False,
 									 key=key4),
-						jax.nn.gelu,
+						jax.nn.relu,
 						eqx.nn.Linear(in_features=self.N_CHANNELS, 	# Updates agent velocity 
 							         out_features=1,
 									 use_bias=False,
 									 key=key5),
-					   #jax.nn.hard_tanh 	# Keeps agent speed non negative
+					   jax.nn.hard_tanh 	# Keeps agent speed non negative
 					   ]
 		self.layers_d_angle = [									
 					   eqx.nn.Linear(in_features=self.N_CHANNELS, 	# Updates agent velocity 
@@ -60,7 +65,7 @@ class agent_nn(eqx.Module):
 							         out_features=1,
 									 use_bias=False,
 									 key=key7),
-						#jax.nn.hard_tanh
+						jax.nn.hard_tanh
 					   ]
 		# w_where = lambda l: l.weight
 		# self.layers_pheremone[0] = eqx.tree_at(w_where,

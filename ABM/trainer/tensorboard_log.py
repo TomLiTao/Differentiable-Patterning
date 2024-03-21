@@ -1,5 +1,6 @@
 import tensorflow as tf
 tf.config.experimental.set_visible_devices([], "GPU") # Force tensorflow not to use GPU, as it's only logging data
+import einops
 import numpy as np
 from ABM.ABM_visualiser import *
 from Common.trainer.abstract_tensorboard_log import Train_log
@@ -58,7 +59,10 @@ class ABM_Train_log(Train_log):
             BATCHES = X[1].shape[0]
             for b in range(BATCHES):
                 tf.summary.image("Trajectory batch "+str(b),parallel_scatter_wrap(X[0][0][b]),step=i,max_outputs=X[0][0].shape[1])
-                tf.summary.image("Pheremone state, batch "+str(b),np.einsum("ncxy->nyxc",X[1][b,:,:3,...]),step=i,max_outputs=X[1].shape[1])
-                
+                ph = np.pad(X[1][b],((0,0),(0,(-X[1][b].shape[1])%3),(0,0),(0,0)))
+                #tf.summary.image("Pheremone state, batch "+str(b),np.einsum("ncxy->nyxc",X[1][b,:,:3,...]),step=i,max_outputs=X[1].shape[1])
+                tf.summary.image("Pheremone state, batch "+str(b),
+                                 einops.rearrange(ph,"n (cw c) x y -> n (cw x) y  c",c=3)[:,:,::-1]
+                                 ,step=i,max_outputs=X[1].shape[1])
         #return None
     

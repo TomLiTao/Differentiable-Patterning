@@ -2,6 +2,7 @@ from Common.trainer.abstract_data_augmenter_array import DataAugmenterAbstract
 from Common.mnist_reader import MnistDataloader
 import jax.numpy as jnp
 import jax.random as jr
+import einops
 import time
 import numpy as np
 import pandas as pd
@@ -115,6 +116,7 @@ class DataAugmenter(DataAugmenterAbstract):
         ph = ph.at[:,:,0].set(ims)
 
         self.OBS_CHANNELS = channels
+        self.LATTICE_SIZE = lattice_size
         #ph = jnp.pad(ph,((0,0),(0,0),(0,hidden_channels),(0,0),(0,0)))
         
         data_true = ((pos,vel),ph)
@@ -130,6 +132,25 @@ class DataAugmenter(DataAugmenterAbstract):
     def data_load(self):
         return self.split_x_y()
 
+
+    def callback_training(self,data,i):
+        # called in the ABM iteration loop - so that parts of X are always fixed
+        # Tuned such that it decays to identity transform after M epochs
+        # NOTE this acts on un vmapped model
+        ((a_p,a_v),ph) = data
+        
+        if i<100:
+            _a = jnp.linspace(0,1,self.LATTICE_SIZE)
+            alpha = (100-i)/100.0
+            ph_x_grad = einops.repeat(_a,"h -> h w", w=self.LATTICE_SIZE)
+            ph_y_grad = einops.repeat(_a,"w -> h w", h=self.LATTICE_SIZE)
+            
+            ph = ph.at[-1].set(alpha*ph_x_grad + (1-alpha)*ph[-1])
+            ph = ph.at[-2].set(alpha*ph_y_grad + (1-alpha)*ph[-2])
+            
+
+        return ((a_p,a_v),ph)
+    
     def duplicate_batches(self,data,B):
         ((a_p,a_v),ph) = data
         a_p = super.duplicate_batches(a_p,B)

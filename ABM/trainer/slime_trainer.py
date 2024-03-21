@@ -30,7 +30,11 @@ class SlimeTrainer(object):
 		#self.OBS_CHANNELS = data[0].shape[1]
 		print("Observable Channels: "+str(self.OBS_CHANNELS))
 		# Set up data and data augmenter class
-		self.DATA_AUGMENTER = DATA_AUGMENTER(int_list,BATCHES,self.nslime.GRID_SIZE,N_agents=N_agents,channels=self.CHANNELS)
+		self.DATA_AUGMENTER = DATA_AUGMENTER(int_list,
+									   		 BATCHES,
+											 lattice_size=self.nslime.GRID_SIZE,
+											 N_agents=N_agents,
+											 channels=self.CHANNELS)
 		#self.DATA_AUGMENTER.data_init()
 		data = self.DATA_AUGMENTER.return_saved_data()
 		
@@ -71,13 +75,13 @@ class SlimeTrainer(object):
 		v_pos_loss = jax.vmap(loss.sinkhorn_divergence_loss,in_axes=(0,0),out_axes=0)
 		vv_pos_loss = jax.vmap(v_pos_loss,in_axes=(0,0),out_axes=0)
 
-		v_ph_loss = jax.vmap(lambda x,y:loss.euclidean(x[:self.OBS_CHANNELS],y[:self.OBS_CHANNELS]),in_axes=(0,0),out_axes=0)
+		v_ph_loss = jax.vmap(lambda x,y:loss.euclidean(x[:self.OBS_CHANNELS],y[:self.OBS_CHANNELS],key),in_axes=(0,0),out_axes=0)
 		vv_ph_loss = jax.vmap(v_ph_loss,in_axes=(0,0),out_axes=0)
 		
 		pos_loss = vv_pos_loss(p_x,p_y)
 		ph_loss = vv_ph_loss(ph_x,ph_y)
-		print(pos_loss.shape)
-		print(ph_loss.shape)
+		#print(pos_loss.shape)
+		#print(ph_loss.shape)
 
 		return pos_loss*self.alpha+ph_loss*(1-self.alpha)
 		#return vv_loss_func(p_x,p_y)
@@ -109,7 +113,7 @@ class SlimeTrainer(object):
 			  key=jax.random.PRNGKey(int(time.time()))):
 		
 		@eqx.filter_jit
-		def make_step(nslime,Y,X,t,opt_state,key):
+		def make_step(nslime,Y,X,t,opt_state,key,i):
 			"""_summary_
 
 			Args:
@@ -149,6 +153,7 @@ class SlimeTrainer(object):
 				def _nslime_run_wrapper(X,nslime):
 					def _nslime_step_wrapper(X,j):# function of type a,b->a
 						X = nslime(X)
+						X = self.DATA_AUGMENTER.callback_training(X,i)
 						return X,None
 					X,_=jax.lax.scan(_nslime_step_wrapper,X,xs=jnp.arange(t))
 					return X
@@ -196,8 +201,8 @@ class SlimeTrainer(object):
 		error_at = 0
 		#Y = self.DATA_AUGMENTER.return_saved_data()
 		X,Y = self.DATA_AUGMENTER.data_load()
-		print(X[1].shape)
-		print(X[0][0].shape)
+		#print(X[1].shape)
+		#print(X[0][0].shape)
 		
 		
 		#print("Data format: ")
@@ -205,7 +210,7 @@ class SlimeTrainer(object):
 		#print("Batch structure:"+str(Y[0].shape))
 		for i in tqdm(range(iters)):
 			key = jax.random.fold_in(key,i)
-			nslime,opt_state,(mean_loss,(X,losses))= make_step(nslime,Y,X,t,opt_state,key)
+			nslime,opt_state,(mean_loss,(X,losses))= make_step(nslime,Y,X,t,opt_state,key,i)
 			
 			if self.IS_LOGGING:
 				self.LOGGER.tb_training_loop_log_sequence(jnp.array([losses]), X, i, nslime)

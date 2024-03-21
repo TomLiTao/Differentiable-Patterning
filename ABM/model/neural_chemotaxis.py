@@ -4,6 +4,7 @@ import equinox as eqx
 from ABM.model.neural_slime import NeuralSlime
 from ABM.model.agent_nn_angle import agent_nn
 
+
 class NeuralChemotaxis(NeuralSlime):
 	
 	def __init__(self,*args,**kwargs):
@@ -50,12 +51,9 @@ class NeuralChemotaxis(NeuralSlime):
 	
 			Returns
 			-------
-			weights
-				sum of local pheremones
-			w_x
-				gradient of local pheremones along anterior direction
-			w_y 
-				gradient of local pheremones along lateral direction
+			weights: array[3*channels + 2]
+				array storing local pheremone averages, gradients of pheremones and orientation
+			
 	
 			"""
 			sobel_x = np.array([[-1,-2,-1],[0,0,0],[1,2,1]])
@@ -70,7 +68,7 @@ class NeuralChemotaxis(NeuralSlime):
 				x_ind = np.stack((c[0]-1,c[0],c[0]+1))%self.GRID_SIZE
 				y_ind = np.stack((c[1]-1,c[1],c[1]+1))%self.GRID_SIZE	
 				_xs,_ys = np.meshgrid(x_ind,y_ind)
-				weights = np.sum(pheremone_lattice[:,_xs,_ys],axis=(1,2)) # [:] over channels
+				id = np.sum(pheremone_lattice[:,_xs,_ys],axis=(1,2)) # [:] over channels
 				w_x = np.sum(pheremone_lattice[:,_xs,_ys]*p_x,axis=(1,2)) # [:] over channels
 				w_y = np.sum(pheremone_lattice[:,_xs,_ys]*p_y,axis=(1,2)) # [:] over channels
 			else:
@@ -79,15 +77,18 @@ class NeuralChemotaxis(NeuralSlime):
 				y_ind = np.stack((c[1]-1,c[1],c[1]+1)) + padwidth
 				_xs,_ys = np.meshgrid(x_ind,y_ind)
 				padded_pheremone_lattice = np.pad(pheremone_lattice,((0,0),(padwidth,padwidth),(padwidth,padwidth)),constant_values=0.0)
-				weights = np.sum(padded_pheremone_lattice[:,_xs,_ys],axis=(1,2)) # [:] over channels
+				id = np.sum(padded_pheremone_lattice[:,_xs,_ys],axis=(1,2)) # [:] over channels
 				w_x = np.sum(pheremone_lattice[:,_xs,_ys]*p_x,axis=(1,2)) # [:] over channels
 				w_y = np.sum(pheremone_lattice[:,_xs,_ys]*p_y,axis=(1,2)) # [:] over channels
-			return weights,w_x,w_y
-	
-		v_sense = jax.vmap(sense_zone_ind,(0,0),(0,0,0),axis_name="N_AGENTS")
+			#weights = np.concatenate([id,w_x,w_y,cos_angle,sin_angle],axis=0)
+			#return weights
+			
+			return id,w_x,w_y,cos_angle[np.newaxis],sin_angle[np.newaxis]
+		v_sense = jax.vmap(sense_zone_ind,(0,0),(0,0,0,0,0),axis_name="N_AGENTS")
 		#print(agents.shape)
-		weights,w_x,w_y =v_sense(agents[0].T,agents[1].T)
-		return weights,w_x,w_y
+		weights =v_sense(agents[0].T,agents[1].T)
+		
+		return weights
 	
 	@eqx.filter_jit
 	def _update_velocities_and_pheremones(self,agents,pheremone_weights,pheremone_lattice):

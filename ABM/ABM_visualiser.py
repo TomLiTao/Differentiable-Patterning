@@ -107,7 +107,7 @@ def my_animate_agents(img,agents):
 	frames = [] # for storing the generated images
 	fig = plt.figure()
 	agents = np.array(agents)
-	print(agents.shape)
+	#print(agents.shape)
 	#agents = agents.reshape((-1,2))
 	for i in range(img.shape[0]):
 		frames.append([plt.imshow(img[i,:,:,:3],vmin=0,vmax=1,animated=True,origin="lower"),
