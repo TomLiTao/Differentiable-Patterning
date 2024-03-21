@@ -32,18 +32,20 @@ N_agents = 2000
 nslime = NeuralChemotaxis(N_agents, resolution, 16,dt=0.1,decay_rate=0.98,PERIODIC=True,gaussian_blur=1)
 
 
-#schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
-schedule = optax.sgdr_schedule([{"init_value":init_val, "peak_value":peak_val, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val},
-                                {"init_value":init_val, "peak_value":peak_val, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/2.0},
-                                {"init_value":init_val/2.0, "peak_value":peak_val/2.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/4.0},
-                                {"init_value":init_val/4.0, "peak_value":peak_val/4.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/8.0},
-                                {"init_value":init_val/8.0, "peak_value":peak_val/8.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/16.0},])
-optimiser = optax.adamw(schedule)
+schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
+# schedule = optax.sgdr_schedule([{"init_value":init_val, "peak_value":peak_val, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val},
+#                                 {"init_value":init_val, "peak_value":peak_val, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/2.0},
+#                                 {"init_value":init_val/2.0, "peak_value":peak_val/2.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/4.0},
+#                                 {"init_value":init_val/4.0, "peak_value":peak_val/4.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/8.0},
+#                                {"init_value":init_val/8.0, "peak_value":peak_val/8.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/16.0},])
+#optimiser = optax.adamw(schedule)
+optimiser = optax.chain(optax.scale_by_param_block_norm(),
+                        optax.adam(schedule))
+#optimiser = optax.chain(optax.scale(),
+#                        optax.adam(schedule))
 
 
-
-
-trainer = SlimeTrainer(nslime,[0,1],BATCHES=1,N_agents=N_agents,model_filename="ant_sinkhorn_test_16",alpha=1.0)
+trainer = SlimeTrainer(nslime,[0,1],BATCHES=1,N_agents=N_agents,model_filename="ant_sinkhorn_test_19",alpha=0.0)
 trainer.train(timesteps,iters,WARMUP=warmup,optimiser=optimiser)
 nslime = trainer.nslime
 
