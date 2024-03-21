@@ -4,6 +4,7 @@ import equinox as eqx
 import time
 from Common.model.abstract_model import AbstractModel # Inherit model loading and saving
 
+
 class NCA(AbstractModel):
 	layers: list
 	KERNEL_STR: list

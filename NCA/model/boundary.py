@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import jax
 import equinox as eqx
 
+
 class NCA_boundary(object):
 	"""
 		Callable object that forces intermediate NCA states to be fixed to boundary condition at specified channels
