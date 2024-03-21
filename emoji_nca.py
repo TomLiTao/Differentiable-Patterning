@@ -33,7 +33,7 @@ nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=True)
 print(nca)
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="gate_emoji_nca_test_1",
+				  model_filename="gate_emoji_nca_test_2",
 				  DATA_AUGMENTER=data_augmenter_subclass)
 				  
 				    
