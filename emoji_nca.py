@@ -16,7 +16,7 @@ iters=2000
 
 class data_augmenter_subclass(DataAugmenter):
     #Redefine how data is pre-processed before training
-    def data_init(self):
+    def data_init(self,SHARDING=None):
         data = self.return_saved_data()
         data = self.duplicate_batches(data, 2)
         data = self.pad(data, 10) 		
