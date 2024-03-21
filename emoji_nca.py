@@ -10,7 +10,7 @@ import optax
 
 
 
-CHANNELS=24
+CHANNELS=16
 t=64
 iters=2000
 
