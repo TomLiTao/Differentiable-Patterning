@@ -14,7 +14,7 @@ CHANNELS=16
 t=64
 iters=2000
 
-data = load_emoji_sequence(["crab.png","alien_monster.png","butterfly.png"],downsample=1)
+data = load_emoji_sequence(["crab.png","alien_monster.png","butterfly.png","butterfly.png"],downsample=2)
 #data = load_textures(["dotted/dotted_0109.jpg","honeycombed/honeycombed_0078.jpg","grid/grid_0002.jpg"],downsample=3,crop_square=True,crop_factor=1)
 schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
