@@ -18,7 +18,7 @@ index=int(sys.argv[1])-1
 
 CHANNELS = 16
 t = 64
-iters=2000
+iters=8000
 BATCHES = 1
 
 # Select which subset of data to train on
