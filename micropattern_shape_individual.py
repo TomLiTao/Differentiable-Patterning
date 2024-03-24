@@ -35,7 +35,8 @@ masks = masks[index:index+1]
 
 
 schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
-optimiser= optax.adamw(schedule)
+optimiser = optax.chain(optax.scale_by_param_block_norm(),
+                        optax.adamw(schedule))
 
 # Remove most of the data augmentation - don't need shifting or extra batches or intermediate propagation
 class data_augmenter_subclass(DataAugmenter):
