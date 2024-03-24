@@ -99,6 +99,120 @@ def plot_weight_kernel_boxplot(nca):
 	return figs
 
 
+def plot_weight_matrices_show(nca):
+	"""
+	Plots heatmaps of NCA layer weights. Returns fig,ax objects with subplots
+
+	Parameters
+	----------
+	nca : object callable - (float32 array [N_CHANNELS,_,_],PRNGKey) -> (float32 array [N_CHANNELS,_,_])
+		the NCA object to plot weights of
+
+	Returns
+	-------
+	figs : list of images
+		a list of images
+
+	"""
+	
+	
+	w1 = nca.layers[3].weight[:,:,0,0]
+	w2 = nca.layers[5].weight[:,:,0,0]
+	
+	fig, ax = plt.subplots(1, 2,sharey=True,figsize=(14, 6),squeeze=True)
+	
+	
+	col_range = max(np.max(w1),-np.min(w1))
+	ax[0].imshow(w1,cmap="seismic",vmax=col_range,vmin=-col_range)
+	ax[0].set_ylabel("Output")
+	ax[0].set_xlabel(r"N_CHANNELS$\star$ KERNELS")
+	
+	
+
+	
+	#figure = plt.figure(figsize=(5,5))
+	col_range = max(np.max(w2),-np.min(w2))
+	ax[1].imshow(w2.T,cmap="seismic",vmax=col_range,vmin=-col_range)
+	ax[1].set_ylabel("Input from previous layer")
+	ax[1].set_xlabel("NCA state increments")
+	
+	return fig,ax
+
+
+def plot_weight_kernel_boxplot_show(nca):
+	"""
+	Plots boxplots of NCA 1st layer weights per kernel, sorted by which channel they correspond to
+
+	Parameters
+	----------
+	nca : object callable - (float32 array [N_CHANNELS,_,_],PRNGKey) -> (float32 array [N_CHANNELS,_,_])
+		the NCA object to plot weights of
+
+	Returns
+	-------
+	figs : list of images
+		a list of images
+
+	"""
+	w = nca.layers[3].weight[:,:,0,0]
+	N_KERNELS = nca.N_FEATURES // nca.N_CHANNELS
+	K_STR = nca.KERNEL_STR.copy()
+	if "DIFF" in K_STR:
+		for i in range(len(K_STR)):
+			if K_STR[i]=="DIFF":
+				K_STR[i]="DIFF X"
+				K_STR.insert(i,"DIFF Y")
+	
+	#weights_split = []
+	#figs = []
+	fig,ax = plt.subplots(1,N_KERNELS,sharey=True,figsize=(18,6))
+	for k in range(N_KERNELS):
+		w_k = w[:,k::N_KERNELS]
+		
+		
+		ax[k].boxplot(w_k.T)
+		ax[k].set_xlabel("Channels")
+		ax[k].set_ylabel("Weights")
+		ax[k].set_title(K_STR[k]+" kernel weights")
+		#plt.plot()
+		#figs.append(plot_to_image(figure))
+	return fig,ax
+
+def plot_weight_matrix_kernel_subplots(nca):
+	
+	w_in = nca.layers[3].weight[:,:,0,0]
+	w_out= nca.layers[5].weight[:,:,0,0]
+	N_KERNELS = nca.N_FEATURES // nca.N_CHANNELS
+	K_STR = nca.KERNEL_STR.copy()
+	if "DIFF" in K_STR:
+		for i in range(len(K_STR)):
+			if K_STR[i]=="DIFF":
+				K_STR[i]="DIFF X"
+				K_STR.insert(i,"DIFF Y")
+	
+	#weights_split = []
+	#figs = []
+	fig,ax = plt.subplots(1,N_KERNELS + 1,sharey=True,figsize=(12,6))
+	for k in range(N_KERNELS):
+		w_k = w_in[:,k::N_KERNELS]
+		
+		col_range = max(np.max(w_k),-np.min(w_k))
+		ax[k].imshow(w_k,cmap="seismic",vmax=col_range,vmin=-col_range)
+		ax[k].set_xlabel("Channel inputs")
+		ax[k].set_ylabel("Outputs")
+		ax[k].set_title(K_STR[k])
+		#plt.plot()
+		#figs.append(plot_to_image(figure))
+	
+	col_range = max(np.max(w_out),-np.min(w_out))
+	ax[-1].imshow(w_out.T,cmap="seismic",vmax=col_range,vmin=-col_range)
+	ax[-1].set_ylabel("Input from previous layer")
+	ax[-1].set_xlabel("NCA state increments")
+	ax[-1].set_title("Output layer")
+	return fig,ax
+
+
+
 def my_animate(img):
 	"""
 	Boilerplate code to produce matplotlib animation

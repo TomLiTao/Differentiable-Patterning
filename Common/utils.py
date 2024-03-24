@@ -288,53 +288,92 @@ def load_micropattern_radii(impath):
 		x0[3]*= masked_arr[3].mean()
 		return np.stack((x0,arr),axis=0)
 	ims = list(map(lambda x: pad(normalise(x)),ims))
-	masks = list(map(adhesion_mask_convex_hull,tqdm(ims)))
+	masks = list(map(adhesion_mask_convex_hull_circle,tqdm(ims)))
 	ims = list(map(mask_out,ims,masks))
 	ims = list(map(reshape,ims))
 	ims = list(map(stack_x0,ims,masks))
 	masks = list(map(just_mask,masks))
 	shapes = list(map(shapes,ims))
-		
-	#plt.hist(shapes)
-	#plt.show()
-
-# 	for i in range(len(shapes)):
-# 		xx = masks[i][1]
-# 		yy = masks[i][2]
-# 		rs = masks[i][3]
-# 		convex = masks[i][4]
-# 		plt.hist(ims[i][:,:,0].flatten(),alpha=0.5,bins=50,label="SOX17")
-# 		plt.hist(ims[i][:,:,1].flatten(),alpha=0.5,bins=50,label="SOX2")
-# 		plt.hist(ims[i][:,:,2].flatten(),alpha=0.5,bins=50,label="TBXT")
-# 		plt.hist(ims[i][:,:,3].flatten(),alpha=0.5,bins=50,label="LMBR")
-# 		#print("Minimum: "+str(np.min(ims[i])))
-# 		#print("Maximum: "+str(np.max(ims[i])))
-# 		
-# 		plt.legend()
-# 		plt.show()
-# 		fig,ax = plt.subplots(1)
-# 		circ = Circle((xx,yy),rs,fill=False,color="yellow")
-# 		ax.add_patch(circ)
-# 		ax.imshow(ims[i][:,:,:3])
-# 		plt.show()
-# 		plt.imshow(masks[i][0])
-# 		plt.show()
-# 		plt.imshow(convex)
-# 		plt.show()
-# 		#plt.imshow(masks[i]*ims[i][:,:,3])
-# 		
-# 		#plt.show()
-# 		#print(masks)
-# 	print(shapes)
-	#print(ims.shape)
 	
 	
 	#ims = jax.tree_util.treedef_tuple(ims)
 	#print(jnp.mean(ims))
 	return ims,masks,shapes
 
+def load_micropattern_ellipse(impath):
+  filenames = glob.glob(impath)
+  filenames = list(sorted(filenames))
+  #print(sorted(filenames))
+  ims = []
+  for f_str in filenames:
+    ims.append(skimage.io.imread(f_str))
+  #print(jax.tree_util.tree_structure(ims))
+
+  normalise = lambda arr : arr/np.max(arr,axis=(0,1))
+  pad = lambda arr : np.pad(arr,((10,10),(10,10),(0,0)))
+  mask_out = lambda arr,mask : np.where(np.repeat(mask[0][:,:,np.newaxis],4,axis=-1),arr,np.zeros_like(arr))
+  reshape = lambda arr:np.einsum("xyc->cxy",arr)
+  just_mask = lambda mask:mask[0][np.newaxis]
+  shapes = lambda arr: arr.shape[-1]
+  def stack_x0(arr,mask):
+    x0 = np.zeros_like(arr).astype(float)
+    masked_arr = np.ma.array(arr,mask=~np.repeat(mask[0][np.newaxis],4,axis=0).astype(bool))
+    #print(masked_arr)
+    x0[1] = mask[0].astype(x0.dtype)#*masked_arr[1].mean() # Set SOX2 channel to high, everything else is 0
+    x0[3] = mask[0].astype(x0.dtype)#*masked_arr[3].mean() # Set LMBR channel to high, everything else is 0
+    x0[1]*= masked_arr[1].mean()
+    x0[3]*= masked_arr[3].mean()
+    return np.stack((x0,arr),axis=0)
+  ims = list(map(lambda x: pad(normalise(x)),ims))
+  masks = list(map(adhesion_mask_convex_hull_ellipse,tqdm(ims)))
+  ims = list(map(mask_out,ims,masks))
+  ims = list(map(reshape,ims))
+  ims = list(map(stack_x0,ims,masks))
+  masks = list(map(just_mask,masks))
+  shapes = list(map(shapes,ims))
 
 
+  #ims = jax.tree_util.treedef_tuple(ims)
+  #print(jnp.mean(ims))
+  return ims,masks,shapes
+
+
+def load_micropattern_triangle(impath):
+  filenames = glob.glob(impath)
+  filenames = list(sorted(filenames))
+  #print(sorted(filenames))
+  ims = []
+  for f_str in filenames:
+    ims.append(skimage.io.imread(f_str))
+  #print(jax.tree_util.tree_structure(ims))
+
+  normalise = lambda arr : arr/np.max(arr,axis=(0,1))
+  pad = lambda arr : np.pad(arr,((10,10),(10,10),(0,0)))
+  mask_out = lambda arr,mask : np.where(np.repeat(mask[:,:,np.newaxis],4,axis=-1),arr,np.zeros_like(arr))
+  reshape = lambda arr:np.einsum("xyc->cxy",arr)
+  just_mask = lambda mask:mask[0][np.newaxis]
+  shapes = lambda arr: arr.shape[-1]
+  def stack_x0(arr,mask):
+    x0 = np.zeros_like(arr).astype(float)
+    masked_arr = np.ma.array(arr,mask=~np.repeat(mask[np.newaxis],4,axis=0).astype(bool))
+    #print(masked_arr)
+    x0[1] = mask.astype(x0.dtype)#*masked_arr[1].mean() # Set SOX2 channel to high, everything else is 0
+    x0[3] = mask.astype(x0.dtype)#*masked_arr[3].mean() # Set LMBR channel to high, everything else is 0
+    x0[1]*= masked_arr[1].mean()
+    x0[3]*= masked_arr[3].mean()
+    return np.stack((x0,arr),axis=0)
+  ims = list(map(lambda x: pad(normalise(x)),ims))
+  masks = list(map(adhesion_mask_convex_hull,tqdm(ims)))
+  ims = list(map(mask_out,ims,masks))
+  ims = list(map(reshape,ims))
+  ims = list(map(stack_x0,ims,masks))
+  masks = list(map(just_mask,masks))
+  shapes = list(map(shapes,ims))
+
+
+  #ims = jax.tree_util.treedef_tuple(ims)
+  #print(jnp.mean(ims))
+  return ims,masks,shapes
 
 def load_sequence_A(name,impath):
   """
@@ -517,7 +556,7 @@ def adhesion_mask(data,rscale=1.0):
   print(mask.shape)
   return mask,x0,y0,r
 
-def adhesion_mask_convex_hull(data,rscale=1.0):
+def adhesion_mask_convex_hull_circle(data,rscale=1.0):
   """
     Given data output from load_sequence_*, returns a binary mask representing the circle where cells can adhere.
     
@@ -529,6 +568,7 @@ def adhesion_mask_convex_hull(data,rscale=1.0):
     rscale : float32
       scales how much bigger or smaller the radius of the mask is
 
+      
     Returns
     -------
     mask : boolean array [1,size,size]
@@ -564,6 +604,85 @@ def adhesion_mask_convex_hull(data,rscale=1.0):
   #print(mask.shape)
   return mask,x0,y0,r,k
   #return mask
+
+
+
+
+def adhesion_mask_convex_hull(data):
+  """
+    Given data output from load_sequence_*, returns a binary mask representing the convex hull where cells can adhere.
+    
+    Parameters
+    ----------
+    data : float32 array [T,1,size,size,4]
+      timesteps (T) of RGBA images. Dummy index of 1 for number of batches
+
+    rscale : float32
+      scales how much bigger or smaller the radius of the mask is
+
+      
+    Returns
+    -------
+    mask : boolean array [1,size,size]
+      Array with circle of 1/0 indicating likely presence/lack of adhesive surface in micropattern
+  """
+  
+  thresh = np.mean(data,axis=-1) 
+  thresh = sp.ndimage.gaussian_filter(thresh,1)  
+  
+  k = thresh>np.mean(thresh)
+  k = skimage.morphology.convex_hull_image(k,tolerance=0.1)
+  
+  
+  return k
+
+
+def adhesion_mask_convex_hull_ellipse(data,angle=0.4):
+    """
+    Given data output from load_sequence_*, returns a binary mask representing the circle where cells can adhere.
+
+    Parameters
+    ----------
+    data : float32 array [T,1,size,size,4]
+        timesteps (T) of RGBA images. Dummy index of 1 for number of batches
+
+    rscale : float32
+        scales how much bigger or smaller the radius of the mask is
+
+    Returns
+    -------
+    mask : boolean array [1,size,size]
+        Array with circle of 1/0 indicating likely presence/lack of adhesive surface in micropattern
+    """
+
+    thresh = np.mean(data,axis=-1) 
+    thresh = sp.ndimage.gaussian_filter(thresh,1)  
+
+    k = thresh>np.mean(thresh)
+    k = skimage.morphology.convex_hull_image(k,tolerance=0.1)
+
+    regions = skimage.measure.regionprops(skimage.measure.label(k))
+    cell_culture = regions[0]
+
+    x0, y0 = cell_culture.centroid
+    r = cell_culture.major_axis_length / 2.
+    r0 = r
+    r1 = r
+    def cost(params):
+        x0, y0, r0, r1, angle = params
+        coords = skimage.draw.ellipse(y0, x0, r0, r1, shape=k.shape,rotation = angle)
+        template = np.zeros_like(k)
+        template[coords] = 1
+        return -np.sum(template == k)**2
+
+    x0, y0, r0, r1, angle= sp.optimize.fmin(cost, (x0, y0, r0,r1, angle),disp=False)
+    mask = np.zeros(k.shape,dtype="float32")
+    
+    coords = skimage.draw.ellipse(y0, x0, r0, r1, shape=k.shape,rotation = angle)
+    
+    mask[coords] = 1
+    
+    return mask,x0,y0,(r0,r1),k
 
 def adhesion_mask_batch(data):
   """

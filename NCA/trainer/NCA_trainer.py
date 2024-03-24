@@ -153,7 +153,7 @@ class NCA_Trainer(object):
 			  LOSS_SAMPLING = 64,
 			  LOG_EVERY=40,
 			  WRITE_IMAGES=True,
-			  LOSS_FUNC_STR = "l2",	        
+			  LOSS_FUNC_STR = "euclidean",	        
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
 		Perform t steps of NCA on x, compare output to y, compute loss and gradients of loss wrt model parameters, and update parameters.
@@ -256,6 +256,7 @@ class NCA_Trainer(object):
 		
 		nca = self.NCA_model
 		nca_diff,nca_static = nca.partition()
+		
 		
 		# Set up optimiser
 		if optimiser is None:
