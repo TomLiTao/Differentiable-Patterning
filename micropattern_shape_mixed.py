@@ -4,7 +4,7 @@ from Common.utils import load_micropattern_radii,load_micropattern_ellipse,load_
 import matplotlib.pyplot as plt
 from NCA.NCA_visualiser import *
 import optax
-import einops
+#import einops
 import numpy as np
 import jax.numpy as jnp
 import jax
