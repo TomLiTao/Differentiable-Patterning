@@ -32,9 +32,9 @@ masks = masks_ellipse[index:index+1] + masks_triangle[index:index+1] + masks_dis
 
 
 schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
-#optimiser= optax.adamw(schedule)
-optimiser = optax.chain(optax.scale_by_param_block_norm(),
-                        optax.adamw(schedule))
+optimiser= optax.adamw(schedule)
+#optimiser = optax.chain(optax.scale_by_param_block_norm(),
+#                        optax.adamw(schedule))
 # Remove most of the data augmentation - don't need shifting or extra batches or intermediate propagation
 class data_augmenter_subclass(DataAugmenter):
     #Redefine how data is pre-processed before training
@@ -51,7 +51,7 @@ class data_augmenter_subclass(DataAugmenter):
 nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=False)
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="micropattern_shapes_gated_"+str(index),
+				  model_filename="micropattern_shapes_gated_mixed_no_norm"+str(index),
 				  BOUNDARY_MASK=masks,
 				  DATA_AUGMENTER = data_augmenter_subclass)
 
