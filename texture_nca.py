@@ -1,5 +1,6 @@
 #from NCA.model.NCA_model import NCA
-from NCA.model.NCA_gated_model import gNCA
+#from NCA.model.NCA_gated_model import gNCA
+from NCA.model.NCA_smooth_model import cNCA
 from NCA.trainer.NCA_trainer import NCA_Trainer
 from Common.utils import load_textures
 #from Common.trainer.data_augmenter_tree_noise_ic import DataAugmenterNoise
@@ -19,11 +20,11 @@ schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
                         optax.adamw(schedule))
 
-nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=True)
+nca = cNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=3,FIRE_RATE=0.5,PERIODIC=True)
 print(nca)
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="gate_texture_nca_test_1",
+				  model_filename="texture_smooth_nca_test_1",
 				  DATA_AUGMENTER=DataAugmenterSubsampleNoiseTexture)
 				  
 				    
