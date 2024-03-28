@@ -24,7 +24,7 @@ class data_augmenter_subclass(DataAugmenter):
         self.save_data(data)
         return None
 
-data = load_emoji_sequence(["crab.png","alien_monster.png","microbe.png","alien_monster.png"],downsample=2)
+data = load_emoji_sequence(["crab.png","microbe.png","alien_monster.png","alien_monster.png"],downsample=2)
 #data = load_textures(["dotted/dotted_0109.jpg","honeycombed/honeycombed_0078.jpg","grid/grid_0002.jpg"],downsample=3,crop_square=True,crop_factor=1)
 schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
@@ -34,7 +34,7 @@ nca = cNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=3,FIRE_RATE=0.5,
 print(nca)
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="emoji_smooth_nca_test_1",
+				  model_filename="emoji_smooth_nca_euclidean_test_2",
 				  DATA_AUGMENTER=data_augmenter_subclass)
 				  
 				    
