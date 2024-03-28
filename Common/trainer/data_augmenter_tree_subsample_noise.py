@@ -1,7 +1,7 @@
 from Common.trainer.abstract_data_augmenter_tree import DataAugmenterAbstract
 import jax
 import time
-class DataAugmenterSubsampleTexture(DataAugmenterAbstract):
+class DataAugmenterSubsampleNoiseTexture(DataAugmenterAbstract):
     def __init__(self, data_true, hidden_channels=0):
         super().__init__(data_true, hidden_channels)
         self.sample_size = 32
@@ -9,7 +9,7 @@ class DataAugmenterSubsampleTexture(DataAugmenterAbstract):
 
     def data_init(self,*args):
         data = self.return_saved_data()
-        data = self.duplicate_batches(data, 2)
+        data = self.duplicate_batches(data, 4)
         self.save_data(data)
 
 
@@ -21,11 +21,11 @@ class DataAugmenterSubsampleTexture(DataAugmenterAbstract):
         print("X0 shape: "+str(x0[0].shape))
         
         return x0,y0
-    #def split_x_y(self, N_steps=1,key=jax.random.PRNGKey(int(time.time()))):
-    #    x,y = super().split_x_y(N_steps)
-    #    set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=0.1))
-    #    x = jax.tree_util.tree_map(set_x0_noise,x)
-    #    return x,y
+    def split_x_y(self, N_steps=1,key=jax.random.PRNGKey(int(time.time()))):
+        x,y = super().split_x_y(N_steps)
+        set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=0.1))
+        x = jax.tree_util.tree_map(set_x0_noise,x)
+        return x,y
         
     def data_callback(self, x, y, i):
 
@@ -44,27 +44,15 @@ class DataAugmenterSubsampleTexture(DataAugmenterAbstract):
                 x_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),shape=(1,),minval=0,maxval=x[j].shape[-2]-self.sample_size)[0])
                 y_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),shape=(1,),minval=0,maxval=x[j].shape[-1]-self.sample_size)[0])
             sample = lambda x,xi,yi: x[:,:,xi:xi+self.sample_size,yi:yi+self.sample_size]
-            x_true,y_true =self.split_x_y(1)
+            x_true,y_true =self.split_x_y(1,key=key)
 
             x = jax.tree_util.tree_map(sample,x_true,x_inds,y_inds)
             y = jax.tree_util.tree_map(sample,y_true,x_inds,y_inds)
         else:
-            x_inds = []
-            y_inds = []
-            for j in range(len(x)):
-                x_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),shape=(1,),minval=0,maxval=x[j].shape[-2]-self.sample_size)[0])
-                y_inds.append(jax.random.randint(jax.random.fold_in(self.SPATIAL_KEY,j),shape=(1,),minval=0,maxval=x[j].shape[-1]-self.sample_size)[0])
-            sample = lambda x,xi,yi: x[:,:,xi:xi+self.sample_size,yi:yi+self.sample_size]
-            x_true,_ =self.split_x_y(1)
-            x_true_sample = jax.tree_util.tree_map(sample,x_true,x_inds,y_inds)
-            x = jax.tree_util.tree_map(sample,x_true,x_inds,y_inds)
-            
             propagate_xn = lambda x:x.at[1:].set(x[:-1])
-            set_x0 = lambda x:x.at[0].set(x_true_sample[0])
-            
-            #set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=0.1))
+            set_x0_noise = lambda x:x.at[0].set(jax.random.uniform(key,shape=x[0].shape,minval=0,maxval=0.1))
             x = jax.tree_util.tree_map(propagate_xn,x) # Set initial condition at each X[n] at next iteration to be final state from X[n-1] of this iteration
-            x = jax.tree_util.tree_map(set_x0,x) 
+            x = jax.tree_util.tree_map(set_x0_noise,x) 
         
         key = jax.random.fold_in(key,i)
         x = self.noise(x,0.005,key=key) 
