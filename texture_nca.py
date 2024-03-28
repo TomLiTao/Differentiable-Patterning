@@ -2,9 +2,11 @@
 #from NCA.model.NCA_gated_model import gNCA
 from NCA.model.NCA_smooth_gated_model import gcNCA
 from NCA.trainer.NCA_trainer import NCA_Trainer
+import jax
 from Common.utils import load_textures
 #from Common.trainer.data_augmenter_tree_noise_ic import DataAugmenterNoise
-from Common.trainer.data_augmenter_tree_subsample_noise import DataAugmenterSubsampleNoiseTexture
+#from Common.trainer.data_augmenter_tree_subsample_noise import DataAugmenterSubsampleNoiseTexture
+from NCA.trainer.data_augmenter_nca import DataAugmenter
 import time
 import optax
 
@@ -24,15 +26,54 @@ optimiser = optax.chain(optax.scale_by_param_block_norm(),
 nca = gcNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=3,FIRE_RATE=0.5,PERIODIC=True)
 print(nca)
 
-class da_subclass(DataAugmenterSubsampleNoiseTexture):
-    def __init__(self, data_true, hidden_channels=0):
-        super().__init__(data_true, hidden_channels)
-        self.sample_size = 64
-        self.resample_freq = 8
+class da_subclass(DataAugmenter):
+    def data_callback(self,x,y,i):
+        """
+        Called after every training iteration to perform data augmentation and processing		
+
+
+        Parameters
+        ----------
+        x : PyTree [BATCHES] f32[N-N_steps,CHANNELS,WIDTH,HEIGHT]
+            Initial conditions
+        y : PyTree [BATCHES] f32[N-N_steps,CHANNELS,WIDTH,HEIGHT]
+            Final states
+        i : int
+            Current training iteration - useful for scheduling mid-training data augmentation
+
+        Returns
+        -------
+        x : PyTree [BATCHES] f32[N-N_steps,CHANNELS,WIDTH,HEIGHT]
+            Initial conditions
+        y : PyTree [BATCHES] f32[N-N_steps,CHANNELS,WIDTH,HEIGHT]
+            Final states
+
+        """
+
+        x_true,_ =self.split_x_y(1)
+        propagate_xn = lambda x:x.at[1:].set(x[:-1])
+        reset_x0 = lambda x,x_true:x.at[0].set(x_true[0])
+        
+        x = jax.tree_util.tree_map(propagate_xn,x) # Set initial condition at each X[n] at next iteration to be final state from X[n-1] of this iteration
+        x = jax.tree_util.tree_map(reset_x0,x,x_true) # Keep first initial x correct
+        
+        #if i < 500:		
+        for b in range(len(x)//2):
+            x[b*2] = x[b*2].at[:,:self.OBS_CHANNELS].set(x_true[b*2][:,:self.OBS_CHANNELS]) # Set every other batch of intermediate initial conditions to correct initial conditions
+            
+        
+        if hasattr(self, "PREVIOUS_KEY"):
+            key = jax.random.fold_in(self.PREVIOUS_KEY,i)
+        else:
+            key=jax.random.PRNGKey(int(time.time()))
+
+        x = self.noise(x,0.005,key=key)
+        self.PREVIOUS_KEY = key
+        return x,y
 
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="texture_smooth_gated_nca_test_2",
+				  model_filename="texture_full_smooth_gated_nca_test_1",
 				  DATA_AUGMENTER=da_subclass)
 				  
 				    
