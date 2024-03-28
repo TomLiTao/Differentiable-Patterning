@@ -16,7 +16,7 @@ iters=2000
 
 
 #data = load_textures(["dotted/dotted_0109.jpg","dotted/dotted_0109.jpg","honeycombed/honeycombed_0078.jpg","grid/grid_0002.jpg"],downsample=3,crop_square=True,crop_factor=1)
-data = load_textures(["banded/banded_0109.jpg","banded/banded_0109.jpg","perforated/perforated_0106.jpg","perforated/perforated_0106.jpg"],downsample=1,crop_square=True,crop_factor=1)
+data = load_textures(["banded/banded_0109.jpg","banded/banded_0109.jpg","perforated/perforated_0106.jpg","perforated/perforated_0106.jpg"],downsample=2,crop_square=True,crop_factor=1)
 schedule = optax.exponential_decay(4e-2, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
                         optax.adamw(schedule))
@@ -32,7 +32,7 @@ class da_subclass(DataAugmenterSubsampleNoiseTexture):
 
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="texture_smooth_gated_highres_nca_test_1",
+				  model_filename="texture_smooth_gated_nca_test_2",
 				  DATA_AUGMENTER=da_subclass)
 				  
 				    
