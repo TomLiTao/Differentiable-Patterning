@@ -18,7 +18,7 @@ iters=2000
 
 
 #data = load_textures(["dotted/dotted_0109.jpg","dotted/dotted_0109.jpg","honeycombed/honeycombed_0078.jpg","grid/grid_0002.jpg"],downsample=3,crop_square=True,crop_factor=1)
-data = load_textures(["banded/banded_0109.jpg","banded/banded_0109.jpg","perforated/perforated_0106.jpg","perforated/perforated_0106.jpg"],downsample=2,crop_square=True,crop_factor=2)
+data = load_textures(["banded/banded_0109.jpg","perforated/perforated_0106.jpg","perforated/perforated_0106.jpg"],downsample=2,crop_square=True,crop_factor=2)
 schedule = optax.exponential_decay(4e-2, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
                         optax.adamw(schedule))
@@ -27,6 +27,10 @@ nca = gcNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=3,FIRE_RATE=0.5
 print(nca)
 
 class da_subclass(DataAugmenter):
+    def data_init(self, SHARDING=None):
+        data = self.return_saved_data()
+        data = self.duplicate_batches(data, 4)
+        self.save_data(data)
     def data_callback(self,x,y,i):
         """
         Called after every training iteration to perform data augmentation and processing		
@@ -73,7 +77,7 @@ class da_subclass(DataAugmenter):
 
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="texture_full_smooth_gated_nca_test_1",
+				  model_filename="texture_full_smooth_gated_nca_test_2",
 				  DATA_AUGMENTER=da_subclass)
 				  
 				    
