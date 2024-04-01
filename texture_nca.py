@@ -1,5 +1,6 @@
 #from NCA.model.NCA_model import NCA
 #from NCA.model.NCA_gated_model import gNCA
+from NCA.model.NCA_smooth_model import cNCA
 from NCA.model.NCA_smooth_gated_model import gcNCA
 from NCA.trainer.NCA_trainer import NCA_Trainer
 import jax
@@ -18,12 +19,12 @@ iters=2000
 
 
 #data = load_textures(["dotted/dotted_0109.jpg","dotted/dotted_0109.jpg","honeycombed/honeycombed_0078.jpg","grid/grid_0002.jpg"],downsample=3,crop_square=True,crop_factor=1)
-data = load_textures(["banded/banded_0109.jpg","perforated/perforated_0106.jpg","perforated/perforated_0106.jpg"],downsample=2,crop_square=True,crop_factor=2)
-schedule = optax.exponential_decay(4e-2, transition_steps=iters, decay_rate=0.99)
+data = load_textures(["banded/banded_0109.jpg","honeycombed/honeycombed_0078.jpg","perforated/perforated_0106.jpg","perforated/perforated_0106.jpg"],downsample=2,crop_square=True,crop_factor=2)
+schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
-                        optax.adamw(schedule))
+                        optax.adam(schedule))
 
-nca = gcNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=3,FIRE_RATE=0.5,PERIODIC=True)
+nca = cNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=3,FIRE_RATE=0.5,PERIODIC=True)
 print(nca)
 
 class da_subclass(DataAugmenter):
@@ -77,7 +78,7 @@ class da_subclass(DataAugmenter):
 
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="texture_full_smooth_gated_nca_test_2",
+				  model_filename="texture_full_smooth_nca_test_3",
 				  DATA_AUGMENTER=da_subclass)
 				  
 				    
