@@ -150,7 +150,7 @@ def load_textures(filename_sequence,impath_textures="../Data/dtd/images/",downsa
   for filename in filename_sequence:
     im = skimage.io.imread(impath_textures+filename)[::downsample,::downsample]
     if crop_square:
-      s= min(im.shape[0],im.shape[1])//crop_factor
+      s= int(min(im.shape[0],im.shape[1])/crop_factor)
       im = im[:s,:s]
       sizes.append(s)
       #im = im[np.newaxis] / 255.0
