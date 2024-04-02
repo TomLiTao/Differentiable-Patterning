@@ -152,7 +152,7 @@ def spectral_weighted(x,y,key):
 	"""
 	fx = jnp.fft.rfft2(x)
 	fy = jnp.fft.rfft2(y)
-	return l1(fx,fy,key)
+	return l2(fx,fy,key)
 @eqx.filter_jit
 def vgg(x,y, key):
 	"""
