@@ -47,9 +47,9 @@ plt.show()
 plt.imshow(einops.rearrange(data[2][1][:3],"c x y -> x y c"))
 plt.show()
 schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
-optimiser= optax.adamw(schedule)
-#optimiser = optax.chain(optax.scale_by_param_block_norm(),
-#                        optax.adamw(schedule))
+#optimiser= optax.adamw(schedule)
+optimiser = optax.chain(optax.scale_by_param_block_norm(),
+                        optax.adam(schedule))
 # Remove most of the data augmentation - don't need shifting or extra batches or intermediate propagation
 
     
@@ -57,7 +57,7 @@ optimiser= optax.adamw(schedule)
 nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=False)
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="micropattern_shapes_gated_texture"+str(index),
+				  model_filename="micropattern_shapes_gated_texture_fft_"+str(index),
 				  BOUNDARY_MASK=masks,
 				  DATA_AUGMENTER = DA)
 x0,y0 = opt.DATA_AUGMENTER.data_load()
@@ -68,4 +68,4 @@ print(y0[0].shape)
 #plt.imshow(einops.rearrange(x0[1][0][:3],"c x y -> x y c"))
 #plt.show()
 
-opt.train(t,iters,optimiser=optimiser,LOSS_FUNC_STR="vgg")
+opt.train(t,iters,optimiser=optimiser,LOSS_FUNC_STR="spectral_full")
