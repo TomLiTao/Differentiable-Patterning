@@ -23,9 +23,9 @@ BATCHES = 1
 
 # Select which subset of data to train on
 #data,masks = load_micropattern_radii("../Data/micropattern_radii/Chir_Fgf_*")
-data_disc,masks_disc,_ = load_micropattern_radii("../Data//micropattern_shapes/Max Projections */lowres/*Disc*")
-data_triangle,masks_triangle,_ = load_micropattern_triangle("../Data//micropattern_shapes/Max Projections */lowres/*Triangle*")
-data_ellipse,masks_ellipse,_ = load_micropattern_ellipse("../Data//micropattern_shapes/Max Projections */lowres/*Ellipse*")
+data_disc,masks_disc,_ = load_micropattern_radii("../Data//micropattern_shapes/Max Projections */lowres_2/*Disc*")
+data_triangle,masks_triangle,_ = load_micropattern_triangle("../Data//micropattern_shapes/Max Projections */lowres_2/*Triangle*")
+data_ellipse,masks_ellipse,_ = load_micropattern_ellipse("../Data//micropattern_shapes/Max Projections */lowres_2/*Ellipse*")
 data = data_ellipse + data_triangle + data_disc
 masks = masks_ellipse + masks_triangle + masks_disc
 
