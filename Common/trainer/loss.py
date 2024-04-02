@@ -29,7 +29,23 @@ def l2(x,y,key):
 		loss : float32 array [...]
 			loss reduced over channel and spatial axes
 		"""
-	return jnp.mean(((x-y)**2),axis=[-1,-2,-3])
+	return jnp.mean((x-y)**2,axis=[-1,-2,-3])
+@jax.jit
+def l1(x,y,key):
+	"""
+		Parameters
+		----------
+		x : float32 [...,CHANNELS,WIDTH,HEIGHT]
+			predictions
+		y : float32 [...,CHANNELS,WIDTH,HEIGHT]
+			true data
+
+		Returns
+		-------
+		loss : float32 array [...]
+			loss reduced over channel and spatial axes
+		"""
+	return jnp.mean(jnp.abs(x-y),axis=[-1,-2,-3])
 @jax.jit
 def euclidean(x,y,key):
 	"""
@@ -84,8 +100,8 @@ def sinkhorn_divergence_loss(x,y):
 	
 
 
-#@jax.jit
-def random_sampled_euclidean(x,y,key,SAMPLES=64):
+@jax.jit
+def random_sampled_euclidean(x,y,key,SAMPLES=16):
 	x_r = jnp.einsum("ncxy->cxyn",x)
 	y_r = jnp.einsum("ncxy->cxyn",y)
 	x_sub = jax.random.choice(key,x_r.reshape((-1,x_r.shape[-1])),(SAMPLES,),False)
@@ -93,7 +109,7 @@ def random_sampled_euclidean(x,y,key,SAMPLES=64):
 	return jnp.sqrt(jnp.mean((x_sub-y_sub)**2,axis=0))
 
 
-@eqx.filter_jit
+@jax.jit
 def spectral(x,y,key):
 	""" 
 		l2 norm in fourier space (discarding phase information)
@@ -116,6 +132,27 @@ def spectral(x,y,key):
 	fy = jnp.abs(fy)
 	return l2(fx,fy)
         
+@jax.jit
+def spectral_weighted(x,y,key):
+	""" 
+		l2 norm in fourier space, keeping phase information.
+		Weighted to emphasise importance of certain frequencies
+
+		Parameters
+		----------
+		x : float32 [...,CHANNELS,WIDTH,HEIGHT]
+			predictions
+		y : float32 [...,CHANNELS,WIDTH,HEIGHT]
+			true data
+
+		Returns
+		-------
+		loss : float32 array [...]
+			loss reduced over channel and spatial axes
+	"""
+	fx = jnp.fft.rfft2(x)
+	fy = jnp.fft.rfft2(y)
+	return l1(fx,fy)
 @eqx.filter_jit
 def vgg(x,y, key):
 	"""

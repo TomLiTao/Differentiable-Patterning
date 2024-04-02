@@ -180,12 +180,16 @@ class NCA_Trainer(object):
 		
 		if LOSS_FUNC_STR=="l2":
 			self._loss_func = loss.l2
+		elif LOSS_FUNC_STR=="l1":
+			self._loss_func = loss.l1
 		elif LOSS_FUNC_STR=="vgg":
 			self._loss_func = loss.vgg
 		elif LOSS_FUNC_STR=="euclidean":
 			self._loss_func = loss.euclidean
 		elif LOSS_FUNC_STR=="spectral":
 			self._loss_func = loss.spectral
+		elif LOSS_FUNC_STR=="spectral_full":
+			self._loss_func = loss.spectral_weighted
 		elif LOSS_FUNC_STR=="rand_euclidean":
 			#def _loss_func(self,x,y,dummy_key):
 			#	return loss.random_sampled_euclidean(x,y,key)
