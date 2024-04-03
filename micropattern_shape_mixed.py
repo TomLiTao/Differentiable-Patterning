@@ -19,7 +19,7 @@ index=int(sys.argv[1])-1
 
 CHANNELS = 16
 t = 64
-iters=8000
+iters=4000
 BATCHES = 1
 
 # Select which subset of data to train on
@@ -55,7 +55,7 @@ class data_augmenter_subclass(DataAugmenter):
 nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=False)
 opt = NCA_Trainer(nca,
 				  data,
-				  model_filename="micropattern_shapes_gated_mixed_fft_"+str(index),
+				  model_filename="micropattern_shapes_gated_mixed_l2_"+str(index),
 				  BOUNDARY_MASK=masks,
 				  DATA_AUGMENTER = data_augmenter_subclass)
 x0,y0 = opt.DATA_AUGMENTER.data_load()
@@ -66,4 +66,4 @@ print(y0[0].shape)
 #plt.imshow(einops.rearrange(x0[1][0][:3],"c x y -> x y c"))
 #plt.show()
 
-opt.train(t,iters,optimiser=optimiser,LOSS_FUNC_STR="spectral_full")
+opt.train(t,iters,optimiser=optimiser,LOSS_FUNC_STR="l2")
