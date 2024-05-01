@@ -59,7 +59,7 @@ trainer = AntTrainer(nslime = nslime,
                      BATCHES=4,
                      DATA_AUGMENTER=DataAugmenter,
                      N_agents=N_agents,
-                     model_filename="ant_sinkhorn_basic_wavelet_checkpointed_1",
+                     model_filename="ant_sinkhorn_basic_wavelet_checkpointed_2",
                      alpha=1.0)
 trainer.train(timesteps,iters,WARMUP=warmup,optimiser=optimiser)
 nslime = trainer.nslime
