@@ -99,10 +99,12 @@ class NeuralSlime(AbstractModel):
 			Tuple containing positions and velocities of all agents.
 
 		"""
-		if self.PERIODIC:
-			return (agents[0]+agents[1]*self.dt)%self.GRID_SIZE,agents[1]
-		else:
-			return np.clip(agents[0]+agents[1]*self.dt,a_min=0,a_max=self.GRID_SIZE),agents[1]
+		#if self.PERIODIC:
+		#	return (agents[0]+agents[1]*self.dt)%self.GRID_SIZE,agents[1]
+		#else:
+		#	return np.clip(agents[0]+agents[1]*self.dt,a_min=0,a_max=self.GRID_SIZE),agents[1]
+
+		return agents[0]+agents[1]*self.dt,agents[1]
 	@eqx.filter_jit
 	def _sense_pheremones(self,agents,pheremone_lattice):
 		"""
@@ -114,10 +116,7 @@ class NeuralSlime(AbstractModel):
 			Tuple containing positions and velocities of all agents.
 		pheremone_lattice : array[channels,grid_size,grid_size]
 			Lattice for storing concentration of signalling pheremones.
-		sensor_angle : float, optional
-			Angle between different sensor regions. The default is 0.6.
-		sensor_length : float, optional
-			Distance between agent and sensor regions. The default is 3.
+		
 	
 		Returns
 		-------
@@ -207,6 +206,42 @@ class NeuralSlime(AbstractModel):
 		pheremone_lattice = smooth_func(pheremone_lattice)
 		pheremone_lattice = self._pheremone_decay(pheremone_lattice)
 		return (agents[0],agent_vel),pheremone_lattice
+	
+	@eqx.filter_jit
+	def _boundary_conditions(self,state):
+		# Handle things like periodic boundary conditions, or absorbing/reflecting boundaries
+		(pos,vel),ph = state
+		
+		if self.PERIODIC:
+			# If periodic, wrap position and do nothing to velocity
+			pos = pos%self.GRID_SIZE
+
+
+
+		else:
+			# If not periodic, clip position and reflect x or y component of velocity if on boundary
+			boundary_width = 20
+			pos = np.clip(pos,a_min=0,a_max=self.GRID_SIZE)
+			pos_int = np.rint(pos).astype(int)
+			xmask = np.logical_or(pos_int[0]==0,pos_int[0]==self.GRID_SIZE)
+			ymask = np.logical_or(pos_int[1]==0,pos_int[1]==self.GRID_SIZE)
+
+			velx = vel[0]
+			vely = vel[1]
+			velx = np.where(xmask,-velx,velx)
+			vely = np.where(ymask,-vely,vely)
+			vel = vel.at[0].set(velx)
+			vel = vel.at[1].set(vely)
+			smooth_boundary = np.zeros((self.GRID_SIZE-2*boundary_width,self.GRID_SIZE-2*boundary_width))
+			smooth_boundary = np.pad(smooth_boundary,
+									 pad_width=((boundary_width,boundary_width),(boundary_width,boundary_width)),
+									 mode="linear_ramp",
+									 end_values=1)
+			smooth_boundary = smooth_boundary**2
+			ph = ph.at[-1].set(smooth_boundary)
+		state = (pos,vel),ph
+		return state
+	
 	@eqx.filter_jit
 	def __call__(self,state):
 		agents,pheremone_lattice = state
@@ -214,6 +249,7 @@ class NeuralSlime(AbstractModel):
 		agents,pheremone_lattice = self._update_velocities_and_pheremones(agents, pheremone_weights, pheremone_lattice)
 		agents = self._update_positions(agents)
 		state = (agents,pheremone_lattice)
+		state = self._boundary_conditions(state)
 		return state
 	
 
