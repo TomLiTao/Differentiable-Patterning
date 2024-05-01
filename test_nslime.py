@@ -31,11 +31,11 @@ cooldown = 60
 #iters=5*warmup+5*cooldown
 iters = 1000
 N_agents = 2000
-nslime = NeuralWaveletChemotaxis(N_AGENTS = N_agents, 
+nslime = NeuralChemotaxis(N_AGENTS = N_agents, 
                                  GRID_SIZE = resolution, 
                                  N_CHANNELS = 16,
-                                 LENGTH_SCALE = 2,
-                                 dt = 0.1,
+                                 #LENGTH_SCALE = 2,
+                                 dt = 1.0,
                                  decay_rate = 0.98,
                                  PERIODIC = False,
                                  gaussian_blur = 1)
@@ -59,90 +59,10 @@ trainer = AntTrainer(nslime = nslime,
                      BATCHES=4,
                      DATA_AUGMENTER=DataAugmenter,
                      N_agents=N_agents,
-                     model_filename="ant_sinkhorn_basic_wavelet_1",
+                     model_filename="ant_sinkhorn_basic_2",
                      alpha=1.0)
 trainer.train(timesteps,iters,WARMUP=warmup,optimiser=optimiser)
 nslime = trainer.nslime
 
 
 
-# #v_nslime = jax.vmap(nslime,in_axes=(0),out_axes=(0),axis_name="A")
-# v_nslime = lambda states: jax.tree_util.tree_map(nslime,states)
-
-# v_init = lambda key_tree: jax.tree_util.tree_map(lambda key:nslime.init_state(key,zero_pheremone=True),key_tree)
-
-
-
-
-
-# def run_nslime(state,nslime):
-# 	#print(key)
-# 	#trajectory = []
-# 	#agent_trajectory = []
-	
-# 	for i in tqdm(range(timesteps)):
-# 		#agents,pheremone_lattice = state
-# 		#trajectory.append(pheremone_lattice)
-# 		#agent_trajectory.append(agents)
-# 		state = nslime(state)
-# 	return state
-
-
-# v_init = jax.vmap(lambda key:nslime.init_state(key,zero_pheremone=True),in_axes=(0),out_axes=(0,0)) 
-# vv_init = jax.vmap(v_init,in_axes=(0),out_axes=(0,0))
-
-# v_run = jax.vmap(run_nslime,in_axes=(0,None),out_axes=(0,0))
-# vv_run = jax.vmap(v_run,in_axes=(0,None),out_axes=(0,0))
-# key=jax.random.PRNGKey(int(time.time()))
-# keys = key_array_gen(key,(3,5,))
-
-# state = vv_init(keys)
-# state = vv_run(state,nslime)
-
-
-# print(jax.tree_util.tree_structure(state))
-# print(state[0][0].shape)
-# print(state[0][1].shape)
-# print(state[1].shape)
-# #print(keys)
-# states = v_init(keys)
-# print(jax.tree_util.tree_structure(states))
-# print(states[0][0][0].shape)
-# print(states[0][0][1].shape)
-# print(states[0][1].shape)
-# for i in tqdm(range(timesteps)):
-#     states = v_nslime(states)
-
-
-
-
-
-# trajectory = []
-# agent_trajectory = []
-# #nslime = NeuralSlime(1000, imsize, 12,dt=0.5,decay_rate=1.0)
-# agents,pheremone_lattice = nslime.init_state()
-# state = nslime.init_state(zero_pheremone=True)
-
-# for i in tqdm(range(timesteps)):
-# 	agents,pheremone_lattice = state
-# 	trajectory.append(pheremone_lattice)
-# 	agent_trajectory.append(agents)
-# 	state = nslime(state)
-# print(trajectory[0].shape)
-
-# a = my_animate_agents(trajectory,agent_trajectory)
-# plt.show()
-
-
-
-
-
-
-
-
-# N=8
-# X = jax.random.uniform(jax.random.PRNGKey(0), shape=(2,N,3,128,128))
-# Y = jax.random.uniform(jax.random.PRNGKey(1), shape=(2,N,3,128,128))
-
-# v_alexnet = jax.vmap(vgg,in_axes=(0,0,None),out_axes=0,axis_name="Batch")
-# print(v_alexnet(X, Y, jax.random.PRNGKey(2)))
