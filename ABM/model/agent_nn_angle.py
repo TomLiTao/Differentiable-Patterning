@@ -23,7 +23,7 @@ class agent_nn(eqx.Module):
 			#a = jnp.array(x).flatten()
 			x,_ = jax.tree_util.tree_flatten(x)
 			x = jnp.concatenate(x)
-			print(x)
+			#print(x)
 
 			return x
 		self.layers = [flat_func,

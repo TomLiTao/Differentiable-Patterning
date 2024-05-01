@@ -111,8 +111,20 @@ class AntTrainer(object):
 			  iters,
 			  optimiser=None,
 			  WARMUP=64,
+			  loop_autodiff="checkpointed",
 			  key=jax.random.PRNGKey(int(time.time()))):
-		
+		"""Iterate the training loop of the model
+
+		Args:
+			t (int): Number of timesteps for the agent based model
+			iters (int): Number of training iterations
+			optimiser (optax GradientTransformation, optional): Which optimiser to use?. Defaults to None, in which case adam is used
+			WARMUP (int, optional): _description_. Defaults to 64.
+			loop_autodiff (str, "lax" or "checkpointed"): How to handle reverse-mode autodiff through loops. "lax" is a bit faster but with much larger memory use. Defaults to "checkpointed".
+			key (jax PRNG, optional): Random number key. Defaults to jax.random.PRNGKey(int(time.time())).
+
+
+		"""
 		@eqx.filter_jit
 		def make_step(nslime,Y,X,t,opt_state,key,i):
 			"""_summary_
@@ -156,7 +168,9 @@ class AntTrainer(object):
 						X = nslime(X)
 						X = self.DATA_AUGMENTER.callback_training(X,i)
 						return X,None
-					X,_=jax.lax.scan(_nslime_step_wrapper,X,xs=jnp.arange(t))
+					#X,_=jax.lax.scan(_nslime_step_wrapper,X,xs=jnp.arange(t))
+					X,_= eqx.internal.scan(_nslime_step_wrapper,X,xs=jnp.arange(t),kind=loop_autodiff)
+					#X,_= eqx.internal.scan(_nslime_step_wrapper,X,xs=jnp.arange(t),kind="lax")
 					return X
 				
 				#v_init_nslime = jax.vmap(lambda key:nslime.init_state(key,zero_pheremone=True),in_axes=(0),out_axes=(0,0))
