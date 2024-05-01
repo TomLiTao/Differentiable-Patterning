@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 
 timesteps = 128
-resolution = 128
+resolution = 64
 warmup = 10
 init_val = 1e-3
 peak_val = 5e-3
