@@ -31,10 +31,10 @@ cooldown = 60
 #iters=5*warmup+5*cooldown
 iters = 1000
 N_agents = 2000
-nslime = NeuralChemotaxis(N_AGENTS = N_agents, 
+nslime = NeuralWaveletChemotaxis(N_AGENTS = N_agents, 
                                  GRID_SIZE = resolution, 
                                  N_CHANNELS = 16,
-                                 #LENGTH_SCALE = 2,
+                                 LENGTH_SCALE = 2,
                                  dt = 0.1,
                                  decay_rate = 0.98,
                                  PERIODIC = False,
@@ -59,7 +59,7 @@ trainer = AntTrainer(nslime = nslime,
                      BATCHES=4,
                      DATA_AUGMENTER=DataAugmenter,
                      N_agents=N_agents,
-                     model_filename="ant_sinkhorn_basic_1",
+                     model_filename="ant_sinkhorn_basic_wavelet_1",
                      alpha=1.0)
 trainer.train(timesteps,iters,WARMUP=warmup,optimiser=optimiser)
 nslime = trainer.nslime
