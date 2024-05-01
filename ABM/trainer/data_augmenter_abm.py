@@ -2,6 +2,7 @@ from Common.trainer.abstract_data_augmenter_array import DataAugmenterAbstract
 from Common.mnist_reader import MnistDataloader
 import jax.numpy as jnp
 import jax.random as jr
+import equinox as eqx
 import einops
 import time
 import numpy as np
@@ -120,6 +121,8 @@ class DataAugmenter(DataAugmenterAbstract):
         #ph = jnp.pad(ph,((0,0),(0,0),(0,hidden_channels),(0,0),(0,0)))
         
         data_true = ((pos,vel),ph)
+        print(ph.shape)
+        print(pos.shape)
         self.data_true = data_true
         self.data_saved = data_true
 
@@ -163,7 +166,7 @@ class DataAugmenter(DataAugmenterAbstract):
         X = ((a_p[:,:-N_steps],a_v[:,:-N_steps]),ph[:,:-N_steps])
         Y = ((a_p[:,N_steps:],a_v[:,N_steps:]),ph[:,N_steps:])
         return X,Y
-
+    @eqx.filter_jit
     def data_callback(self, x, y, i,key):
         self.key = jr.fold_in(self.key,i)
         key1,key2 = jr.split(self.key)

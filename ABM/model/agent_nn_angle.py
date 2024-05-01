@@ -9,6 +9,12 @@ class agent_nn(eqx.Module):
 	layers_velocity_mag: list
 	layers_d_angle: list
 	N_CHANNELS: int
+	"""
+	Individual agent neural network. Reads pheremone conentrations of each channel, convolved with sensor kernels
+	i.e. reads value, anterior-posterior and left-right gradients. Also reads orientation of agent in space
+
+	Outputs pheremone increment, velocity magnitude and velocity direction
+	"""
 	
 	def __init__(self,N_CHANNELS,key=jax.random.PRNGKey(int(time.time()))):
 		key1,key2,key3,key4,key5,key6,key7 = jax.random.split(key,7)
@@ -53,14 +59,14 @@ class agent_nn(eqx.Module):
 							         out_features=1,
 									 use_bias=False,
 									 key=key5),
-					   jax.nn.hard_tanh 	# Keeps agent speed non negative
+					   jax.nn.sigmoid 	# Keeps agent speed non negative
 					   ]
 		self.layers_d_angle = [									
 					   eqx.nn.Linear(in_features=self.N_CHANNELS, 	# Updates agent velocity 
 							         out_features=self.N_CHANNELS,
 									 use_bias=False,
 									 key=key6),
-					   jax.nn.gelu,									# Keeps agent speed non negative
+					   jax.nn.relu,									
 					   eqx.nn.Linear(in_features=self.N_CHANNELS, 	# Updates agent velocity 
 							         out_features=1,
 									 use_bias=False,

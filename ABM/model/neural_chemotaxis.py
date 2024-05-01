@@ -94,43 +94,47 @@ class NeuralChemotaxis(NeuralSlime):
 	def _update_velocities_and_pheremones(self,agents,pheremone_weights,pheremone_lattice):
 		v_agent_nn = jax.vmap(self.Agent_nn,in_axes=0,out_axes=(1,1,1),axis_name="N_AGENTS") # vmap over agents 
 		d_v_mag,d_pheremones,d_angle = v_agent_nn(pheremone_weights)
-		pos = np.rint(agents[0]).astype(int)
-		if self.PERIODIC:
-			vel = agents[1]
-		else:
-			boundary_mask = np.logical_or(pos==0,pos==self.GRID_SIZE)
+		pos_int = np.rint(agents[0]).astype(int)
+		vel = agents[1]
+		
+		#if self.PERIODIC: # Flip agent velocities at the boundary
+		#	vel = agents[1]
+		#else:
+		#	boundary_mask = np.logical_or(pos==0,pos==self.GRID_SIZE)
 
-			vel = np.where(boundary_mask,-agents[1],agents[1])
+		#	vel = np.where(boundary_mask,-agents[1],agents[1])
+		
 		
 		
 		v_angle = np.arctan2(vel[1],vel[0])
-		v_mag = np.sqrt(vel[1]**2+vel[0]**2)
-		#print(c_angle.shape)
-		#print(d_angle.shape)
+		# v_mag = np.sqrt(vel[1]**2+vel[0]**2)
+		
+		
 		v_angle = v_angle+self.dt*d_angle[:,0]
-		v_mag = np.clip(v_mag+self.dt*d_v_mag,a_min=-10*self.dt,a_max=10*self.dt)
+		# v_mag = np.clip(v_mag+self.dt*d_v_mag,a_min=-10*self.dt,a_max=10*self.dt)
+		# agent_vel = np.array([np.cos(v_angle),np.sin(v_angle)])*v_mag
+		
+		
+
+		#v_angle = np.arctan2(vel[1],vel[0])
+		#v_mag = np.sqrt(vel[1]**2+vel[0]**2)
+		
+		
+		#v_angle = d_angle[:,0]
+		v_mag = d_v_mag
 		agent_vel = np.array([np.cos(v_angle),np.sin(v_angle)])*v_mag
 		
 		
-		
 		smooth_func = jax.vmap(self._pheremone_diffuse,in_axes=0,out_axes=0,axis_name="pheremones")
-		pheremone_lattice = pheremone_lattice.at[:,pos[0],pos[1]].set(jax.nn.relu(pheremone_lattice[:,pos[0],pos[1]]+self.dt*d_pheremones))
+		pheremone_lattice = pheremone_lattice.at[:,pos_int[0],pos_int[1]].set(
+			jax.nn.relu(pheremone_lattice[:,pos_int[0],pos_int[1]]+self.dt*d_pheremones)
+		)
 		pheremone_lattice = smooth_func(pheremone_lattice)
 		pheremone_lattice = self._pheremone_decay(pheremone_lattice)
+		pheremone_lattice = np.clip(pheremone_lattice,a_min=0,a_max=1)
 		return (agents[0],agent_vel),pheremone_lattice
 	
-	# @eqx.filter_jit
-	# def __call__(self,state):
-	# 	print("State: ")
-	# 	print(state)
-	# 	agents,pheremone_lattice = state
-	# 	print("Agents: ")
-	# 	print(agents)
-	# 	pheremone_weights = self._sense_pheremones(agents, pheremone_lattice)
-	# 	agents,pheremone_lattice = self._update_velocities_and_pheremones(agents, pheremone_weights, pheremone_lattice)
-	# 	agents = self._update_positions(agents)
-	# 	state = (agents,pheremone_lattice)
-	# 	return state
+
 
 	@eqx.filter_jit
 	def __call__(self,state):
@@ -147,4 +151,5 @@ class NeuralChemotaxis(NeuralSlime):
 		((agents_p,agents_v),pheremone_lattice) = self._update_velocities_and_pheremones((agents_p,agents_v), pheremone_weights, pheremone_lattice)
 		(agents_p,agents_v) = self._update_positions((agents_p,agents_v))
 		state = ((agents_p,agents_v),pheremone_lattice)
+		state = self._boundary_conditions(state)
 		return state
