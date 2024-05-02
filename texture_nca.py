@@ -26,7 +26,7 @@ schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
                         optax.nadam(schedule))
 
-nca = bNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=True)
+nca = bNCA(CHANNELS,OBSERVABLE_CHANNELS=4,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=0.5,PERIODIC=True)
 print(nca)
 
 class da_subclass(DataAugmenter):
