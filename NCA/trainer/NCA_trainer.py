@@ -153,7 +153,8 @@ class NCA_Trainer(object):
 			  LOSS_SAMPLING = 64,
 			  LOG_EVERY=40,
 			  WRITE_IMAGES=True,
-			  LOSS_FUNC_STR = "euclidean",	        
+			  LOSS_FUNC_STR = "euclidean",
+			  LOOP_AUTODIFF = "checkpointed",
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
 		Perform t steps of NCA on x, compare output to y, compute loss and gradients of loss wrt model parameters, and update parameters.
@@ -171,6 +172,14 @@ class NCA_Trainer(object):
 			Strength of intermediate state regulariser. Defaults to 1.0
 		WARMUP : int optional
 			Number of iterations to wait for until starting model checkpointing
+		LOG_EVERY : int optional
+			Save output of model every LOG_EVERY steps
+		WRITE_IMAGES : boolean
+			Save images during logging
+		LOSS_FUNC_STR : string
+			Which loss function to use
+		LOOP_AUTODIFF : string 
+			How to save gradients through loop over timesteps. "checkpointed" or "lax"
 		key : jax.random.PRNGKey, optional
 			Jax random number key. The default is jax.random.PRNGKey(int(time.time())).
 		Returns
@@ -249,7 +258,8 @@ class NCA_Trainer(object):
 					reg_log+=v_intermediate_reg(x)
 					return (key,x,reg_log),None
 
-				(key,x,reg_log),_ = jax.lax.scan(nca_step,(key,x,reg_log),xs=jnp.arange(t))
+				#(key,x,reg_log),_ = jax.lax.scan(nca_step,(key,x,reg_log),xs=jnp.arange(t))
+				(key,x,reg_log),_ = eqx.internal.scan(nca_step,(key,x,reg_log),xs=jnp.arange(t),kind=LOOP_AUTODIFF)
 				
 				loss_key = key_pytree_gen(key, (len(x),))
 				losses = v_loss_func(x, y, loss_key)
