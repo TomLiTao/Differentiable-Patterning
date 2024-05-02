@@ -49,7 +49,7 @@ schedule = optax.exponential_decay(1e-3, transition_steps=iters, decay_rate=0.99
 #                                {"init_value":init_val/8.0, "peak_value":peak_val/8.0, "decay_steps":cooldown, "warmup_steps":warmup, "end_value":init_val/16.0},])
 #optimiser = optax.adam(schedule)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
-                        optax.adam(schedule))
+                        optax.nadam(schedule))
 #optimiser = optax.chain(optax.scale(),
 #                        optax.adam(schedule))
 
@@ -59,7 +59,7 @@ trainer = AntTrainer(nslime = nslime,
                      BATCHES=4,
                      DATA_AUGMENTER=DataAugmenter,
                      N_agents=N_agents,
-                     model_filename="ant_sinkhorn_basic_wavelet_checkpointed_5",
+                     model_filename="ant_sinkhorn_basic_wavelet_checkpointed_6",
                      alpha=1.0)
 trainer.train(timesteps,iters,WARMUP=warmup,optimiser=optimiser)
 nslime = trainer.nslime
