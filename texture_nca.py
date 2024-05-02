@@ -22,7 +22,7 @@ iters=2000
 data = load_textures(["banded/banded_0109.jpg","dotted/dotted_0109.jpg","dotted/dotted_0109.jpg","perforated/perforated_0106.jpg","perforated/perforated_0106.jpg"],downsample=2,crop_square=True,crop_factor=1.5)
 schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
-                        optax.adam(schedule))
+                        optax.nadam(schedule))
 
 nca = gcNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=3,FIRE_RATE=0.5,PERIODIC=True)
 print(nca)

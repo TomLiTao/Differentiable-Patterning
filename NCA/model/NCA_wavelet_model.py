@@ -10,12 +10,13 @@ class cNCA(NCA):
     layers: list
     KERNEL_STR: list
     KERNEL_SCALE: int
+    WAVELET_NUMBER: int
     N_CHANNELS: int
     N_FEATURES: int
     PERIODIC: bool
     FIRE_RATE: float
     N_WIDTH: int
-    def __init__(self, N_CHANNELS, KERNEL_STR=["ID","LAP"], KERNEL_SCALE=1, ACTIVATION_STR="relu", PERIODIC=True, FIRE_RATE=1.0, key=jax.random.PRNGKey(int(time.time()))):
+    def __init__(self, N_CHANNELS, KERNEL_STR=["ID","LAP"], KERNEL_SCALE=1,WAVELET_NUMBER=1, ACTIVATION_STR="relu", PERIODIC=True, FIRE_RATE=1.0, key=jax.random.PRNGKey(int(time.time()))):
         """
         
 
@@ -49,7 +50,10 @@ class cNCA(NCA):
         self.KERNEL_STR = KERNEL_STR
         self.N_WIDTH = 1
         self.KERNEL_SCALE = KERNEL_SCALE
+        self.WAVELET_NUMBER = WAVELET_NUMBER
         nstds = 2
+        WAVELENGTHS = [jnp.pi*8,jnp.pi*4,jnp.pi*2,jnp.pi]
+        WAVELENGTHS = WAVELENGTHS[:self.WAVELET_NUMBER]
         def identity(scale,nstds):
               # Number of standard deviation sigma
             i = jnp.zeros((nstds*scale+1,nstds*scale+1))
@@ -85,13 +89,13 @@ class cNCA(NCA):
             return gb / jnp.sum(jnp.abs(gb))
 
 
-        def gradx(scale,nstds):
+        def gradx(scale,wavelength,nstds):
             # Gabor filter with large wavelength, x direction
-            return gabor(0.5*scale,jnp.pi/2,10000*scale,0,1,nstds)
+            return gabor(0.5*scale,jnp.pi/2,wavelength,0,1,nstds)
 
-        def grady(scale,nstds):
+        def grady(scale,wavelength,nstds):
             # Gabor filter with large wavelength, y direction
-            return gabor(0.5*scale,0,10000*scale,0,1,nstds)
+            return gabor(0.5*scale,0,wavelength,0,1,nstds)
         def gaussian(sigma,nstds):
             # Gaussian
             sigma_x = sigma*0.5
@@ -158,12 +162,11 @@ class cNCA(NCA):
             av = gaussian(self.KERNEL_SCALE,nstds)
             KERNELS.append(av)
         if "DIFF" in self.KERNEL_STR:
-            #dx = jnp.outer(jnp.array([1.0,2.0,1.0]),jnp.array([-1.0,0.0,1.0]))/8.0
-            #dy = dx.T
-            dx = gradx(self.KERNEL_SCALE,nstds)
-            dy = grady(self.KERNEL_SCALE,nstds)
-            KERNELS.append(dx)
-            KERNELS.append(dy)
+            for W in WAVELENGTHS:
+                dx = gradx(self.KERNEL_SCALE,W,nstds)
+                dy = grady(self.KERNEL_SCALE,W,nstds)
+                KERNELS.append(dx)
+                KERNELS.append(dy)
         if "LAP" in self.KERNEL_STR:
             lap = laplacian(self.KERNEL_SCALE,nstds)
             KERNELS.append(lap)
