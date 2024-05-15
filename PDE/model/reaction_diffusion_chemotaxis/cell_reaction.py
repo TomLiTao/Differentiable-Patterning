@@ -15,15 +15,15 @@ class Cell_reaction(eqx.Module):
         self.TOTAL_CHANNELS = CELL_CHANNELS + SIGNAL_CHANNELS
         key1,key2 = jax.random.split(key,2)
         self.layers = [
-            eqx.nn.Conv2d(
-                in_channels=self.TOTAL_CHANNELS,
-                out_channels=self.TOTAL_CHANNELS,
-                kernel_size=1,
-                padding=0,
-                use_bias=False,
-                key=key1
-            ),
-            jax.nn.relu,
+            # eqx.nn.Conv2d(
+            #     in_channels=self.TOTAL_CHANNELS,
+            #     out_channels=self.TOTAL_CHANNELS,
+            #     kernel_size=1,
+            #     padding=0,
+            #     use_bias=False,
+            #     key=key1
+            # ),
+            # jax.nn.relu,
             eqx.nn.Conv2d(
                 in_channels=self.TOTAL_CHANNELS,
                 out_channels=self.CELL_CHANNELS,
