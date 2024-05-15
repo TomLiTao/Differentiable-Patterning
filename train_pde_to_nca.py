@@ -52,6 +52,6 @@ opt = non_negative_diffusion_chemotaxis(schedule)
 
 trainer = PDE_Trainer(pde,
                       NCA_trajectory,
-                      model_filename="pde_chemreacdiff_to_emoji_nca_3")
+                      model_filename="pde_chemreacdiff_to_emoji_nca_4")
 
 trainer.train(32,iters,optimiser=opt)
