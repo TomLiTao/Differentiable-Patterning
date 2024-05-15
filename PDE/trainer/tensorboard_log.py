@@ -1,7 +1,7 @@
 import tensorflow as tf
 tf.config.experimental.set_visible_devices([], "GPU") # Force tensorflow not to use GPU, as it's only logging data
 import numpy as np
-from PDE.PDE_visualiser import *
+from PDE.model.reaction_diffusion_chemotaxis.visualize import plot_weight_kernel_boxplot,plot_weight_matrices
 
 
 
@@ -41,7 +41,7 @@ class PDE_Train_log(object):
 			
 		self.train_summary_writer = train_summary_writer
 
-	def tb_training_loop_log_sequence(self,losses,x,i,pde,write_images=False):
+	def tb_training_loop_log_sequence(self,losses,x,i,pde,write_images=True):
 		"""
 			Helper function to format some data logging during the training loop
 
@@ -79,21 +79,21 @@ class PDE_Train_log(object):
 			if i%10==0:
 
 				# Log weights and biasses of model every 10 training epochs
-				#weight_matrix_image = []
-				w1_v = pde.func.f_v.layers[0].weight[:,:,0,0]
-				w2_v = pde.func.f_v.layers[2].weight[:,:,0,0]
+				# #weight_matrix_image = []
+				# w1_v = pde.func.f_v.layers[0].weight[:,:,0,0]
+				# w2_v = pde.func.f_v.layers[2].weight[:,:,0,0]
 				
-				w1_d = pde.func.f_d.layers[-1].weight[:,:,0,0]
+				# w1_d = pde.func.f_d.layers[-1].weight[:,:,0,0]
 				
-				w1_r = pde.func.f_r.layers[0].weight[:,:,0,0]
-				w2_r = pde.func.f_r.layers[2].weight[:,:,0,0]
-				#w1 = nca.layers[3].weight[:,:,0,0]
-				#w2 = nca.layers[5].weight[:,:,0,0]
-				#b2 = nca.layers[5].bias[:,0,0]
+				# w1_r = pde.func.f_r.layers[0].weight[:,:,0,0]
+				# w2_r = pde.func.f_r.layers[2].weight[:,:,0,0]
+				# #w1 = nca.layers[3].weight[:,:,0,0]
+				# #w2 = nca.layers[5].weight[:,:,0,0]
+				# #b2 = nca.layers[5].bias[:,0,0]
 				
-				tf.summary.histogram('Advection weights',np.concatenate((w1_v,w2_v),axis=None),step=i)
-				tf.summary.histogram('Diffusion weights',w1_d,step=i)
-				tf.summary.histogram('Reaction weights',np.concatenate((w1_r,w2_r),axis=None),step=i)				
+				# tf.summary.histogram('Advection weights',np.concatenate((w1_v,w2_v),axis=None),step=i)
+				# tf.summary.histogram('Diffusion weights',w1_d,step=i)
+				# tf.summary.histogram('Reaction weights',np.concatenate((w1_r,w2_r),axis=None),step=i)				
 				#diff,static=nca.partition()
 				weight_matrix_figs = plot_weight_matrices(pde)
 				tf.summary.image("Weight matrices",np.array(weight_matrix_figs)[:,0],step=i,max_outputs=5)
@@ -107,10 +107,10 @@ class PDE_Train_log(object):
 						if self.RGB_mode=="RGB":
 							#tf.summary.image('Trajectory batch '+str(b),np.einsum("ncxy->nxyc",x[b,:,:3,...]),step=i,max_outputs=x.shape[0])
 							tf.summary.image('Trajectory batch '+str(b),np.einsum("ncxy->nxyc",x[b][:,:3,...]),step=i,max_outputs=N)
-						elif self.RGB_mode=="RGBA":
-							#tf.summary.image('Trajectory batch '+str(b),np.einsum("ncxy->nxyc",x[b,:,:4,...]),step=i,max_outputs=x.shape[0])
-							tf.summary.image('Trajectory batch '+str(b),np.einsum("ncxy->nxyc",x[b][:,:4,...]),step=i,max_outputs=N)
-					if nca.N_CHANNELS > 4:
+						#elif self.RGB_mode=="RGBA":
+						#	#tf.summary.image('Trajectory batch '+str(b),np.einsum("ncxy->nxyc",x[b,:,:4,...]),step=i,max_outputs=x.shape[0])
+						#	tf.summary.image('Trajectory batch '+str(b),np.einsum("ncxy->nxyc",x[b][:,:4,...]),step=i,max_outputs=N)
+					if pde.func.SIGNAL_CHANNELS > 0:
 						b=0
 						if self.RGB_mode=="RGB":
 							hidden_channels = x[b][:,3:]
