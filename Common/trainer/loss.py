@@ -31,7 +31,7 @@ def l2(x,y,key):
 		"""
 	return jnp.mean((x-y)**2,axis=[-1,-2,-3])
 @jax.jit
-def l1(x,y,key):
+def l1(x,y,key=None):
 	"""
 		Parameters
 		----------
@@ -47,7 +47,7 @@ def l1(x,y,key):
 		"""
 	return jnp.mean(jnp.abs(x-y),axis=[-1,-2,-3])
 @jax.jit
-def euclidean(x,y,key):
+def euclidean(x,y,key=None):
 	"""
 		General format of loss functions here:
 
