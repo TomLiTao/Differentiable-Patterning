@@ -2,12 +2,12 @@ import jax
 import equinox as eqx
 import time
 import diffrax
-from PDE.model.reaction_diffusion_advection.update import F
+#from PDE.model.reaction_diffusion_advection.update import F
 
 from Common.model.abstract_model import AbstractModel
 
 class PDE_solver(AbstractModel):
-	func: F	
+	func: eqx.Module	
 	dt0: float
 	def __init__(self,F,dt=0.1):
 		self.func = F
