@@ -1,5 +1,7 @@
 import jax
 import jax.numpy as np
+import optax
+from PDE.trainer.optimiser import non_negative_diffusion_chemotaxis
 from einops import repeat
 from PDE.model.reaction_diffusion_chemotaxis.update import F
 from PDE.model.solver.semidiscrete_solver import PDE_solver
@@ -33,12 +35,23 @@ print(NCA_trajectory.shape)
 
 
 
+
+
 # Define PDE model
 func = F(CELL_CHANNELS,SIGNAL_CHANNELS,PADDING="REPLICATE",dx=1.0,key=key)
 pde = PDE_solver(func,dt=0.1)
 
+
+# Define optimiser and lr schedule
+iters = 100
+schedule = optax.exponential_decay(1e-3, transition_steps=iters, decay_rate=0.99)
+#self.OPTIMISER = optax.adam(schedule)
+opt = non_negative_diffusion_chemotaxis(schedule)
+
+
+
 trainer = PDE_Trainer(pde,
                       NCA_trajectory,
-                      model_filename="pde_chemreacdiff_to_emoji_nca_2")
+                      model_filename="pde_chemreacdiff_to_emoji_nca_3")
 
-trainer.train(32,100)
+trainer.train(32,iters,optimiser=opt)
