@@ -23,15 +23,15 @@ class Cell_motility(eqx.Module):
 
         
         self.motility_layers = [
-            # eqx.nn.Conv2d(
-            #     in_channels=self.TOTAL_CHANNELS,
-            #     out_channels=self.TOTAL_CHANNELS,
-            #     kernel_size=1,
-            #     padding=0,
-            #     use_bias=False,
-            #     key=key1
-            # ),
-            # jax.nn.relu,
+            eqx.nn.Conv2d(
+                in_channels=self.TOTAL_CHANNELS,
+                out_channels=self.TOTAL_CHANNELS,
+                kernel_size=1,
+                padding=0,
+                use_bias=False,
+                key=key1
+            ),
+            jax.nn.relu,
             eqx.nn.Conv2d(
                 in_channels=self.TOTAL_CHANNELS,
                 out_channels=self.CELL_CHANNELS,
@@ -44,15 +44,15 @@ class Cell_motility(eqx.Module):
         ]
         
         self.chemotaxis_layers = [
-            # eqx.nn.Conv2d(
-            #     in_channels=self.TOTAL_CHANNELS,
-            #     out_channels=self.TOTAL_CHANNELS,
-            #     kernel_size=1,
-            #     padding=0,
-            #     use_bias=False,
-            #     key=key3
-            # ),
-            # jax.nn.relu,
+            eqx.nn.Conv2d(
+                in_channels=self.TOTAL_CHANNELS,
+                out_channels=self.TOTAL_CHANNELS,
+                kernel_size=1,
+                padding=0,
+                use_bias=False,
+                key=key3
+            ),
+            jax.nn.relu,
             eqx.nn.Conv2d(
                 in_channels=self.TOTAL_CHANNELS,
                 out_channels=self.CELL_CHANNELS*self.SIGNAL_CHANNELS,

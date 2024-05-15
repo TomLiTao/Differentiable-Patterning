@@ -19,15 +19,15 @@ class Signal_reaction(eqx.Module):
         
         key1,key2,key3,key4 = jax.random.split(key,4)
         self.production_layers = [
-            # eqx.nn.Conv2d(
-            #     in_channels=self.TOTAL_CHANNELS,
-            #     out_channels=self.TOTAL_CHANNELS,
-            #     kernel_size=1,
-            #     padding=0,
-            #     use_bias=False,
-            #     key=key1
-            # ),
-            # jax.nn.relu,
+            eqx.nn.Conv2d(
+                in_channels=self.TOTAL_CHANNELS,
+                out_channels=self.TOTAL_CHANNELS,
+                kernel_size=1,
+                padding=0,
+                use_bias=False,
+                key=key1
+            ),
+            jax.nn.relu,
             eqx.nn.Conv2d(
                 in_channels=self.TOTAL_CHANNELS,
                 out_channels=self.SIGNAL_CHANNELS,
@@ -39,15 +39,15 @@ class Signal_reaction(eqx.Module):
             jax.nn.relu
         ]
         self.decay_layers = [
-            # eqx.nn.Conv2d(
-            #     in_channels=self.TOTAL_CHANNELS,
-            #     out_channels=self.TOTAL_CHANNELS,
-            #     kernel_size=1,
-            #     padding=0,
-            #     use_bias=False,
-            #     key=key3
-            # ),
-            # jax.nn.relu,
+            eqx.nn.Conv2d(
+                in_channels=self.TOTAL_CHANNELS,
+                out_channels=self.TOTAL_CHANNELS,
+                kernel_size=1,
+                padding=0,
+                use_bias=False,
+                key=key3
+            ),
+            jax.nn.relu,
             eqx.nn.Conv2d(
                 in_channels=self.TOTAL_CHANNELS,
                 out_channels=self.SIGNAL_CHANNELS,
@@ -77,7 +77,7 @@ class Signal_reaction(eqx.Module):
         
         for L in self.decay_layers:
             decay = L(decay)
-        stability_factor = 0.001
+        stability_factor = 0.01
         return production - signals*decay - stability_factor*signals
     
     def partition(self):
