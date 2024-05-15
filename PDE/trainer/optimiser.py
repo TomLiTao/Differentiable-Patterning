@@ -28,9 +28,9 @@ def non_negative_diffusion(schedule):
 	return optax.chain(opt_d,opt_ra)
 
 
-def non_negative_diffusion_chemotaxis(schedule):
+def non_negative_diffusion_chemotaxis(schedule,optimiser=optax.adam):
 	
-	opt_ra = optax.adamw(schedule) # Adam with weight decay for reaction and advection
+	opt_ra = optimiser(schedule) # Adam with weight decay for reaction and advection
 	opt_d = optax.chain(optax.keep_params_nonnegative(),optax.adam(schedule)) # Non-negative adam on diffusive terms (no weight decay)
 	
 	def label_diffusive(tree):
