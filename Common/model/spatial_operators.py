@@ -60,8 +60,8 @@ class Ops(eqx.Module):
                                     padding_mode=PADDING,
                                     groups=1)
         
-        _lap = jnp.array([[0.25,0.5,0.25],[0.5,-3,0.5],[0.25,0.5,0.25]]) / (dx*dx)
-        _grad_x = jnp.outer(jnp.array([1.0,2.0,1.0]),jnp.array([-1.0,0.0,1.0])) /dx
+        _lap = jnp.array([[0.25,0.5,0.25],[0.5,-3,0.5],[0.25,0.5,0.25]]) / (6.0*dx*dx)
+        _grad_x = jnp.outer(jnp.array([1.0,2.0,1.0]),jnp.array([-1.0,0.0,1.0])) /(8.0*dx)
         _grad_y = _grad_x.T
         kernel_dx = rearrange(_grad_x,"x y -> () () x y")
         kernel_dy = rearrange(_grad_y,"x y -> () () x y")
