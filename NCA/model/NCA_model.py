@@ -2,23 +2,25 @@ import jax
 import jax.numpy as jnp
 import equinox as eqx
 import time
+from jaxtyping import Float, Array, Key, Int, Scalar
 from Common.model.abstract_model import AbstractModel # Inherit model loading and saving
-
+from Common.model.spatial_operators import Ops # Spatial stuff like gradients or laplacians
+from einops import rearrange
 
 class NCA(AbstractModel):
 	layers: list
 	KERNEL_STR: list
 	N_CHANNELS: int
 	N_FEATURES: int
-	PERIODIC: bool
 	FIRE_RATE: float
-	N_WIDTH: int
+	op: Ops
 	def __init__(self,
 			     N_CHANNELS,
 				 KERNEL_STR=["ID","LAP"],
-				 ACTIVATION_STR="relu",
-				 PERIODIC=True,
+				 ACTIVATION=jax.nn.relu,
+				 PADDING="CIRCULAR",
 				 FIRE_RATE=1.0,
+				 KERNEL_SCALE = 1,
 				 key=jax.random.PRNGKey(int(time.time()))):
 		"""
 		
@@ -47,80 +49,44 @@ class NCA(AbstractModel):
 		
 		
 		key1,key2 = jax.random.split(key,2)
-		self.PERIODIC=PERIODIC
 		self.N_CHANNELS = N_CHANNELS
 		self.FIRE_RATE = FIRE_RATE
 		self.KERNEL_STR = KERNEL_STR
-		self.N_WIDTH = 1
-		
-		# Define which convolution kernels to use
-		KERNELS = []
-		if "ID" in KERNEL_STR:
-			KERNELS.append(jnp.array([[0,0,0],[0,1,0],[0,0,0]]))
-		if "AV" in KERNEL_STR:
-			KERNELS.append(jnp.array([[1,1,1],[1,1,1],[1,1,1]])/9.0)
-		if "DIFF" in KERNEL_STR:
-			dx = jnp.outer(jnp.array([1.0,2.0,1.0]),jnp.array([-1.0,0.0,1.0]))/8.0
-			dy = dx.T
-			KERNELS.append(dx)
-			KERNELS.append(dy)
-		if "LAP" in KERNEL_STR:
-			KERNELS.append(jnp.array([[0.25,0.5,0.25],[0.5,-3,0.5],[0.25,0.5,0.25]]))
-		
-		self.N_FEATURES = N_CHANNELS*len(KERNELS)
-		KERNELS = jnp.array(KERNELS) # OHW layout
-		KERNELS = jnp.zeros((self.N_CHANNELS,self.N_FEATURES//self.N_CHANNELS,3,3)) + KERNELS[jnp.newaxis]# OIHW layout
-		KERNELS = jnp.reshape(KERNELS,(-1,3,3))
-		KERNELS = jnp.expand_dims(KERNELS,1)
-		
-		# Define which activation function to use
-		if ACTIVATION_STR == "relu":
-			ACTIVATION = jax.nn.relu
-		elif ACTIVATION_STR == "tanh":
-			ACTIVATION = jax.nn.tanh
-		elif ACTIVATION_STR == "swish":
-			ACTIVATION = jax.nn.swish
-		elif ACTIVATION_STR == "linear":
-			ACTIVATION = lambda x:x
-		elif ACTIVATION_STR == "leaky_relu":
-			ACTIVATION = jax.nn.leaky_relu
-		elif ACTIVATION_STR == "gelu":
-			ACTIVATION = jax.nn.gelu
-		else:
-			ACTIVATION = None
-		
-		@jax.jit
-		def periodic_pad(x):
-			if self.PERIODIC:
-				return jnp.pad(x, ((0,0),(1,1),(1,1)), mode='wrap')
-			else:
-				return x
-		
-		@jax.jit
-		def periodic_unpad(x):
-			if self.PERIODIC:
-				return x[:,1:-1,1:-1]
-			else:
-				return x
+		N_WIDTH = 1
+		self.op = Ops(PADDING=PADDING,dx=1,KERNEL_SCALE=KERNEL_SCALE)
+
 		
 
+		_kernel_length = len(KERNEL_STR)
+		if "DIFF" in KERNEL_STR:
+			_kernel_length+=1
+		self.N_FEATURES = N_CHANNELS*_kernel_length
+		
+		@eqx.filter_jit
+		def spatial_layer(X: Float[Array,"{self.N_CHANNELS} x y"])-> Float[Array, "H x y"]:
+			output = []
+			if "ID" in KERNEL_STR:
+				output.append(X)
+			if "DIFF" in KERNEL_STR:
+				grad = self.op.Grad(X)
+				output.append(grad[0])
+				output.append(grad[1])
+			if "AV" in KERNEL_STR:
+				output.append(self.op.Average(X))
+			if "LAP" in KERNEL_STR:
+				output.append(self.op.Lap(X))
+			output = rearrange(output,"b C x y -> (b C) x y")
+			return output
+		
 		self.layers = [
-			periodic_pad,
-			eqx.nn.Conv2d(in_channels=self.N_CHANNELS,
-						  out_channels=self.N_FEATURES,
-						  kernel_size=3,
-						  use_bias=False,
-						  key=key1,
-						  padding=1,
-						  groups=self.N_CHANNELS),
-			periodic_unpad,
+			spatial_layer,
 			eqx.nn.Conv2d(in_channels=self.N_FEATURES,
-						  out_channels=self.N_WIDTH*self.N_FEATURES,
+						  out_channels=N_WIDTH*self.N_FEATURES,
 						  kernel_size=1,
 						  use_bias=False,
 						  key=key1),
 			ACTIVATION,
-			eqx.nn.Conv2d(in_channels=self.N_WIDTH*self.N_FEATURES, 
+			eqx.nn.Conv2d(in_channels=N_WIDTH*self.N_FEATURES, 
 						  out_channels=self.N_CHANNELS,
 						  kernel_size=1,
 						  use_bias=True,
@@ -129,19 +95,19 @@ class NCA(AbstractModel):
 		
 		
 		# Initialise final layer to zero
-		w_zeros = jnp.zeros((self.N_CHANNELS,self.N_WIDTH*self.N_FEATURES,1,1))
+		w_zeros = jnp.zeros((self.N_CHANNELS,N_WIDTH*self.N_FEATURES,1,1))
 		b_zeros = jnp.zeros((self.N_CHANNELS,1,1))
 		w_where = lambda l: l.weight
 		b_where = lambda l: l.bias
 		self.layers[-1] = eqx.tree_at(w_where,self.layers[-1],w_zeros)
 		self.layers[-1] = eqx.tree_at(b_where,self.layers[-1],b_zeros)
 		
-		# Initialise first layer weights as perception kernels
-		self.layers[1] = eqx.tree_at(w_where,self.layers[1],KERNELS)
-		
 
 		
-	def __call__(self,x,boundary_callback=lambda x:x,key=jax.random.PRNGKey(int(time.time()))):
+	def __call__(self,
+			  	 x: Float[Array,"{self.N_CHANNELS} x y"],
+				 boundary_callback=lambda x:x,
+				 key: Key=jax.random.PRNGKey(int(time.time())))->Float[Array, "{self.N_CHANNEL} x y"]:
 		"""
 		
 
@@ -182,14 +148,19 @@ class NCA(AbstractModel):
 
 		"""
 		
-		where = lambda nca: nca.layers[1].weight
-		kernel = self.layers[1].weight
-		diff,static = eqx.partition(self,eqx.is_array)
-		diff = eqx.tree_at(where,diff,None)
-		static = eqx.tree_at(where,static,kernel,is_leaf=lambda x: x is None)
-		return diff, static
+		total_diff,total_static = eqx.partition(self,eqx.is_array)
+		ops_diff,ops_static = self.op.partition()
+		where_ops = lambda m:m.op
+		total_diff = eqx.tree_at(where_ops,total_diff,ops_diff)
+		total_static = eqx.tree_at(where_ops,total_static,ops_static)
+		return total_diff, total_static
 		
-	def run(self,iters,x,callback=lambda x:x,key=jax.random.PRNGKey(int(time.time()))):
+	def run(self,
+		    iters: Int[Scalar, ""],
+			x: Float[Array, "{self.N_CHANNELS} x y"],
+			callback=lambda x:x,
+			key: Key =jax.random.PRNGKey(int(time.time())))->Float[Array,"{iters} {self.N_CHANNELS} x y"]:
+		
 		trajectory = []
 		trajectory.append(x)
 		for i in range(iters):

@@ -13,7 +13,8 @@ class Ops(eqx.Module):
     grad_x: eqx.Module
     grad_y: eqx.Module
     laplacian: eqx.Module
-    def __init__(self,PADDING,dx):
+    average: eqx.Module
+    def __init__(self,PADDING,dx,KERNEL_SCALE=1):
         """
         Equinox module for computing finite difference approximation of gradient, divergence, curl or laplacian of 
         scalar or vector fields
@@ -35,9 +36,10 @@ class Ops(eqx.Module):
         key = jax.random.PRNGKey(0) # Dummy key for conv2d init
         self.PADDING = PADDING
         self.dx = dx
+        nstds = 2
         self.grad_x = eqx.nn.Conv2d(in_channels=1,
                                     out_channels=1,
-                                    kernel_size=3,
+                                    kernel_size=2*KERNEL_SCALE+1,
                                     use_bias=False,
                                     key=key,
                                     padding="SAME",
@@ -45,7 +47,7 @@ class Ops(eqx.Module):
                                     groups=1)
         self.grad_y = eqx.nn.Conv2d(in_channels=1,
                                     out_channels=1,
-                                    kernel_size=3,
+                                    kernel_size=2*KERNEL_SCALE+1,
                                     use_bias=False,
                                     key=key,
                                     padding="SAME",
@@ -53,23 +55,142 @@ class Ops(eqx.Module):
                                     groups=1)
         self.laplacian = eqx.nn.Conv2d(in_channels=1,
                                     out_channels=1,
-                                    kernel_size=3,
+                                    kernel_size=2*KERNEL_SCALE+1,
                                     use_bias=False,
                                     key=key,
                                     padding="SAME",
                                     padding_mode=PADDING,
                                     groups=1)
+        self.average = eqx.nn.Conv2d(in_channels=1,
+                                    out_channels=1,
+                                    kernel_size=2*KERNEL_SCALE+1,
+                                    use_bias=False,
+                                    key=key,
+                                    padding="SAME",
+                                    padding_mode=PADDING,
+                                    groups=1)
+
+        def gabor(sigma, theta, Lambda, psi, gamma,nstds):
+            # General odd gabor filter 
+            sigma_x = sigma
+            sigma_y = float(sigma) / gamma
+
+            # Bounding box
+              # Number of standard deviation sigma
+            xmax = max(
+                abs(nstds * sigma_x * jnp.cos(theta)), abs(nstds * sigma_y * jnp.sin(theta))
+            )
+            xmax = jnp.ceil(max(1, xmax))
+            ymax = max(
+                abs(nstds * sigma_x * jnp.sin(theta)), abs(nstds * sigma_y * jnp.cos(theta))
+            )
+            ymax = jnp.ceil(max(1, ymax))
+            xmin = -xmax
+            ymin = -ymax
+            (y, x) = jnp.meshgrid(jnp.arange(ymin, ymax + 1), jnp.arange(xmin, xmax + 1))
+
+            # Rotation
+            x_theta = x * jnp.cos(theta) + y * jnp.sin(theta)
+            y_theta = -x * jnp.sin(theta) + y * jnp.cos(theta)
+
+            gb = jnp.exp(
+                -0.5 * (x_theta**2 / sigma_x**2 + y_theta**2 / sigma_y**2)
+            ) * jnp.sin(2 * jnp.pi / Lambda * x_theta + psi) 
+            return gb / jnp.sum(jnp.abs(gb))
+
+
+        def gradx(scale,wavelength,nstds):
+            # Gabor filter with large wavelength, x direction
+            return gabor(0.5*scale,jnp.pi/2,wavelength,0,1,nstds)
+
+        def grady(scale,wavelength,nstds):
+            # Gabor filter with large wavelength, y direction
+            return gabor(0.5*scale,0,wavelength,0,1,nstds)
+        def gaussian(sigma,nstds):
+            # Gaussian
+            sigma_x = sigma*0.5
+            
+
+            # Bounding box
+             # Number of standard deviation sigma
+            xmax = nstds * sigma_x
+            #max(
+            #    abs( )
+            #)
+            xmax = jnp.ceil(max(1, xmax))
+            ymax = nstds * sigma_x
+            
+            ymax = jnp.ceil(max(1, ymax))
+            xmin = -xmax
+            ymin = -ymax
+            (y, x) = jnp.meshgrid(jnp.arange(ymin, ymax + 1), jnp.arange(xmin, xmax + 1))
+
+
+            gb = jnp.exp(
+                -0.5 * (x**2 / sigma_x**2 + y**2 / sigma_x**2)
+            )
+            return gb / jnp.sum(gb)
+
+        def laplacian(sigma,nstds):
+            # Laplacian of gaussian
+            sigma_x = sigma*0.5
+            
+
+            # Bounding box
+             # Number of standard deviation sigma
+            xmax = nstds * sigma_x
+            #max(
+            #    abs( )
+            #)
+            xmax = jnp.ceil(max(1, xmax))
+            ymax = nstds * sigma_x
+            
+            ymax = jnp.ceil(max(1, ymax))
+            xmin = -xmax
+            ymin = -ymax
+            (y, x) = jnp.meshgrid(jnp.arange(ymin, ymax + 1), jnp.arange(xmin, xmax + 1))
+
+
+            gb = jnp.exp(
+                -0.5 * (x**2 / sigma_x**2 + y**2 / sigma_x**2)
+            )
+            lgb = (1-4*(x**2+y**2)/(sigma_x**2))*gb
+            
+            lap = -lgb
+            lap = lap - jnp.mean(lap)
+            lap = lap/jnp.sum(jnp.abs(lap))
+            
+            return lap
         
-        _lap = jnp.array([[0.25,0.5,0.25],[0.5,-3,0.5],[0.25,0.5,0.25]]) / (6.0*dx*dx)
-        _grad_x = jnp.outer(jnp.array([1.0,2.0,1.0]),jnp.array([-1.0,0.0,1.0])) /(8.0*dx)
-        _grad_y = _grad_x.T
+
+
+
+
+
+
+
+
+
+
+
+        #_lap = jnp.array([[0.25,0.5,0.25],[0.5,-3,0.5],[0.25,0.5,0.25]]) / (6.0*dx*dx)
+        #_grad_x = jnp.outer(jnp.array([1.0,2.0,1.0]),jnp.array([-1.0,0.0,1.0])) /(8.0*dx)
+        #_grad_y = _grad_x.T
+        
+        _lap = laplacian(KERNEL_SCALE,nstds=nstds) / (dx*dx)
+        _grad_x = gradx(KERNEL_SCALE,wavelength=KERNEL_SCALE*10000,nstds=nstds) / dx
+        _grad_y = grady(KERNEL_SCALE,wavelength=KERNEL_SCALE*10000,nstds=nstds) / dx
+        _av = gaussian(KERNEL_SCALE,nstds=nstds)
+        
         kernel_dx = rearrange(_grad_x,"x y -> () () x y")
         kernel_dy = rearrange(_grad_y,"x y -> () () x y")
         kernel_lap= rearrange(_lap,"x y -> () () x y")
+        kernel_av= rearrange(_av,"x y -> () () x y")
         w_where = lambda l: l.weight
         self.grad_x = eqx.tree_at(w_where,self.grad_x,kernel_dx)
         self.grad_y = eqx.tree_at(w_where,self.grad_y,kernel_dy)
         self.laplacian = eqx.tree_at(w_where,self.laplacian,kernel_lap)
+        self.average = eqx.tree_at(w_where,self.average,kernel_av)
 
     @eqx.filter_jit
     def Grad(self,X: Float[Array,"C x y"])->Float[Array, "dim C x y"]:
@@ -110,6 +231,13 @@ class Ops(eqx.Module):
         #gx = reduce(gx,"C () x y -> C x y", "min")
         #gy = reduce(gy,"C () x y -> C x y", "min")
         return gx - gy
+    
+    @eqx.filter_jit
+    def Average(self,X:Float [Array, "C x y"])->Float[Array,"C x y"]:
+        v_av = jax.vmap(self.average,in_axes=0,out_axes=0,axis_name="CHANNELS")
+        X = rearrange(X,"C x y -> C () x y")
+        return v_av(X)[:,0]
+    
     @eqx.filter_jit
     def NonlinearDiffusion(self,f: Float[Array,"C x y"],g: Float[Array, "C x y"])->Float[Array, "C x y"]:
         """ Computes the anisotropic/nonlinear diffusion: Div(f(x) Grad g(x)) in a stable way. 
@@ -127,16 +255,20 @@ class Ops(eqx.Module):
         where_x = lambda m: m.grad_x.weight
         where_y = lambda m: m.grad_y.weight
         where_l = lambda m: m.laplacian.weight
+        where_av = lambda m: m.average.weight
         sobel_x = self.grad_x.weight
         sobel_y = self.grad_y.weight
         l_weight = self.laplacian.weight
+        av_weight= self.average.weight
         diff,static = eqx.partition(self,eqx.is_array)
         diff = eqx.tree_at(where_x,diff,None)
         diff = eqx.tree_at(where_y,diff,None)
         diff = eqx.tree_at(where_l,diff,None)
+        diff = eqx.tree_at(where_av,diff,None)
         static = eqx.tree_at(where_x,static,sobel_x,is_leaf=lambda x: x is None)
         static = eqx.tree_at(where_y,static,sobel_y,is_leaf=lambda x: x is None)
         static = eqx.tree_at(where_l,static,l_weight,is_leaf=lambda x: x is None)
+        static = eqx.tree_at(where_av,static,av_weight,is_leaf=lambda x: x is None)
         return diff, static
     
     def combine(self,diff,static):
