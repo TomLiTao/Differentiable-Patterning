@@ -188,3 +188,10 @@ def index_to_sample(index):
 	samplings = [1,2,4,8,16,32,128]
 	SAMPLING=samplings[index]
 	return N_CHANNELS,SAMPLING
+
+
+def index_to_data_nca_type(index):
+	indices = np.unravel_index(index,(8,2))
+	data_index = indices[0]
+	nca_type_index = indices[1]
+	return data_index,nca_type_index
