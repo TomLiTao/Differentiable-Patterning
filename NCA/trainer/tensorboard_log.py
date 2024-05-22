@@ -14,9 +14,9 @@ class NCA_Train_log(Train_log):
 	def log_model_parameters(self,nca,i):
 		#Log weights and biasses of model every 10 training epochs
 		with self.train_summary_writer.as_default():
-			w1 = nca.layers[3].weight[:,:,0,0]
-			w2 = nca.layers[5].weight[:,:,0,0]
-			b2 = nca.layers[5].bias[:,0,0]
+			w1 = nca.layers[1].weight[:,:,0,0]
+			w2 = nca.layers[3].weight[:,:,0,0]
+			b2 = nca.layers[3].bias[:,0,0]
 					
 			tf.summary.histogram('Input layer weights',w1,step=i)
 			tf.summary.histogram('Output layer weights',w2,step=i)
