@@ -40,8 +40,8 @@ def plot_weight_matrices(nca):
 	"""
 	
 	
-	w1 = nca.layers[3].weight[:,:,0,0]
-	w2 = nca.layers[5].weight[:,:,0,0]
+	w1 = nca.layers[1].weight[:,:,0,0]
+	w2 = nca.layers[3].weight[:,:,0,0]
 	figs = []
 	
 	figure = plt.figure(figsize=(5,5))
@@ -75,7 +75,7 @@ def plot_weight_kernel_boxplot(nca):
 		a list of images
 
 	"""
-	w = nca.layers[3].weight[:,:,0,0]
+	w = nca.layers[1].weight[:,:,0,0]
 	N_KERNELS = nca.N_FEATURES // nca.N_CHANNELS
 	K_STR = nca.KERNEL_STR.copy()
 	if "DIFF" in K_STR:
@@ -116,8 +116,8 @@ def plot_weight_matrices_show(nca):
 	"""
 	
 	
-	w1 = nca.layers[3].weight[:,:,0,0]
-	w2 = nca.layers[5].weight[:,:,0,0]
+	w1 = nca.layers[1].weight[:,:,0,0]
+	w2 = nca.layers[3].weight[:,:,0,0]
 	
 	fig, ax = plt.subplots(1, 2,sharey=True,figsize=(14, 6),squeeze=True)
 	
@@ -154,7 +154,7 @@ def plot_weight_kernel_boxplot_show(nca):
 		a list of images
 
 	"""
-	w = nca.layers[3].weight[:,:,0,0]
+	w = nca.layers[1].weight[:,:,0,0]
 	N_KERNELS = nca.N_FEATURES // nca.N_CHANNELS
 	K_STR = nca.KERNEL_STR.copy()
 	if "DIFF" in K_STR:
@@ -180,8 +180,8 @@ def plot_weight_kernel_boxplot_show(nca):
 
 def plot_weight_matrix_kernel_subplots(nca):
 	
-	w_in = nca.layers[3].weight[:,:,0,0]
-	w_out= nca.layers[5].weight[:,:,0,0]
+	w_in = nca.layers[1].weight[:,:,0,0]
+	w_out= nca.layers[3].weight[:,:,0,0]
 	N_KERNELS = nca.N_FEATURES // nca.N_CHANNELS
 	K_STR = nca.KERNEL_STR.copy()
 	if "DIFF" in K_STR:
