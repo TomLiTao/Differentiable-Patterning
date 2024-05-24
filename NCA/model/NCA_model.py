@@ -60,7 +60,7 @@ class NCA(AbstractModel):
 		_kernel_length = len(KERNEL_STR)
 		if "DIFF" in KERNEL_STR:
 			_kernel_length+=1
-		self.N_FEATURES = N_CHANNELS*_kernel_length
+		self.N_FEATURES = N_CHANNELS*_kernel_length*N_WIDTH
 		
 		@eqx.filter_jit
 		def spatial_layer(X: Float[Array,"{self.N_CHANNELS} x y"])-> Float[Array, "H x y"]:
@@ -81,12 +81,12 @@ class NCA(AbstractModel):
 		self.layers = [
 			spatial_layer,
 			eqx.nn.Conv2d(in_channels=self.N_FEATURES,
-						  out_channels=N_WIDTH*self.N_FEATURES,
+						  out_channels=self.N_FEATURES,
 						  kernel_size=1,
 						  use_bias=False,
 						  key=key1),
 			ACTIVATION,
-			eqx.nn.Conv2d(in_channels=N_WIDTH*self.N_FEATURES, 
+			eqx.nn.Conv2d(in_channels=self.N_FEATURES, 
 						  out_channels=self.N_CHANNELS,
 						  kernel_size=1,
 						  use_bias=True,
@@ -95,7 +95,7 @@ class NCA(AbstractModel):
 		
 		
 		# Initialise final layer to zero
-		w_zeros = jnp.zeros((self.N_CHANNELS,N_WIDTH*self.N_FEATURES,1,1))
+		w_zeros = jnp.zeros((self.N_CHANNELS,self.N_FEATURES,1,1))
 		b_zeros = jnp.zeros((self.N_CHANNELS,1,1))
 		w_where = lambda l: l.weight
 		b_where = lambda l: l.bias

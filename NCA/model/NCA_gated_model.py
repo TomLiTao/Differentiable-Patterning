@@ -17,7 +17,7 @@ class gNCA(NCA):
         super().__init__(N_CHANNELS, KERNEL_STR, ACTIVATION, PADDING, FIRE_RATE, KERNEL_SCALE, key)
         #key1,key2 = jax.random.split(key,2)
         key = jax.random.fold_in(key,1)
-        self.layers[-1] = eqx.nn.Conv2d(in_channels=self.N_WIDTH*self.N_FEATURES, 
+        self.layers[-1] = eqx.nn.Conv2d(in_channels=self.N_FEATURES, 
 						  out_channels=2*self.N_CHANNELS,
 						  kernel_size=1,
 						  use_bias=True,
@@ -27,7 +27,7 @@ class gNCA(NCA):
 
 
         # Initialise final convolution to zero
-        w_zeros = jnp.zeros((2*self.N_CHANNELS,self.N_WIDTH*self.N_FEATURES,1,1))
+        w_zeros = jnp.zeros((2*self.N_CHANNELS,self.N_FEATURES,1,1))
         b_zeros = jnp.zeros((2*self.N_CHANNELS,1,1))
         w_where = lambda l: l.weight
         b_where = lambda l: l.bias
