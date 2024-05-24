@@ -51,9 +51,9 @@ if data_index == 7:
 
 
 
-schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
+schedule = optax.exponential_decay(1e-3, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
-                        optax.adamw(schedule))
+                        optax.nadamw(schedule))
 
 if nca_type_index==0:
     nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
