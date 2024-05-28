@@ -14,6 +14,7 @@ class NCA(AbstractModel):
 	N_FEATURES: int
 	FIRE_RATE: float
 	op: Ops
+	perception: callable
 	def __init__(self,
 			     N_CHANNELS,
 				 KERNEL_STR=["ID","LAP"],
@@ -58,7 +59,7 @@ class NCA(AbstractModel):
 		
 
 		_kernel_length = len(KERNEL_STR)
-		if "DIFF" in KERNEL_STR:
+		if "GRAD" in KERNEL_STR:
 			_kernel_length+=1
 		self.N_FEATURES = N_CHANNELS*_kernel_length*N_WIDTH
 		
@@ -68,6 +69,9 @@ class NCA(AbstractModel):
 			if "ID" in KERNEL_STR:
 				output.append(X)
 			if "DIFF" in KERNEL_STR:
+				gradnorm = self.op.GradNorm(X)
+				output.append(gradnorm)
+			if "GRAD" in KERNEL_STR:
 				grad = self.op.Grad(X)
 				output.append(grad[0])
 				output.append(grad[1])
@@ -77,9 +81,9 @@ class NCA(AbstractModel):
 				output.append(self.op.Lap(X))
 			output = rearrange(output,"b C x y -> (b C) x y")
 			return output
+		self.perception = lambda x:spatial_layer(x)
 		
 		self.layers = [
-			spatial_layer,
 			eqx.nn.Conv2d(in_channels=self.N_FEATURES,
 						  out_channels=self.N_FEATURES,
 						  kernel_size=1,
@@ -127,7 +131,7 @@ class NCA(AbstractModel):
 
 		"""
 		
-		dx = x
+		dx = self.perception(x)
 		for layer in self.layers:
 			dx = layer(dx)
 		sigma = jax.random.bernoulli(key,p=self.FIRE_RATE,shape=dx.shape)
@@ -135,6 +139,19 @@ class NCA(AbstractModel):
 		return boundary_callback(x_new)
 
 	
+	def get_weights(self):
+		"""Returns list of arrays of weights, for plotting purposes
+
+		Returns:
+			weights : list of arrays of trainable parameters 
+		"""
+		
+		
+		diff_self,_ = self.partition()
+		ws = jax.tree.leaves(diff_self)
+		return list(map(jnp.squeeze,ws))
+		
+
 	def partition(self):
 		"""
 		Behaves like eqx.partition, but moves the hard coded kernels (a jax array) from the "trainable" pytree to the "static" pytree

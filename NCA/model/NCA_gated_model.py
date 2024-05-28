@@ -13,6 +13,7 @@ class gNCA(NCA):
     N_FEATURES: int
     FIRE_RATE: float
     op: Ops
+    perception: callable
     def __init__(self, N_CHANNELS, KERNEL_STR=["ID","LAP"], ACTIVATION=jax.nn.relu, PADDING="CIRCULAR", FIRE_RATE=1.0, KERNEL_SCALE = 1, key=jax.random.PRNGKey(int(time.time()))):
         super().__init__(N_CHANNELS, KERNEL_STR, ACTIVATION, PADDING, FIRE_RATE, KERNEL_SCALE, key)
         #key1,key2 = jax.random.split(key,2)
