@@ -59,44 +59,60 @@ if data_index == 7:
 
 
 
-schedule = optax.exponential_decay(2e-3, transition_steps=iters, decay_rate=0.99)
-optimiser = optax.chain(optax.scale_by_param_block_norm(),
-                        optax.nadamw(schedule))
+
 
 if nca_type_index==0:
+    schedule = optax.exponential_decay(2e-3, transition_steps=iters, decay_rate=0.99)
+    optimiser = optax.chain(optax.scale_by_param_block_norm(),
+                            optax.nadamw(schedule))
+    
     nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
                       model_filename="demo_2_emoji_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
+        
+    opt.train(t,
+            iters,
+            WARMUP=10,
+            optimiser=optimiser,
+            LOSS_FUNC_STR="euclidean")
 elif nca_type_index==1:
+    schedule = optax.exponential_decay(2e-3, transition_steps=iters, decay_rate=0.99)
+    optimiser = optax.chain(optax.scale_by_param_block_norm(),
+                            optax.nadamw(schedule))
     nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
                       model_filename="demo_2_emoji_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
+        
+    opt.train(t,
+            iters,
+            WARMUP=10,
+            optimiser=optimiser,
+            LOSS_FUNC_STR="euclidean")
 
 elif nca_type_index==2:
+    schedule = optax.exponential_decay(2e-3, transition_steps=iters//10, decay_rate=0.99)
+    optimiser = optax.chain(optax.scale_by_param_block_norm(),
+                            optax.nadamw(schedule))
     nca = kaNCA(6,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
                       model_filename="demo_2_emoji_ka_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
-    
-print(jax.devices())
-ws = nca.get_weights()
-for w in ws:
-    print(w.shape)
+        
+    opt.train(t,
+            iters//10,
+            WARMUP=10,
+            optimiser=optimiser,
+            LOSS_FUNC_STR="euclidean")
 
-print(nca.op.grad_x.weight)
+    
+
 
 				  	    
-
-opt.train(t,
-          iters,
-          WARMUP=10,
-          optimiser=optimiser,
-          LOSS_FUNC_STR="euclidean")
