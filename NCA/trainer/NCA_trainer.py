@@ -222,7 +222,7 @@ class NCA_Trainer(object):
 			self._loss_func = lambda x,y,dummy_key:loss.random_sampled_euclidean(x,y,key=key)
 
 
-		@partial(eqx.filter_jit,donate="all")
+		@partial(eqx.filter_jit,donate="all-except-first")
 		def make_step(nca,x,y,t,opt_state,key):
 			"""
 			

@@ -21,7 +21,7 @@ data_index,nca_type_index = index_to_data_nca_type(index)
 CHANNELS=32
 DOWNSAMPLE = 1
 t=64
-iters=8000
+iters=80
 
 class data_augmenter_subclass(DataAugmenter):
     #Redefine how data is pre-processed before training
@@ -69,7 +69,7 @@ if nca_type_index==0:
     nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_2_emoji_nca_"+data_filename,
+                      model_filename="demo_test_2_emoji_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
         
