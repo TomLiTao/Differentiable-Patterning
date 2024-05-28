@@ -90,8 +90,8 @@ class funcKAN(eqx.Module):
     def __call__(self,x:Float[Array,"{self.in_features}"],key=None)->Float[Array, "{self.out_features}"]:
         h1 = repeat(x,"I -> I O",O=self.out_features)
         
-        in_func = eqx.filter_jit(lambda x,coeffs:self.inner_func(x,coeffs))
-        vfunc = jax.vmap(in_func,in_axes=(0,0),out_axes=0)
+        #in_func = eqx.filter_jit(lambda x,coeffs:self.inner_func(x,coeffs))
+        vfunc = jax.vmap(self.inner_func,in_axes=(0,0),out_axes=0)
         vvfunc = jax.vmap(vfunc,in_axes=(0,0),out_axes=0)
 
         h2 = vvfunc(h1,self.weight)
