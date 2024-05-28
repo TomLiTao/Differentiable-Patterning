@@ -63,7 +63,7 @@ class NCA(AbstractModel):
 			_kernel_length+=1
 		self.N_FEATURES = N_CHANNELS*_kernel_length*N_WIDTH
 		
-		@eqx.filter_jit
+		#@eqx.filter_jit
 		def spatial_layer(X: Float[Array,"{self.N_CHANNELS} x y"])-> Float[Array, "H x y"]:
 			output = []
 			if "ID" in KERNEL_STR:
