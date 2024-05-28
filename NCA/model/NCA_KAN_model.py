@@ -23,8 +23,8 @@ class kaNCA(NCA):
         scale = 4 # Initialised scale, 0 on second layer
         key1,key2 = jax.random.split(key,2)
         self.layers = [
-            eqx.filter_pmap(
-                eqx.filter_pmap(
+            eqx.filter_vmap(
+                eqx.filter_vmap(
                     gaussKAN(in_features=self.N_FEATURES,
                             out_features=self.N_FEATURES,
                             ORDER=ORDER,
@@ -36,8 +36,8 @@ class kaNCA(NCA):
                     out_axes=1),
                 in_axes=1,
                 out_axes=1),
-            eqx.filter_pmap(
-                eqx.filter_pmap(
+            eqx.filter_vmap(
+                eqx.filter_vmap(
                     gaussKAN(in_features=self.N_FEATURES,
                             out_features=self.N_CHANNELS,
                             ORDER=ORDER,
