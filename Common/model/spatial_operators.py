@@ -202,6 +202,16 @@ class Ops(eqx.Module):
         #gx = reduce(gx,"C () x y -> C x y", "min")
         #gy = reduce(gy,"C () x y -> C x y", "min")
         return rearrange([gx,gy],"dim k x y -> dim k x y")
+    
+    @eqx.filter_jit
+    def GradNorm(self,X: Float[Array,"C x y"])->Float[Array, "C x y"]:
+        v_grad_x = jax.vmap(self.grad_x,in_axes=0,out_axes=0,axis_name="CHANNELS")
+        v_grad_y = jax.vmap(self.grad_y,in_axes=0,out_axes=0,axis_name="CHANNELS")
+        X = rearrange(X,"C x y -> C () x y")
+        gx = v_grad_x(X)[:,0]
+        gy = v_grad_y(X)[:,0]
+        return jnp.sqrt(gx**2+gy**2)
+    
     @eqx.filter_jit
     def Div(self,X: Float[Array,"dim C x y"])->Float[Array, "C x y"]:
         v_grad_x = jax.vmap(self.grad_x,in_axes=0,out_axes=0,axis_name="CHANNELS")
