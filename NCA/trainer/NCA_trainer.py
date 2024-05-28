@@ -4,11 +4,13 @@ import optax
 import equinox as eqx
 import datetime
 import Common.trainer.loss as loss
-from NCA.trainer.tensorboard_log import NCA_Train_log
+from NCA.trainer.tensorboard_log import NCA_Train_log, kaNCA_Train_log
+from NCA.model.NCA_KAN_model import kaNCA
 from NCA.trainer.data_augmenter_nca import DataAugmenter
 from Common.utils import key_pytree_gen
 from NCA.model.boundary import NCA_boundary
 from tqdm import tqdm
+from jaxtyping import Float,Array,Key
 import time
 
 class NCA_Trainer(object):
@@ -23,6 +25,7 @@ class NCA_Trainer(object):
 				 DATA_AUGMENTER = DataAugmenter,
 				 BOUNDARY_MASK = None, 
 				 SHARDING = None, 
+				 GRAD_LOSS = True,
 				 directory="models/"):
 		"""
 		
@@ -63,7 +66,7 @@ class NCA_Trainer(object):
 		self.CHANNELS = self.NCA_model.N_CHANNELS
 		self.OBS_CHANNELS = data[0].shape[1]
 		self.SHARDING = SHARDING
-		
+		self.GRAD_LOSS = GRAD_LOSS
 		
 		# Set up data and data augmenter class
 		self.DATA_AUGMENTER = DATA_AUGMENTER(data,self.CHANNELS-self.OBS_CHANNELS)
@@ -91,14 +94,21 @@ class NCA_Trainer(object):
 			self.model_filename = model_filename
 			self.IS_LOGGING = True
 			self.LOG_DIR = "logs/"+self.model_filename+"/train"
-			self.LOGGER = NCA_Train_log(self.LOG_DIR, data)
+			if isinstance(self.NCA_model ,kaNCA):
+				self.LOGGER = kaNCA_Train_log(self.LOG_DIR,data)
+			else:
+				self.LOGGER = NCA_Train_log(self.LOG_DIR, data)
 			print("Logging training to: "+self.LOG_DIR)
 		self.directory = directory
 		self.MODEL_PATH = directory+self.model_filename
 		print("Saving model to: "+self.MODEL_PATH)
 		
 	@eqx.filter_jit	
-	def loss_func(self,x,y,key,SAMPLES):
+	def loss_func(self,
+			   	  x:Float[Array, "N CHANNELS x y"],
+				  y:Float[Array, "N CHANNELS x y"],
+				  key: Key,
+				  SAMPLES)->Float[Array, "N"]:
 		"""
 		NOTE: VMAP THIS OVER BATCHES TO HANDLE DIFFERENT SIZES OF GRID IN EACH BATCH
 
@@ -117,6 +127,12 @@ class NCA_Trainer(object):
 		"""
 		x_obs = x[:,:self.OBS_CHANNELS]
 		y_obs = y[:,:self.OBS_CHANNELS]
+		if self.GRAD_LOSS:
+			v_perception = jax.vmap(self.NCA_model.perception,in_axes=0,out_axes=0)
+			x_obs = v_perception(x_obs)
+			y_obs = v_perception(y_obs)
+			x_obs = x_obs.at[:,self.OBS_CHANNELS:].set(0.1*x_obs[:,self.OBS_CHANNELS:])
+			y_obs = y_obs.at[:,self.OBS_CHANNELS:].set(0.1*y_obs[:,self.OBS_CHANNELS:])
 		return self._loss_func(x_obs,y_obs,key)
 		#return loss.vgg(x_obs,y_obs,key)
 		#return loss.l2(x_obs,y_obs)
