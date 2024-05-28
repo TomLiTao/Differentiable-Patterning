@@ -1,3 +1,4 @@
+import jax
 import os
 os.environ['XLA_FLAGS'] = (
     '--xla_gpu_triton_gemm_any=True '
@@ -85,6 +86,7 @@ elif nca_type_index==2:
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
     
+print(jax.devices())
 ws = nca.get_weights()
 for w in ws:
     print(w.shape)

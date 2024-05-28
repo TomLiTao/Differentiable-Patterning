@@ -4,6 +4,7 @@ import optax
 import equinox as eqx
 import datetime
 import Common.trainer.loss as loss
+from functools import partial
 from NCA.trainer.tensorboard_log import NCA_Train_log, kaNCA_Train_log
 from NCA.model.NCA_KAN_model import kaNCA
 from NCA.trainer.data_augmenter_nca import DataAugmenter
@@ -221,7 +222,7 @@ class NCA_Trainer(object):
 			self._loss_func = lambda x,y,dummy_key:loss.random_sampled_euclidean(x,y,key=key)
 
 
-		@eqx.filter_jit
+		@partial(eqx.filter_jit,donate="all")
 		def make_step(nca,x,y,t,opt_state,key):
 			"""
 			
@@ -286,7 +287,8 @@ class NCA_Trainer(object):
 			loss_x,grads = compute_loss(nca_diff,nca_static,x,y,t,key)
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, nca_diff)
 			nca = eqx.apply_updates(nca,updates)
-			return nca,opt_state,loss_x
+			(mean_loss,(x,losses)) = loss_x
+			return nca,x,y,t,opt_state,key,mean_loss,losses
 		
 		nca = self.NCA_model
 		nca_diff,nca_static = nca.partition()
@@ -312,8 +314,8 @@ class NCA_Trainer(object):
 		error_at = 0
 		for i in tqdm(range(iters)):
 			key = jax.random.fold_in(key,i)
-			nca,opt_state,(mean_loss,(x,losses)) = make_step(nca, x, y, t, opt_state,key)
-			
+			#nca,opt_state,(mean_loss,(x,losses)) = make_step(nca, x, y, t, opt_state,key)
+			nca,x,y,t,opt_state,key,mean_loss,losses = make_step(nca, x, y, t, opt_state,key)
 			if self.IS_LOGGING:
 				self.LOGGER.tb_training_loop_log_sequence(losses, x, i, nca,write_images=WRITE_IMAGES,LOG_EVERY=LOG_EVERY)
 			
