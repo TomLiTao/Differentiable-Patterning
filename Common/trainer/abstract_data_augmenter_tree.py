@@ -12,7 +12,7 @@ class DataAugmenterAbstract(object):
 	
 	def __init__(self,
 			  	 data_true:PyTree[Float[Array, "N C W H"]],
-				 hidden_channels:Scalar[Int, ""] =0):
+				 hidden_channels:Int[Scalar, ""] =0):
 		"""
 		Class for handling data augmentation for NCA training. 
 		data_init is called before training,
@@ -62,7 +62,7 @@ class DataAugmenterAbstract(object):
 	def data_callback(self,
 				   	  x:PyTree[Float[Array, "N C W H"]],
 					  y:PyTree[Float[Array, "N C W H"]],
-					  i:Scalar[Int, ""]):
+					  i:Int[Scalar, ""]):
 		"""
 		Called after every training iteration to perform data augmentation and processing		
 
@@ -91,7 +91,7 @@ class DataAugmenterAbstract(object):
 	def random_N_select(self,
 					 	x:PyTree[Float[Array, "N C W H"]],
 						y:PyTree[Float[Array, "N C W H"]],
-						n:Scalar[Int, ""],
+						n:Int[Scalar, ""],
 						key:Key =jr.PRNGKey(int(time.time()))):
 		"""
 		Randomly sample n pairs of states from x and y
@@ -119,7 +119,7 @@ class DataAugmenterAbstract(object):
 		y_sampled = jtu.tree_map(lambda data:data[ns],y)
 		return x_sampled,y_sampled
 
-	def split_x_y(self,N_steps:Scalar[Int, ""]=1):
+	def split_x_y(self,N_steps:Int[Scalar, ""]=1):
 		"""
 		Splits data into x (initial conditions) and y (final states). 
 		Offset by N_steps in N, so x[:,N]->y[:,N+N_steps] is learned
@@ -142,7 +142,7 @@ class DataAugmenterAbstract(object):
 		return x,y
 	
 	@eqx.filter_jit
-	def pad(self,data:PyTree[Float[Array, "N C W H"]],am:Scalar[Int, ""]):
+	def pad(self,data:PyTree[Float[Array, "N C W H"]],am:Int[Scalar, ""]):
 		"""
 		
 		Pads spatial dimensions with zeros
@@ -166,7 +166,7 @@ class DataAugmenterAbstract(object):
 	@eqx.filter_jit
 	def shift(self,
 		      data:PyTree[Float[Array, "N C W H"]],
-			  am:Scalar[Int, ""],
+			  am:Int[Scalar, ""],
 			  key:Key=jr.PRNGKey(int(time.time()))):
 		"""
 		Randomly shifts each trajectory. 
@@ -195,7 +195,7 @@ class DataAugmenterAbstract(object):
 	@eqx.filter_jit
 	def unshift(self,
 			 	data:PyTree[Float[Array, "N C W H"]],
-				am:Scalar[Int, ""],
+				am:Int[Scalar, ""],
 				key:Key):
 		"""
 		Randomly shifts each trajectory. If useing same key as shift(), it undoes that shift
@@ -224,7 +224,7 @@ class DataAugmenterAbstract(object):
 	
 	def noise(self,
 		   	  data:PyTree[Float[Array, "N C W H"]],
-			  am:Scalar[Int, ""],
+			  am:Int[Scalar, ""],
 			  full=True,
 			  key:Key=jr.PRNGKey(int(time.time()))):
 		"""
@@ -305,7 +305,7 @@ class DataAugmenterAbstract(object):
 
 
 	@eqx.filter_jit
-	def duplicate_batches(self,data:PyTree[Float[Array, "N C W H"]],B:Scalar[Int, ""]):
+	def duplicate_batches(self,data:PyTree[Float[Array, "N C W H"]],B:Int[Scalar, ""]):
 		"""
 		Repeats data along batches axis by B
 
