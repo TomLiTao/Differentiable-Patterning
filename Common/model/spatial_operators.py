@@ -99,13 +99,33 @@ class Ops(eqx.Module):
             return gb / jnp.sum(jnp.abs(gb))
 
 
-        def gradx(scale,wavelength,nstds):
+        def gradx(scale,nstds):
             # Gabor filter with large wavelength, x direction
-            return gabor(0.5*scale,jnp.pi/2,wavelength,0,1,nstds)
+            
+            sigma = scale*0.5
 
-        def grady(scale,wavelength,nstds):
-            # Gabor filter with large wavelength, y direction
-            return gabor(0.5*scale,0,wavelength,0,1,nstds)
+            # Bounding box
+            # Number of standard deviation sigma
+            xmax = nstds * sigma
+            #max(
+            #    abs( )
+            #)
+            xmax = jnp.ceil(max(1, xmax))
+            ymax = nstds * sigma
+            #max(
+            #    abs(nstds * sigma_x * np.sin(theta)), abs( * np.cos(theta))
+            #)
+            ymax = jnp.ceil(max(1, ymax))
+            xmin = -xmax
+            ymin = -ymax
+            (y, x) = jnp.meshgrid(jnp.arange(ymin, ymax + 1), jnp.arange(xmin, xmax + 1))
+
+
+            gb = -(x/sigma**2)*jnp.exp(
+                -0.5 * (x**2 / sigma**2 + y**2 / sigma**2)
+            )
+            return gb / jnp.sum(jnp.abs(gb))
+
         def gaussian(sigma,nstds):
             # Gaussian
             sigma_x = sigma*0.5
@@ -164,22 +184,10 @@ class Ops(eqx.Module):
         
 
 
-
-
-
-
-
-
-
-
-
-        #_lap = jnp.array([[0.25,0.5,0.25],[0.5,-3,0.5],[0.25,0.5,0.25]]) / (6.0*dx*dx)
-        #_grad_x = jnp.outer(jnp.array([1.0,2.0,1.0]),jnp.array([-1.0,0.0,1.0])) /(8.0*dx)
-        #_grad_y = _grad_x.T
         
         _lap = laplacian(KERNEL_SCALE,nstds=nstds) / (dx*dx)
-        _grad_x = gradx(KERNEL_SCALE,wavelength=KERNEL_SCALE*10000,nstds=nstds) / dx
-        _grad_y = grady(KERNEL_SCALE,wavelength=KERNEL_SCALE*10000,nstds=nstds) / dx
+        _grad_x = gradx(KERNEL_SCALE,nstds=nstds) / dx
+        _grad_y = _grad_x.T
         _av = gaussian(KERNEL_SCALE,nstds=nstds)
         
         kernel_dx = rearrange(_grad_x,"x y -> () () x y")
