@@ -284,7 +284,7 @@ class DataAugmenterAbstract(object):
 			
 			# Create the mask for the circle
 			mask = (X - center_x)**2 + (Y - center_y)**2 <= radius**2
-			image = image.at[mask].set(0)
+			image = image.at[:,:,mask].set(0)
 
 			return image
 
