@@ -1,13 +1,18 @@
 import jax.numpy as jnp
+import jax.random as jr
+import jax.tree_util as jtu
 import jax
 import time
 import equinox as eqx
 from jax.experimental import mesh_utils
 from Common.utils import key_pytree_gen
+from jaxtyping import Array, Float, PyTree, Scalar, Int, Key
 import itertools
 class DataAugmenterAbstract(object):
 	
-	def __init__(self,data_true,hidden_channels=0):
+	def __init__(self,
+			  	 data_true:PyTree[Float[Array, "N C W H"]],
+				 hidden_channels:Scalar[Int, ""] =0):
 		"""
 		Class for handling data augmentation for NCA training. 
 		data_init is called before training,
@@ -33,7 +38,7 @@ class DataAugmenterAbstract(object):
 				data_tree.append(data_true[i])
 		except:
 			data_tree = data_true
-		data_true = jax.tree_util.tree_map(lambda x: jnp.pad(x,((0,0),(0,hidden_channels),(0,0),(0,0))),data_tree) # Pad zeros onto hidden channels
+		data_true = jtu.tree_map(lambda x: jnp.pad(x,((0,0),(0,hidden_channels),(0,0),(0,0))),data_tree) # Pad zeros onto hidden channels
 
 
 		self.data_true = data_true
@@ -54,7 +59,10 @@ class DataAugmenterAbstract(object):
 		x0,y0 = self.data_callback(x0,y0,0)
 		return x0,y0
 	
-	def data_callback(self,x,y,i):
+	def data_callback(self,
+				   	  x:PyTree[Float[Array, "N C W H"]],
+					  y:PyTree[Float[Array, "N C W H"]],
+					  i:Scalar[Int, ""]):
 		"""
 		Called after every training iteration to perform data augmentation and processing		
 
@@ -80,7 +88,11 @@ class DataAugmenterAbstract(object):
 		return x,y
 		
 	@eqx.filter_jit
-	def random_N_select(self,x,y,n,key=jax.random.PRNGKey(int(time.time()))):
+	def random_N_select(self,
+					 	x:PyTree[Float[Array, "N C W H"]],
+						y:PyTree[Float[Array, "N C W H"]],
+						n:Scalar[Int, ""],
+						key:Key =jr.PRNGKey(int(time.time()))):
 		"""
 		Randomly sample n pairs of states from x and y
 
@@ -102,12 +114,12 @@ class DataAugmenterAbstract(object):
 
 		"""
 		#print(x)
-		ns = jax.random.choice(key,jnp.arange(x[0].shape[0]),shape=(n,),replace=False)
-		x_sampled = jax.tree_util.tree_map(lambda data:data[ns],x)
-		y_sampled = jax.tree_util.tree_map(lambda data:data[ns],y)
+		ns = jr.choice(key,jnp.arange(x[0].shape[0]),shape=(n,),replace=False)
+		x_sampled = jtu.tree_map(lambda data:data[ns],x)
+		y_sampled = jtu.tree_map(lambda data:data[ns],y)
 		return x_sampled,y_sampled
 
-	def split_x_y(self,N_steps=1):
+	def split_x_y(self,N_steps:Scalar[Int, ""]=1):
 		"""
 		Splits data into x (initial conditions) and y (final states). 
 		Offset by N_steps in N, so x[:,N]->y[:,N+N_steps] is learned
@@ -125,12 +137,12 @@ class DataAugmenterAbstract(object):
 			Final states
 
 		"""
-		x = jax.tree_util.tree_map(lambda data:data[:-N_steps],self.data_saved)
-		y = jax.tree_util.tree_map(lambda data:data[N_steps:],self.data_saved)
+		x = jtu.tree_map(lambda data:data[:-N_steps],self.data_saved)
+		y = jtu.tree_map(lambda data:data[N_steps:],self.data_saved)
 		return x,y
 	
 	@eqx.filter_jit
-	def pad(self,data,am):
+	def pad(self,data:PyTree[Float[Array, "N C W H"]],am:Scalar[Int, ""]):
 		"""
 		
 		Pads spatial dimensions with zeros
@@ -148,11 +160,14 @@ class DataAugmenterAbstract(object):
 			data padded with zeros
 
 		"""
-		return jax.tree_util.tree_map(lambda x,am:jnp.pad(x,((0,0),(0,0),(am,am),(am,am))),data,[am]*len(data))
+		return jtu.tree_map(lambda x,am:jnp.pad(x,((0,0),(0,0),(am,am),(am,am))),data,[am]*len(data))
 
 	
 	@eqx.filter_jit
-	def shift(self,data,am,key=jax.random.PRNGKey(int(time.time()))):
+	def shift(self,
+		      data:PyTree[Float[Array, "N C W H"]],
+			  am:Scalar[Int, ""],
+			  key:Key=jr.PRNGKey(int(time.time()))):
 		"""
 		Randomly shifts each trajectory. 
 
@@ -172,13 +187,16 @@ class DataAugmenterAbstract(object):
 
 		"""
 
-		shifts = jax.random.randint(key,minval=-am,maxval=am,shape=(len(data),2))
+		shifts = jr.randint(key,minval=-am,maxval=am,shape=(len(data),2))
 		for b in range(len(data)):
 			data[b] = jnp.roll(data[b],shifts[b],axis=(-1,-2))
 		return data
 
 	@eqx.filter_jit
-	def unshift(self,data,am,key):
+	def unshift(self,
+			 	data:PyTree[Float[Array, "N C W H"]],
+				am:Scalar[Int, ""],
+				key:Key):
 		"""
 		Randomly shifts each trajectory. If useing same key as shift(), it undoes that shift
 
@@ -198,13 +216,17 @@ class DataAugmenterAbstract(object):
 
 		"""
 
-		shifts = jax.random.randint(key,minval=-am,maxval=am,shape=(len(data),2))
+		shifts = jr.randint(key,minval=-am,maxval=am,shape=(len(data),2))
 		for b in range(len(data)):
 			data[b] = jnp.roll(data[b],-shifts[b],axis=(-1,-2))
 		return data
 
 	
-	def noise(self,data,am,full=True,key=jax.random.PRNGKey(int(time.time()))):
+	def noise(self,
+		   	  data:PyTree[Float[Array, "N C W H"]],
+			  am:Scalar[Int, ""],
+			  full=True,
+			  key:Key=jr.PRNGKey(int(time.time()))):
 		"""
 		Adds uniform noise to the data
 		
@@ -227,14 +249,63 @@ class DataAugmenterAbstract(object):
 		key_array = key_pytree_gen(key, [len(data)])
 		#print(data[0].shape)
 		#noisy = am*jax.random.uniform(key,shape=data.shape) + (1-am)*data
-		noisy = jax.tree_util.tree_map(lambda x,key:am*jax.random.uniform(key,shape=x.shape) + (1-am)*x,data,key_array)
+		noisy = jtu.tree_map(lambda x,key:am*jr.uniform(key,shape=x.shape) + (1-am)*x,data,key_array)
 		
 		if not full:
-			noisy = jax.tree_util.tree_map(lambda x,y:x.at[:,self.OBS_CHANNELS:].set(y[:,self.OBS_CHANNELS:]),noisy,data)
+			noisy = jtu.tree_map(lambda x,y:x.at[:,self.OBS_CHANNELS:].set(y[:,self.OBS_CHANNELS:]),noisy,data)
 		return noisy
+	
+
+
+	def zero_random_circle(self,
+						   data:PyTree[Float[Array, "N C W H"]],
+						   key:Key):
+		"""Sets random (iid across batches) circles of X to zero, so NCA can learn
+		regenerative behaviour better
+
+		Args:
+			data (PyTree[Float[Array, N C W H]]): data to augment
+			key (Key): PRNGkey
+		"""
 		
+		def _zero_random_circle(image, key):
+			# Get image dimensions
+			height = image.shape[-1]
+			width = image.shape[-2]
+
+			# Generate random numbers for circle parameters
+			key, subkey1, subkey2, subkey3 = jr.split(key, 4)
+			center_x = jr.randint(subkey1, (), 0, width)
+			center_y = jr.randint(subkey2, (), 0, height)
+			max_radius = min(center_x, width - center_x, center_y, height - center_y)
+			radius = jr.randint(subkey3, (), 5, max_radius + 1)
+
+			Y, X = jnp.ogrid[:height, :width]
+			
+			# Create the mask for the circle
+			mask = (X - center_x)**2 + (Y - center_y)**2 <= radius**2
+			image = image.at[mask].set(0)
+
+			return image
+
+
+		# Get the leaves (individual images) and the structure of the PyTree
+		leaves, treedef = jtu.tree_flatten(data)
+		
+		keys = jr.split(key, len(leaves))
+		modified_leaves = [_zero_random_circle(leaf, k) for leaf, k in zip(leaves, keys)]
+
+		# Reconstruct the PyTree with the modified leaves
+		return jtu.tree_unflatten(treedef, modified_leaves)
+		
+
+		
+		
+
+
+
 	@eqx.filter_jit
-	def duplicate_batches(self,data,B):
+	def duplicate_batches(self,data:PyTree[Float[Array, "N C W H"]],B:Scalar[Int, ""]):
 		"""
 		Repeats data along batches axis by B
 
@@ -257,7 +328,7 @@ class DataAugmenterAbstract(object):
 
 		return jax.tree_util.tree_flatten(array_repeated)[0]
 	
-	def save_data(self,data):
+	def save_data(self,data:PyTree[Float[Array, "N C W H"]]):
 		self.data_saved = data
 
 	def return_saved_data(self):		
