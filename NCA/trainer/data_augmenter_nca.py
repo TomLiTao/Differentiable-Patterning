@@ -114,7 +114,9 @@ class DataAugmenter(DataAugmenterAbstract):
 		y = self.shift(y,am,key=key)
 		#print(x[0].shape)
 		#print(len(x))
+		x = self.zero_random_circle(x,key=key)
 		x = self.noise(x,0.005,key=key)
+
 		#y = self.noise(y,0.01,key=jax.random.fold_in(key,2*i))
 		self.PREVIOUS_KEY = key
 		return x,y
