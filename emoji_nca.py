@@ -66,10 +66,10 @@ if nca_type_index==0:
     optimiser = optax.chain(optax.scale_by_param_block_norm(),
                             optax.nadam(schedule))
     
-    nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
+    nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_nca_"+data_filename,
+                      model_filename="demo_stable_anisotropic_emoji_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
         
@@ -82,10 +82,10 @@ elif nca_type_index==1:
     schedule = optax.exponential_decay(1e-3, transition_steps=iters, decay_rate=0.99)
     optimiser = optax.chain(optax.scale_by_param_block_norm(),
                             optax.nadam(schedule))
-    nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
+    nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_gated_nca_"+data_filename,
+                      model_filename="demo_stable_anisotropic_emoji_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
         
