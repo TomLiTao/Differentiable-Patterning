@@ -10,10 +10,12 @@ from NCA.model.boundary import NCA_boundary
 from PDE.trainer.tensorboard_log import PDE_Train_log
 from PDE.trainer.optimiser import non_negative_diffusion_chemotaxis
 from PDE.model.solver.semidiscrete_solver import PDE_solver
+from functools import partial
+from Common.model.spatial_operators import Ops
 from jaxtyping import Float, Array, Int, Scalar, Key
 import diffrax
 from tqdm import tqdm
-from einops import repeat
+from einops import repeat,rearrange
 class PDE_Trainer(object):
 	
 	
@@ -22,7 +24,8 @@ class PDE_Trainer(object):
 				 data: Float[Array, "Batches T C W H"],
 				 model_filename=None,
 				 DATA_AUGMENTER = DataAugmenter,
-				 BOUNDARY_MASK = None, 
+				 BOUNDARY_MASK = None,
+				 GRAD_LOSS = True,
 				 SHARDING = None, 
 				 directory="models/"):
 		"""
@@ -67,7 +70,16 @@ class PDE_Trainer(object):
 		# Set up variables 
 
 		self.OBS_CHANNELS = self.PDE_solver.func.CELL_CHANNELS#data[0].shape[1]
-		
+		self.GRAD_LOSS = GRAD_LOSS
+		op = Ops(PADDING=PDE_solver.func.PADDING,dx=PDE_solver.func.dx)
+		def spatial_loss_gradients(self,X: Float[Array, "T C W H"])->Float[Array, "T s W H"]:
+			def _spatial(X: Float[Array, "C W H"]):
+				_grad = op.Grad(X)
+				_gx = _grad[0]
+				_gy = _grad[1]
+				_lap = op.Lap(X)
+				return rearrange([_gx,_gy,_lap],"b C x y -> (b C) x y")
+			return jax.vmap(_spatial,in_axes=0,out_axes=0)(X)
 		# Set up data and data augmenter class
 		self.DATA_AUGMENTER = DATA_AUGMENTER(data)
 		self.DATA_AUGMENTER.data_init()
@@ -111,9 +123,9 @@ class PDE_Trainer(object):
 	
 		Parameters
 		----------
-		x : float32 array [N,CHANNELS,_,_]
+		x : float32 array [T,CHANNELS,_,_]
 			NCA state
-		y : float32 array [N,OBS_CHANNELS,_,_]
+		y : float32 array [T,OBS_CHANNELS,_,_]
 			data
 		Returns
 		-------
@@ -122,7 +134,12 @@ class PDE_Trainer(object):
 		"""
 		x_obs = x[:,:self.OBS_CHANNELS]
 		y_obs = y[:,:self.OBS_CHANNELS]
-		return loss.euclidean(x_obs,y_obs)
+		L = loss.euclidean(x_obs,y_obs)
+		if self.GRAD_LOSS:
+			x_obs_spatial = self.spatial_loss_gradients(x_obs)
+			y_obs_spatial = self.spatial_loss_gradients(y_obs)
+			L += 0.1*loss.euclidean(x_obs_spatial,y_obs_spatial)
+		return L
 	
 	def train(self,
 		      t,
@@ -163,7 +180,7 @@ class PDE_Trainer(object):
 		"""
 		
 		
-		@eqx.filter_jit
+		@partial(eqx.filter_jit,donate="all-except-first")
 		def make_step(pde,
 					  x: Float[Array,"Batches T C W H"],
 					  y: Float[Array,"Batches T C W H"],
@@ -215,7 +232,8 @@ class PDE_Trainer(object):
 			loss_x,grads = compute_loss(pde_diff, pde_static, x, y, t, key)
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, pde_diff)
 			pde = eqx.apply_updates(pde,updates)
-			return pde,opt_state,loss_x
+			(mean_loss,(x,losses)) = loss_x
+			return pde,x,y,t,opt_state,key,mean_loss,losses
 		
 		
 		# Initialise training
@@ -242,7 +260,8 @@ class PDE_Trainer(object):
 		for i in tqdm(range(iters)):
 			key = jax.random.fold_in(key,i)
 			x,y = self.DATA_AUGMENTER.sub_trajectory_split(L=t,key=key)
-			pde,opt_state,(mean_loss,(x,losses)) = make_step(pde, x, y, t, opt_state,key)
+			#pde,opt_state, = make_step(pde, x, y, t, opt_state,key)
+			pde,x,y,t,opt_state,mean_loss,key,losses = make_step(pde, x, y, t, opt_state,key)
 			#print(losses.shape)
 			if self.IS_LOGGING:
 				full_trajectory = pde(jnp.linspace(0,self.TRAJECTORY_LENGTH,self.TRAJECTORY_LENGTH//t),x0)[1]
