@@ -33,7 +33,7 @@ class data_augmenter_subclass(DataAugmenter):
 
 
 data = load_emoji_sequence(["crab.png","microbe.png","microbe.png"],downsample=DOWNSAMPLE)
-data_filename = "cr_mi_al"
+data_filename = "cr_mi"
 
 nca = kaNCA(CHANNELS,
             KERNEL_STR=["ID","LAP","GRAD"],
