@@ -191,7 +191,7 @@ def index_to_sample(index):
 
 
 def index_to_data_nca_type(index):
-	indices = np.unravel_index(index,(8,2))
+	indices = np.unravel_index(index,(4,4))
 	data_index = indices[0]
 	nca_type_index = indices[1]
 	return data_index,nca_type_index
