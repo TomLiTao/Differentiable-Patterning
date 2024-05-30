@@ -14,7 +14,7 @@ from NCA.trainer.data_augmenter_nca import DataAugmenter as DataAugmenterNCA
 import time
 import sys
 
-key = jax.random.PRNGKey(int(time.time()))
+
 
 
 CHANNELS = 32
@@ -22,6 +22,8 @@ CELL_CHANNELS = 3
 SIGNAL_CHANNELS = CHANNELS-CELL_CHANNELS
 index=int(sys.argv[1])-1
 data_index,nca_type_index = index_to_data_nca_type(index)
+key = jax.random.PRNGKey(int(time.time()))
+key = jax.random.fold_in(key,index)
 # Load saved NCA model and data, then run to generate trajectory to train PDE to
 
 if data_index == 0:
@@ -65,15 +67,9 @@ elif nca_type_index==3:
 #nca = nca.load("models/model_exploration/emoji_16_channels_64_sampling_relu_activation_ID_DIFF_LAP_kernels_v4.eqx")
 
 
-
-
-
 NCA_trajectory = nca.run(128,x0)
 NCA_trajectory = repeat(NCA_trajectory,"T C X Y -> B T C X Y",B=4)
 print(NCA_trajectory.shape)
-
-
-
 
 
 # Define PDE model
@@ -84,7 +80,6 @@ pde = PDE_solver(func,dt=0.1)
 # Define optimiser and lr schedule
 iters = 1000
 schedule = optax.exponential_decay(1e-4, transition_steps=iters, decay_rate=0.99)
-#self.OPTIMISER = optax.adam(schedule)
 opt = non_negative_diffusion_chemotaxis(schedule)
 
 
