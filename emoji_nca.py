@@ -17,7 +17,8 @@ import sys
 
 index=int(sys.argv[1])-1
 data_index,nca_type_index = index_to_data_nca_type(index)
-
+print(data_index)
+print(nca_type_index)
 CHANNELS=32
 DOWNSAMPLE = 1
 t=64
@@ -57,14 +58,15 @@ if data_index == 3:
 #     data = load_emoji_sequence(["lizard_1f98e.png","microbe.png","anatomical_heart.png","anatomical_heart.png"],downsample=DOWNSAMPLE)
 #     data_filename = "li_mi_an"
 
-print(data_filename)
-print(nca_type_index)
+# print(data_filename)
+# print(nca_type_index)
 
 schedule = optax.exponential_decay(1e-3, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
                         optax.nadam(schedule))
 
 if nca_type_index==0:
+    print("Training anisotropic nca")
     nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
@@ -78,7 +80,8 @@ if nca_type_index==0:
         optimiser=optimiser,
         LOSS_FUNC_STR="euclidean")
 
-elif nca_type_index==1: 
+if nca_type_index==1: 
+    print("Training anisotropic gated nca")
     nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
@@ -93,7 +96,8 @@ elif nca_type_index==1:
             LOSS_FUNC_STR="euclidean")
 
 
-elif nca_type_index==2:
+if nca_type_index==2:
+    print("Training isotropic nca")
     nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
@@ -107,7 +111,8 @@ elif nca_type_index==2:
             optimiser=optimiser,
             LOSS_FUNC_STR="euclidean")
 
-elif nca_type_index==3: 
+if nca_type_index==3: 
+    print("Training isotropic gated nca")
     nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
                       data,
