@@ -1,8 +1,8 @@
 import jax
-import os
-os.environ['XLA_FLAGS'] = (
-    '--xla_gpu_triton_gemm_any=True '
-)
+# import os
+# os.environ['XLA_FLAGS'] = (
+#     '--xla_gpu_triton_gemm_any=True '
+# )
 
 from NCA.model.NCA_model import NCA
 from NCA.model.NCA_gated_model import gNCA
@@ -57,7 +57,8 @@ if data_index == 3:
 #     data = load_emoji_sequence(["lizard_1f98e.png","microbe.png","anatomical_heart.png","anatomical_heart.png"],downsample=DOWNSAMPLE)
 #     data_filename = "li_mi_an"
 
-
+print(data_filename)
+print(nca_type_index)
 
 schedule = optax.exponential_decay(1e-3, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
@@ -71,6 +72,12 @@ if nca_type_index==0:
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
 
+    opt.train(t,
+        iters,
+        WARMUP=10,
+        optimiser=optimiser,
+        LOSS_FUNC_STR="euclidean")
+
 elif nca_type_index==1: 
     nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
     opt = NCA_Trainer(nca,
@@ -78,7 +85,13 @@ elif nca_type_index==1:
                       model_filename="demo_stable_emoji_anisotropic_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
-        
+                    
+    opt.train(t,
+            iters,
+            WARMUP=10,
+            optimiser=optimiser,
+            LOSS_FUNC_STR="euclidean")
+
 
 elif nca_type_index==2:
     nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
@@ -87,6 +100,12 @@ elif nca_type_index==2:
                       model_filename="demo_stable_emoji_isotropic_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
+                
+    opt.train(t,
+            iters,
+            WARMUP=10,
+            optimiser=optimiser,
+            LOSS_FUNC_STR="euclidean")
 
 elif nca_type_index==3: 
     nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
@@ -95,35 +114,14 @@ elif nca_type_index==3:
                       model_filename="demo_stable_emoji_isotropic_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
-        
-opt.train(t,
-        iters,
-        WARMUP=10,
-        optimiser=optimiser,
-        LOSS_FUNC_STR="euclidean")
+            
+    opt.train(t,
+            iters,
+            WARMUP=10,
+            optimiser=optimiser,
+            LOSS_FUNC_STR="euclidean")
 
 
-
-
-
-# elif nca_type_index==2:
-#     schedule = optax.exponential_decay(2e-3, transition_steps=iters//10, decay_rate=0.99)
-#     optimiser = optax.chain(optax.scale_by_param_block_norm(),
-#                             optax.nadamw(schedule))
-#     nca = kaNCA(6,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
-#     opt = NCA_Trainer(nca,
-#                       data,
-#                       model_filename="demo_2_emoji_ka_nca_"+data_filename,
-#                       DATA_AUGMENTER=data_augmenter_subclass,
-#                       GRAD_LOSS=True)
-        
-#     opt.train(t,
-#             iters//10,
-#             WARMUP=10,
-#             optimiser=optimiser,
-#             LOSS_FUNC_STR="euclidean")
-
-    
 
 
 				  	    
