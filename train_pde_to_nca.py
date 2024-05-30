@@ -41,7 +41,7 @@ if data_index == 3:
 
 
 #data = load_emoji_sequence(["alien_monster.png","microbe.png","rooster_1f413.png","rooster_1f413.png"],downsample=2)
-da = DataAugmenterNCA(data,12)
+da = DataAugmenterNCA(data,28)
 da.data_init()
 x0 = np.array(da.split_x_y()[0])[0,0]
 
