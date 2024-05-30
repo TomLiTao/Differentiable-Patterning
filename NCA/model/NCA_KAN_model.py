@@ -14,8 +14,16 @@ class kaNCA(NCA):
     FIRE_RATE: float
     op: Ops
     perception: callable
-    def __init__(self, N_CHANNELS, KERNEL_STR=["ID","LAP"], ACTIVATION=jax.nn.relu, PADDING="CIRCULAR", FIRE_RATE=1.0, KERNEL_SCALE = 1, key=jax.random.PRNGKey(int(time.time()))):
-        super().__init__(N_CHANNELS, KERNEL_STR, ACTIVATION, PADDING, FIRE_RATE, KERNEL_SCALE, key)
+    def __init__(self, 
+                 N_CHANNELS,
+                 KERNEL_STR=["ID","LAP"], 
+                 PADDING="CIRCULAR", 
+                 FIRE_RATE=1.0, 
+                 KERNEL_SCALE = 1,
+                 BASIS_FUNCS=11,
+                 BASIS_WIDTH=4, 
+                 key=jax.random.PRNGKey(int(time.time()))):
+        super().__init__(N_CHANNELS, KERNEL_STR, jax.nn.relu, PADDING, FIRE_RATE, KERNEL_SCALE, key)
         # gaussKAN hyperparameters
         bounds = 3 # The expected range of input parameters.
         ORDER = 11 # How many radial basis functions to use per edge?

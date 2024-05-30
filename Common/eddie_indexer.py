@@ -195,3 +195,11 @@ def index_to_data_nca_type(index):
 	data_index = indices[0]
 	nca_type_index = indices[1]
 	return data_index,nca_type_index
+
+
+
+def index_to_kaNCA_hyperparameters(index):
+	indices = np.unravel_index(index,(8,8))
+	BASIS_RESOLUTION = [2,3,4,5,8,11,16,25][indices[0]]
+	BASIS_WIDTH = [0.1,0.5,1,2,4,8,12,16][indices[1]]
+	return BASIS_RESOLUTION,BASIS_WIDTH
