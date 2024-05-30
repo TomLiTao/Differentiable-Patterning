@@ -5,8 +5,8 @@ import equinox as eqx
 
 def non_negative_diffusion(schedule):
 	#schedule = optax.exponential_decay(1e-3, transition_steps=iters, decay_rate=0.99)
-	opt_ra = optax.adamw(schedule) # Adam with weight decay for reaction and advection
-	opt_d = optax.chain(optax.keep_params_nonnegative(),optax.adam(schedule)) # Non-negative adam on diffusive terms (no weight decay)
+	opt_ra = optax.nadamw(schedule) # Adam with weight decay for reaction and advection
+	opt_d = optax.chain(optax.keep_params_nonnegative(),optax.nadam(schedule)) # Non-negative adam on diffusive terms (no weight decay)
 	
 	def label_diffusive(tree):
 		# Returns True for the diffusion terms that should remain non-negative
@@ -28,10 +28,10 @@ def non_negative_diffusion(schedule):
 	return optax.chain(opt_d,opt_ra)
 
 
-def non_negative_diffusion_chemotaxis(schedule,optimiser=optax.adam):
+def non_negative_diffusion_chemotaxis(schedule,optimiser=optax.nadamw):
 	
 	opt_ra = optimiser(schedule) # Adam with weight decay for reaction and advection
-	opt_d = optax.chain(optax.keep_params_nonnegative(),optax.adam(schedule)) # Non-negative adam on diffusive terms (no weight decay)
+	opt_d = optax.chain(optax.keep_params_nonnegative(),optax.nadam(schedule)) # Non-negative adam on diffusive terms (no weight decay)
 	
 	def label_diffusive(tree):
 		# Returns True for the diffusion terms that should remain non-negative
