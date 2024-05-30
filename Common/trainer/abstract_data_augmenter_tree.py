@@ -278,7 +278,7 @@ class DataAugmenterAbstract(object):
 			center_x = jr.randint(subkey1, (), 0, width)
 			center_y = jr.randint(subkey2, (), 0, height)
 			max_radius = min(center_x, width - center_x, center_y, height - center_y)
-			radius = jr.randint(subkey3, (), 5, max_radius + 1)
+			radius = jr.randint(subkey3, (), 1, (max_radius + 1)/2)
 
 			Y, X = jnp.ogrid[:height, :width]
 			
