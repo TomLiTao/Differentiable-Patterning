@@ -24,6 +24,9 @@ DOWNSAMPLE = 1
 t=64
 iters=8000
 
+key = jax.random.PRNGKey(int(time.time()))
+key = jax.random.fold_in(key,index)
+
 class data_augmenter_subclass(DataAugmenter):
     #Redefine how data is pre-processed before training
     def data_init(self,SHARDING=None):
@@ -67,7 +70,12 @@ optimiser = optax.chain(optax.scale_by_param_block_norm(),
 
 if nca_type_index==0:
     print("Training anisotropic nca")
-    nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
+    nca = NCA(CHANNELS,
+              KERNEL_STR=["ID","LAP","GRAD"],
+              KERNEL_SCALE=1,
+              FIRE_RATE=0.5,
+              PADDING="REPLICATE",
+              key=key)
     opt = NCA_Trainer(nca,
                       data,
                       model_filename="demo_stable_emoji_anisotropic_nca_"+data_filename,
@@ -78,16 +86,23 @@ if nca_type_index==0:
         iters,
         WARMUP=10,
         optimiser=optimiser,
-        LOSS_FUNC_STR="euclidean")
+        LOSS_FUNC_STR="euclidean",
+        key=key)
 
 if nca_type_index==1: 
     print("Training anisotropic gated nca")
-    nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
+    nca = gNCA(CHANNELS,
+               KERNEL_STR=["ID","LAP","GRAD"],
+               KERNEL_SCALE=1,
+               FIRE_RATE=0.5,
+               PADDING="REPLICATE",
+               key=key)
     opt = NCA_Trainer(nca,
                       data,
                       model_filename="demo_stable_emoji_anisotropic_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
-                      GRAD_LOSS=True)
+                      GRAD_LOSS=True,
+                      key=key)
                     
     opt.train(t,
             iters,
@@ -98,7 +113,12 @@ if nca_type_index==1:
 
 if nca_type_index==2:
     print("Training isotropic nca")
-    nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
+    nca = NCA(CHANNELS,
+              KERNEL_STR=["ID","LAP","DIFF"],
+              KERNEL_SCALE=1,
+              FIRE_RATE=0.5,
+              PADDING="REPLICATE",
+              key=key)
     opt = NCA_Trainer(nca,
                       data,
                       model_filename="demo_stable_emoji_isotropic_nca_"+data_filename,
@@ -109,11 +129,17 @@ if nca_type_index==2:
             iters,
             WARMUP=10,
             optimiser=optimiser,
-            LOSS_FUNC_STR="euclidean")
+            LOSS_FUNC_STR="euclidean",
+            key=key)
 
 if nca_type_index==3: 
     print("Training isotropic gated nca")
-    nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,FIRE_RATE=0.5,PADDING="REPLICATE")
+    nca = gNCA(CHANNELS,
+               KERNEL_STR=["ID","LAP","DIFF"],
+               KERNEL_SCALE=1,
+               FIRE_RATE=0.5,
+               PADDING="REPLICATE",
+               key=key)
     opt = NCA_Trainer(nca,
                       data,
                       model_filename="demo_stable_emoji_isotropic_gated_nca_"+data_filename,
@@ -124,7 +150,8 @@ if nca_type_index==3:
             iters,
             WARMUP=10,
             optimiser=optimiser,
-            LOSS_FUNC_STR="euclidean")
+            LOSS_FUNC_STR="euclidean",
+            key=key)
 
 
 
