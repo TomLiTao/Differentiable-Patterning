@@ -100,7 +100,7 @@ class DataAugmenter(DataAugmenterAbstract):
 		x = jax.tree_util.tree_map(propagate_xn,x) # Set initial condition at each X[n] at next iteration to be final state from X[n-1] of this iteration
 		x = jax.tree_util.tree_map(reset_x0,x,x_true) # Keep first initial x correct
 		
-		#if i < 500:		
+				
 		for b in range(len(x)//2):
 			x[b*2] = x[b*2].at[:,:self.OBS_CHANNELS].set(x_true[b*2][:,:self.OBS_CHANNELS]) # Set every other batch of intermediate initial conditions to correct initial conditions
 		
@@ -114,7 +114,8 @@ class DataAugmenter(DataAugmenterAbstract):
 		y = self.shift(y,am,key=key)
 		#print(x[0].shape)
 		#print(len(x))
-		x = self.zero_random_circle(x,key=key)
+		if i < 1000:
+			x = self.zero_random_circle(x,key=key)
 		x = self.noise(x,0.005,key=key)
 
 		#y = self.noise(y,0.01,key=jax.random.fold_in(key,2*i))
