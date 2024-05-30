@@ -85,11 +85,11 @@ def plot_weight_kernel_boxplot(nca):
 	N_KERNELS = nca.N_FEATURES // nca.N_CHANNELS
 	N_CHANNELS = nca.N_CHANNELS
 	K_STR = nca.KERNEL_STR.copy()
-	if "DIFF" in K_STR:
+	if "GRAD" in K_STR:
 		for i in range(len(K_STR)):
-			if K_STR[i]=="DIFF":
-				K_STR[i]="DIFF X"
-				K_STR.insert(i,"DIFF Y")
+			if K_STR[i]=="GRAD":
+				K_STR[i]="GRAD X"
+				K_STR.insert(i,"GRAD Y")
 	
 	#weights_split = []
 	figs = []
