@@ -20,6 +20,7 @@ import sys
 CHANNELS = 32
 CELL_CHANNELS = 3
 SIGNAL_CHANNELS = CHANNELS-CELL_CHANNELS
+DOWNSAMPLE=1
 index=int(sys.argv[1])-1
 data_index,nca_type_index = index_to_data_nca_type(index)
 key = jax.random.PRNGKey(int(time.time()))
