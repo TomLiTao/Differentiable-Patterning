@@ -101,14 +101,14 @@ if nca_type_index==1:
                       data,
                       model_filename="demo_stable_emoji_anisotropic_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
-                      GRAD_LOSS=True,
-                      key=key)
+                      GRAD_LOSS=True)
                     
     opt.train(t,
             iters,
             WARMUP=10,
             optimiser=optimiser,
-            LOSS_FUNC_STR="euclidean")
+            LOSS_FUNC_STR="euclidean",
+            key=key)
 
 
 if nca_type_index==2:
