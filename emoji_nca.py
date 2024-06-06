@@ -20,7 +20,7 @@ data_index,nca_type_index = index_to_data_nca_type(index)
 print(data_index)
 print(nca_type_index)
 CHANNELS=32
-DOWNSAMPLE = 1
+DOWNSAMPLE = 3
 t=64
 iters=8000
 
@@ -78,7 +78,7 @@ if nca_type_index==0:
               key=key)
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_anisotropic_nca_"+data_filename,
+                      model_filename="demo_lowres_stable_emoji_anisotropic_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
 
@@ -99,7 +99,7 @@ if nca_type_index==1:
                key=key)
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_anisotropic_gated_nca_"+data_filename,
+                      model_filename="demo_lowres_stable_emoji_anisotropic_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
                     
@@ -121,7 +121,7 @@ if nca_type_index==2:
               key=key)
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_isotropic_nca_"+data_filename,
+                      model_filename="demo_lowres_stable_emoji_isotropic_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
                 
@@ -142,7 +142,7 @@ if nca_type_index==3:
                key=key)
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_isotropic_gated_nca_"+data_filename,
+                      model_filename="demo_lowres_stable_emoji_isotropic_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
             

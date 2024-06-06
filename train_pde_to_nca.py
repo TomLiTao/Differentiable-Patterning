@@ -50,20 +50,20 @@ x0 = np.array(da.split_x_y()[0])[0,0]
 
 if nca_type_index==0:
     nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,PADDING="REPLICATE")
-    nca = nca.load("models/demo_stable_emoji_anisotropic_nca_"+data_filename+".eqx")
-    nca_type="_pure_"
+    nca = nca.load("models/demo_lowres_stable_emoji_anisotropic_nca_"+data_filename+".eqx")
+    nca_type="_pure_anisotropic_"
 elif nca_type_index==1:
     nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,PADDING="REPLICATE")
-    nca = nca.load("models/demo_stable_emoji_anisotropic_gated_nca_"+data_filename+".eqx")
-    nca_type="_gated_"
+    nca = nca.load("models/demo_lowres_stable_emoji_anisotropic_gated_nca_"+data_filename+".eqx")
+    nca_type="_gated_anisotropic_"
 elif nca_type_index==2:
     nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,PADDING="REPLICATE")
-    nca = nca.load("models/demo_stable_emoji_isotropic_nca_"+data_filename+".eqx")
-    nca_type="_pure_"
+    nca = nca.load("models/demo_lowres_stable_emoji_isotropic_nca_"+data_filename+".eqx")
+    nca_type="_pure_isotropic_"
 elif nca_type_index==3:
     nca = gNCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],KERNEL_SCALE=1,PADDING="REPLICATE")
-    nca = nca.load("models/demo_stable_emoji_isotropic_gated_nca_"+data_filename+".eqx")
-    nca_type="_gated_"
+    nca = nca.load("models/demo_lowres_stable_emoji_isotropic_gated_nca_"+data_filename+".eqx")
+    nca_type="_gated_isotropic_"
 #nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","DIFF"],FIRE_RATE=1.0,PERIODIC=False)
 #nca = nca.load("models/model_exploration/emoji_16_channels_64_sampling_relu_activation_ID_DIFF_LAP_kernels_v4.eqx")
 
