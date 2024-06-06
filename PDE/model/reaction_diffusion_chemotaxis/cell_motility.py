@@ -13,7 +13,8 @@ class Cell_motility(eqx.Module):
     
     
 
-    def __init__(self,CELL_CHANNELS,SIGNAL_CHANNELS,PADDING,dx,key):
+
+    def __init__(self,CELL_CHANNELS,SIGNAL_CHANNELS,PADDING,dx,INTERNAL_ACTIVATION,OUTER_ACTIVATION,INIT_SCALE,key):
         self.CELL_CHANNELS = CELL_CHANNELS
         self.SIGNAL_CHANNELS = SIGNAL_CHANNELS
         self.TOTAL_CHANNELS = CELL_CHANNELS + SIGNAL_CHANNELS
@@ -31,7 +32,7 @@ class Cell_motility(eqx.Module):
                 use_bias=False,
                 key=key1
             ),
-            jax.nn.relu,
+            INTERNAL_ACTIVATION,
             eqx.nn.Conv2d(
                 in_channels=self.TOTAL_CHANNELS,
                 out_channels=self.CELL_CHANNELS,
@@ -40,7 +41,7 @@ class Cell_motility(eqx.Module):
                 use_bias=False,
                 key=key2
             ),
-            jax.nn.sigmoid
+            OUTER_ACTIVATION
         ]
         
         self.chemotaxis_layers = [
@@ -52,7 +53,7 @@ class Cell_motility(eqx.Module):
                 use_bias=False,
                 key=key3
             ),
-            jax.nn.relu,
+            INTERNAL_ACTIVATION,
             eqx.nn.Conv2d(
                 in_channels=self.TOTAL_CHANNELS,
                 out_channels=self.CELL_CHANNELS*self.SIGNAL_CHANNELS,
@@ -61,16 +62,23 @@ class Cell_motility(eqx.Module):
                 use_bias=False,
                 key=key4
             ),
-            jax.nn.tanh
+            OUTER_ACTIVATION
         ]
         where = lambda l:l.weight
-        scale = 0.0
+        
+        self.chemotaxis_layers[0] = eqx.tree_at(where,
+                                                 self.chemotaxis_layers[0],
+                                                 INIT_SCALE*jax.random.normal(key=key1,shape=self.chemotaxis_layers[0].weight.shape))
+        self.motility_layers[0] = eqx.tree_at(where,
+                                                 self.motility_layers[0],
+                                                 INIT_SCALE*jax.random.normal(key=key2,shape=self.motility_layers[0].weight.shape))
+
         self.chemotaxis_layers[-2] = eqx.tree_at(where,
                                                  self.chemotaxis_layers[-2],
-                                                 scale*jax.random.normal(key=key4,shape=self.chemotaxis_layers[-2].weight.shape))
+                                                 INIT_SCALE*jax.random.normal(key=key3,shape=self.chemotaxis_layers[-2].weight.shape))
         self.motility_layers[-2] = eqx.tree_at(where,
                                                  self.motility_layers[-2],
-                                                 scale*jax.random.normal(key=key2,shape=self.motility_layers[-2].weight.shape))
+                                                 INIT_SCALE*jax.random.normal(key=key4,shape=self.motility_layers[-2].weight.shape))
 
     def motility(self,X:Float[Array, "C x y"])->Float[Array, "C x y"]:
         for L in self.motility_layers:

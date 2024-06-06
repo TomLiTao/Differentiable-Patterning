@@ -10,6 +10,7 @@ from PDE.model.reaction_diffusion_chemotaxis.cell_reaction import Cell_reaction
 from PDE.model.reaction_diffusion_chemotaxis.signal_diffusion import Signal_diffusion
 from PDE.model.reaction_diffusion_chemotaxis.signal_reaction import Signal_reaction
 
+
 class F(eqx.Module):
     cell_motility: Cell_motility
     cell_reaction: Cell_reaction
@@ -20,16 +21,52 @@ class F(eqx.Module):
     PADDING: str
     dx: float
 
-    def __init__(self,CELL_CHANNELS,SIGNAL_CHANNELS,PADDING,dx,key=jax.random.PRNGKey(int(time.time()))):
+    def __init__(self,
+                 CELL_CHANNELS,
+                 SIGNAL_CHANNELS,
+                 PADDING,
+                 dx,
+                 INTERNAL_ACTIVATION=jax.nn.relu,
+                 OUTER_ACTIVATION=jax.nn.tanh,
+                 INIT_SCALE=0.01,
+                 STABILITY_FACTOR=0.01,
+                 key=jax.random.PRNGKey(int(time.time()))):
         self.CELL_CHANNELS = CELL_CHANNELS
         self.SIGNAL_CHANNELS = SIGNAL_CHANNELS
         self.PADDING = PADDING
         key1,key2,key3,key4 = jax.random.split(key,4)
         self.dx = dx
-        self.cell_motility = Cell_motility(CELL_CHANNELS,SIGNAL_CHANNELS,PADDING,dx,key=key1)
-        self.cell_reaction = Cell_reaction(CELL_CHANNELS,SIGNAL_CHANNELS,key=key2)
-        self.signal_diffusion= Signal_diffusion(CELL_CHANNELS,SIGNAL_CHANNELS,PADDING,dx,key=key3)
-        self.signal_reaction = Signal_reaction(CELL_CHANNELS,SIGNAL_CHANNELS,key=key4)
+        self.cell_motility = Cell_motility(
+            CELL_CHANNELS,
+            SIGNAL_CHANNELS,
+            PADDING,
+            dx,
+            INTERNAL_ACTIVATION,
+            OUTER_ACTIVATION,
+            INIT_SCALE,
+            key=key1)
+        self.cell_reaction = Cell_reaction(
+            CELL_CHANNELS,
+            SIGNAL_CHANNELS,
+            INTERNAL_ACTIVATION,
+            OUTER_ACTIVATION,
+            INIT_SCALE,
+            STABILITY_FACTOR,
+            key=key2)
+        self.signal_diffusion= Signal_diffusion(
+            CELL_CHANNELS,
+            SIGNAL_CHANNELS,
+            PADDING,
+            dx,
+            key=key3)
+        self.signal_reaction = Signal_reaction(
+            CELL_CHANNELS,
+            SIGNAL_CHANNELS,
+            INTERNAL_ACTIVATION,
+            OUTER_ACTIVATION,
+            INIT_SCALE,
+            STABILITY_FACTOR,
+            key=key4)
     
     @eqx.filter_jit
     def __call__(self,
