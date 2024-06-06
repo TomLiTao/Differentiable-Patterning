@@ -42,8 +42,25 @@ class AbstractModel(eqx.Module):
 		"""
 		self = eqx.combine(diff,static)
 	
+	def get_weights(self):
+		"""Returns list of arrays of weights, for plotting purposes, or for manually adjusting weights with
+		code that doesn't `just work' on PyTrees
+
+		Returns:
+			weights : list of arrays of trainable parameters 
+		"""
+		
+		
+		diff_self,_ = self.partition()
+		ws,tree_def = jax.tree_util.tree_flatten(diff_self)
+		#return #list(map(jnp.squeeze,ws))
+		return ws
 	
 	
+	def set_weights(self,weights):
+
+		raise NotImplementedError
+
 	
 	def save(self, path: Union[str, Path], overwrite: bool = False):
 		"""
