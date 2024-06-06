@@ -68,6 +68,7 @@ elif nca_type_index==3:
 #nca = nca.load("models/model_exploration/emoji_16_channels_64_sampling_relu_activation_ID_DIFF_LAP_kernels_v4.eqx")
 
 
+
 NCA_trajectory = nca.run(128,x0)
 NCA_trajectory = repeat(NCA_trajectory,"T C X Y -> B T C X Y",B=4)
 print(NCA_trajectory.shape)

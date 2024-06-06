@@ -71,15 +71,8 @@ class PDE_Trainer(object):
 
 		self.OBS_CHANNELS = self.PDE_solver.func.CELL_CHANNELS#data[0].shape[1]
 		self.GRAD_LOSS = GRAD_LOSS
-		op = Ops(PADDING=PDE_solver.func.PADDING,dx=PDE_solver.func.dx)
-		def spatial_loss_gradients(self,X: Float[Array, "T C W H"])->Float[Array, "T s W H"]:
-			def _spatial(X: Float[Array, "C W H"]):
-				_grad = op.Grad(X)
-				_gx = _grad[0]
-				_gy = _grad[1]
-				_lap = op.Lap(X)
-				return rearrange([_gx,_gy,_lap],"b C x y -> (b C) x y")
-			return jax.vmap(_spatial,in_axes=0,out_axes=0)(X)
+		self._op = Ops(PADDING=PDE_solver.func.PADDING,dx=PDE_solver.func.dx)
+		
 		# Set up data and data augmenter class
 		self.DATA_AUGMENTER = DATA_AUGMENTER(data)
 		self.DATA_AUGMENTER.data_init()
@@ -113,7 +106,14 @@ class PDE_Trainer(object):
 		print("Saving model to: "+self.MODEL_PATH)
 	
 	
-	
+	def spatial_loss_gradients(self,X: Float[Array, "T C W H"])->Float[Array, "T s W H"]:
+		def _spatial(X: Float[Array, "C W H"]):
+			_grad = self._op.Grad(X)
+			_gx = _grad[0]
+			_gy = _grad[1]
+			_lap = self._op.Lap(X)
+			return rearrange([_gx,_gy,_lap],"b C x y -> (b C) x y")
+		return jax.vmap(_spatial,in_axes=0,out_axes=0)(X)
 	@eqx.filter_jit	
 	def loss_func(self,
 			   	  x: Float[Array, "T C W H"],
@@ -233,7 +233,7 @@ class PDE_Trainer(object):
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, pde_diff)
 			pde = eqx.apply_updates(pde,updates)
 			(mean_loss,(x,losses)) = loss_x
-			return pde,x,y,t,opt_state,key,mean_loss,losses
+			return pde,x,y,t,opt_state,mean_loss,losses,key
 		
 		
 		# Initialise training
@@ -261,7 +261,8 @@ class PDE_Trainer(object):
 			key = jax.random.fold_in(key,i)
 			x,y = self.DATA_AUGMENTER.sub_trajectory_split(L=t,key=key)
 			#pde,opt_state, = make_step(pde, x, y, t, opt_state,key)
-			pde,x,y,t,opt_state,mean_loss,key,losses = make_step(pde, x, y, t, opt_state,key)
+			pde,x,y,t,opt_state,mean_loss,losses,key = make_step(pde, x, y, t, opt_state,key)
+			#print(mean_loss)
 			#print(losses.shape)
 			if self.IS_LOGGING:
 				full_trajectory = pde(jnp.linspace(0,self.TRAJECTORY_LENGTH,self.TRAJECTORY_LENGTH//t),x0)[1]

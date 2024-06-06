@@ -152,6 +152,7 @@ def my_animate(img):
 	frames = [] # for storing the generated images
 	fig = plt.figure()
 	for i in range(img.shape[0]):
-		frames.append([plt.imshow(img[i],vmin=0,vmax=1,animated=True)])
+		frames.append([plt.imshow(img[i,:,:,:3],vmin=0,vmax=1,animated=True)])
 	ani = animation.ArtistAnimation(fig, frames, interval=50, blit=True,repeat_delay=0)
-	plt.show()
+	return ani
+	#plt.show()
