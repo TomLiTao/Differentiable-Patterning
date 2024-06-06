@@ -45,6 +45,7 @@ def plot_weight_matrices(nca):
 	figs = []
 	ws = nca.get_weights()
 	for i,w in enumerate(ws):
+		w = np.squeeze(w)
 		if w.ndim==2:
 			figure = plt.figure(figsize=(5,5))
 			col_range = max(np.max(w),-np.min(w))
@@ -82,6 +83,7 @@ def plot_weight_kernel_boxplot(nca):
 	"""
 	#w = nca.layers[0].weight[:,:,0,0]
 	w = nca.get_weights()[0]
+	w = np.squeeze(w)
 	N_KERNELS = nca.N_FEATURES // nca.N_CHANNELS
 	N_CHANNELS = nca.N_CHANNELS
 	K_STR = nca.KERNEL_STR.copy()

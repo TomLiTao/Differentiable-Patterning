@@ -17,7 +17,10 @@ class NCA_Train_log(Train_log):
 			# w1 = nca.layers[0].weight[:,:,0,0]
 			# w2 = nca.layers[2].weight[:,:,0,0]
 			# b2 = nca.layers[2].bias[:,0,0]
-			w1,w2,b2 = nca.get_weights()		
+			w1,w2,b2 = nca.get_weights()
+			w1 = np.squeeze(w1)
+			w2 = np.squeeze(w1)
+			b2 = np.squeeze(b2)		
 			tf.summary.histogram('Input layer weights',w1,step=i)
 			tf.summary.histogram('Output layer weights',w2,step=i)
 			tf.summary.histogram('Output layer bias',b2,step=i)				

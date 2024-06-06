@@ -4,6 +4,7 @@ import optax
 import equinox as eqx
 import datetime
 import Common.trainer.loss as loss
+import jaxpruner
 from functools import partial
 from NCA.trainer.tensorboard_log import NCA_Train_log, kaNCA_Train_log
 from NCA.model.NCA_KAN_model import kaNCA
@@ -172,6 +173,7 @@ class NCA_Trainer(object):
 			  WRITE_IMAGES=True,
 			  LOSS_FUNC_STR = "euclidean",
 			  LOOP_AUTODIFF = "checkpointed",
+			  SPARSE_PRUNING = False,
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
 		Perform t steps of NCA on x, compare output to y, compute loss and gradients of loss wrt model parameters, and update parameters.
@@ -293,17 +295,17 @@ class NCA_Trainer(object):
 		nca = self.NCA_model
 		nca_diff,nca_static = nca.partition()
 		
-		
+		#--- OPTIMISER ---
 		# Set up optimiser
 		if optimiser is None:
-			schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
-			self.OPTIMISER = optax.adam(schedule)
+			schedule = optax.exponential_decay(1e-3, transition_steps=iters, decay_rate=0.99)
+			self.OPTIMISER = optax.nadam(schedule)
 			#self.OPTIMISER = optax.chain(optax.clip_by_block_rms(1.0),self.OPTIMISER)
 		else:
 			self.OPTIMISER = optimiser
 		opt_state = self.OPTIMISER.init(nca_diff)
 		
-		# Split data into x and y
+		# # Split data into x and y
 		x,y = self.DATA_AUGMENTER.data_load()
 		
 		
@@ -312,10 +314,26 @@ class NCA_Trainer(object):
 		model_saved = False
 		error = 0
 		error_at = 0
+		SPARSITY = jnp.concat((jnp.zeros(WARMUP),jnp.linspace(0,0.5,iters-WARMUP)))
+		#--- Do training run ---
 		for i in tqdm(range(iters)):
 			key = jax.random.fold_in(key,i)
 			#nca,opt_state,(mean_loss,(x,losses)) = make_step(nca, x, y, t, opt_state,key)
 			nca,x,y,t,opt_state,key,mean_loss,losses = make_step(nca, x, y, t, opt_state,key)
+			
+			if SPARSE_PRUNING:
+				
+				if i>WARMUP:
+
+					ws = nca.get_weights()
+					sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=SPARSITY[i])
+					pruner = jaxpruner.MagnitudePruning(
+						sparsity_distribution_fn=sparsity_distribution,
+						skip_gradients=True)
+					ws = pruner.instant_sparsify(ws)[0]
+					nca.set_weights(ws)
+
+			
 			if self.IS_LOGGING:
 				self.LOGGER.tb_training_loop_log_sequence(losses, x, i, nca,write_images=WRITE_IMAGES,LOG_EVERY=LOG_EVERY)
 			

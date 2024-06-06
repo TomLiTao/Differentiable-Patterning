@@ -139,18 +139,16 @@ class NCA(AbstractModel):
 		return boundary_callback(x_new)
 
 	
-	def get_weights(self):
-		"""Returns list of arrays of weights, for plotting purposes
 
-		Returns:
-			weights : list of arrays of trainable parameters 
-		"""
-		
-		
-		diff_self,_ = self.partition()
-		ws = jax.tree.leaves(diff_self)
-		return list(map(jnp.squeeze,ws))
-		
+	
+	def set_weights(self,weights):
+		w0,w1,b1 = weights
+		w_where = lambda l: l.weight
+		b_where = lambda l: l.bias
+
+		self.layers[0] = eqx.tree_at(w_where,self.layers[0],w0)
+		self.layers[-1] = eqx.tree_at(w_where,self.layers[-1],w1)
+		self.layers[-1] = eqx.tree_at(b_where,self.layers[-1],b1)
 
 	def partition(self):
 		"""
