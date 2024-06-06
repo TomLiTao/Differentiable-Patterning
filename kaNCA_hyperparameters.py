@@ -59,5 +59,5 @@ opt.train(T,
         WARMUP=10,
         optimiser=optimiser,
         LOSS_FUNC_STR="euclidean",
-        LOOP_AUTODIFF="lax",
+        LOOP_AUTODIFF="checkpointed",
         key=key)
