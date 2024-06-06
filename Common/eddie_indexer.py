@@ -1,6 +1,6 @@
 import numpy as np
 from Common.trainer.loss import l2,euclidean,vgg,spectral,random_sampled_euclidean
-
+import jax
 
 
 
@@ -203,3 +203,17 @@ def index_to_kaNCA_hyperparameters(index):
 	BASIS_RESOLUTION = [2,3,4,5,8,11,16,25][indices[0]]
 	BASIS_WIDTH = [0.1,0.5,1,2,4,8,12,16][indices[1]]
 	return BASIS_RESOLUTION,BASIS_WIDTH
+
+
+def index_to_pde_hyperparameters(index):
+	indices = np.unravel_index(index,(2,3,4,4))
+
+	INNER_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
+	OUTER_ACTIVATIONS = [jax.nn.tanh,jax.nn.sigmoid,lambda x:x][indices[1]]
+	INIT_SCALES = [0,0.01,0.1,1][indices[2]]
+	STABILITY_FACTOR = [0,0.01,0.1,1][indices[3]]
+
+	INNER_TEXT = ["relu","tanh"][indices[0]]
+	OUTER_TEXT = ["tanh","sigmoid","identity"][indices[1]]
+
+	return INNER_ACTIVATIONS,OUTER_ACTIVATIONS,INIT_SCALES,STABILITY_FACTOR,INNER_TEXT,OUTER_TEXT
