@@ -15,7 +15,7 @@ index=int(sys.argv[1])-1
 key = jr.PRNGKey(int(time.time()))
 key = jr.fold_in(key,index)
 
-LEARN_RATE,OPTIMISER,BASIS_FUNCS,BASIS_WIDTH,INIT_SCALE,LEARN_RATE_TEXT,OPTIMISER_TEXT=index_to_kaNCA_hyperparameters(index)
+LEARN_RATE,OPTIMISER,BASIS_FUNCS,BASIS_WIDTH,INIT_SCALE,LEARN_RATE_TEXT,OPTIMISER_TEXT,INIT_SCALE_TEXT=index_to_kaNCA_hyperparameters(index)
 
 CHANNELS=8
 DOWNSAMPLE=3
@@ -47,7 +47,7 @@ nca = kaNCA(CHANNELS,
 
 opt = NCA_Trainer(nca,
                   data,
-                  model_filename="kaNCA_hyperparameters/res_"+str(BASIS_FUNCS)+"_width_"+str(BASIS_WIDTH)+"_scale_"+str(INIT_SCALE)+"_optimiser_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_data_"+data_filename,
+                  model_filename="kaNCA_hyperparameters/res_"+str(BASIS_FUNCS)+"_width_"+str(BASIS_WIDTH)+"_scale_"+INIT_SCALE_TEXT+"_optimiser_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_data_"+data_filename,
                   DATA_AUGMENTER=data_augmenter_subclass,
                   GRAD_LOSS=True)
 

@@ -206,9 +206,10 @@ def index_to_kaNCA_hyperparameters(index):
 	BASIS_RESOLUTION = [2,3,4,5,8,11,16,25][indices[2]]
 	BASIS_WIDTH = [0.1,0.5,1,2,4,8,12,16][indices[3]]
 	INIT_SCALE = [0.01,0.1][indices[4]]
-	LEARN_RATE_TEXT = ["1e4","1e3"][indices[0]]
+	LEARN_RATE_TEXT = ["1e-4","1e-3"][indices[0]]
 	OPTIMISER_TEXT = ["nadam","nadamw","lamb"][indices[1]]
-	return LEARN_RATE,OPTIMISER,BASIS_RESOLUTION,BASIS_WIDTH,INIT_SCALE,LEARN_RATE_TEXT,OPTIMISER_TEXT
+	INIT_SCALE_TEXT = ["1e-2","1e-1"][indices[4]]
+	return LEARN_RATE,OPTIMISER,BASIS_RESOLUTION,BASIS_WIDTH,INIT_SCALE,LEARN_RATE_TEXT,OPTIMISER_TEXT,INIT_SCALE_TEXT
 
 
 def index_to_pde_hyperparameters(index):
@@ -219,7 +220,9 @@ def index_to_pde_hyperparameters(index):
 	#INIT_SCALES = [0.01,0.1][indices[2]]
 	#STABILITY_FACTOR = [0.01,0.1][indices[3]]
 	INIT_SCALES = 0.1
+	#INIT_SCALE_TEXT = "1e-1"
 	STABILITY_FACTOR = 0.1
+	#STABILITY_FACTOR_TEXT = "1e-1"
 	OPTIMISER = [optax.nadam,optax.nadamw,optax.lamb][indices[2]]
 	LEARN_RATES = [1e-4,1e-3][indices[3]]
 	TRAJECTORY_LENGTH = [1,8,32,64][indices[4]]
