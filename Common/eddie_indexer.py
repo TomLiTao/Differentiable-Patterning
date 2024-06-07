@@ -208,8 +208,9 @@ def index_to_kaNCA_hyperparameters(index):
 	INIT_SCALE = [0.01,0.1][indices[4]]
 	LEARN_RATE_TEXT = ["1e-4","1e-3"][indices[0]]
 	OPTIMISER_TEXT = ["nadam","nadamw","lamb"][indices[1]]
+	BASIS_WIDTH_TEXT = ["1e-1","5e-1","1","2","4","8","12","16"][indices[3]]
 	INIT_SCALE_TEXT = ["1e-2","1e-1"][indices[4]]
-	return LEARN_RATE,OPTIMISER,BASIS_RESOLUTION,BASIS_WIDTH,INIT_SCALE,LEARN_RATE_TEXT,OPTIMISER_TEXT,INIT_SCALE_TEXT
+	return LEARN_RATE,OPTIMISER,BASIS_RESOLUTION,BASIS_WIDTH,INIT_SCALE,LEARN_RATE_TEXT,OPTIMISER_TEXT,BASIS_WIDTH_TEXT,INIT_SCALE_TEXT
 
 
 def index_to_pde_hyperparameters(index):
