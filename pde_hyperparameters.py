@@ -38,6 +38,7 @@ USE_BIAS = PARAMS[7]
 INTERNAL_TEXT = PARAMS[8]
 OUTER_TEXT = PARAMS[9]
 OPTIMISER_TEXT = PARAMS[10]
+LEARN_RATE_TEXT = PARAMS[11]
 
 key = jax.random.PRNGKey(int(time.time()))
 key = jax.random.fold_in(key,index)
@@ -86,5 +87,5 @@ opt = non_negative_diffusion_chemotaxis(schedule,optimiser=OPTIMISER)
 trainer = PDE_Trainer(pde,
                       NCA_trajectory,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/act_"+INTERNAL_TEXT+"_"+OUTER_TEXT+"_opt_"+OPTIMISER_TEXT+"_lr_"+str(LEARN_RATE)+"_tl_"+str(TRAJECTORY_LENGTH)+"_bias_"+str(USE_BIAS))
+                      model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/act_"+INTERNAL_TEXT+"_"+OUTER_TEXT+"_opt_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_tl_"+str(TRAJECTORY_LENGTH)+"_bias_"+str(USE_BIAS))
 trainer.train(TRAJECTORY_LENGTH,iters,optimiser=opt)

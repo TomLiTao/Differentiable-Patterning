@@ -201,13 +201,14 @@ def index_to_data_nca_type(index):
 def index_to_kaNCA_hyperparameters(index):
 	indices = np.unravel_index(index,(2,3,8,8,2))
 	LEARN_RATE = [1e-4,1e-3][indices[0]]
+	
 	OPTIMISER = [optax.nadam,optax.nadamw,optax.lamb][indices[1]]
 	BASIS_RESOLUTION = [2,3,4,5,8,11,16,25][indices[2]]
 	BASIS_WIDTH = [0.1,0.5,1,2,4,8,12,16][indices[3]]
 	INIT_SCALE = [0.01,0.1][indices[4]]
-
+	LEARN_RATE_TEXT = ["1e-4","1e-3"][indices[0]]
 	OPTIMISER_TEXT = ["nadam","nadamw","lamb"][indices[1]]
-	return LEARN_RATE,OPTIMISER,BASIS_RESOLUTION,BASIS_WIDTH,INIT_SCALE,OPTIMISER_TEXT
+	return LEARN_RATE,OPTIMISER,BASIS_RESOLUTION,BASIS_WIDTH,INIT_SCALE,LEARN_RATE_TEXT,OPTIMISER_TEXT
 
 
 def index_to_pde_hyperparameters(index):
@@ -226,7 +227,7 @@ def index_to_pde_hyperparameters(index):
 	INNER_TEXT = ["relu","tanh"][indices[0]]
 	OUTER_TEXT = ["tanh","sigmoid","identity"][indices[1]]
 	OPTIMISER_TEXT = ["nadam","nadamw","lamb"][indices[2]]
-
+	LEARN_RATE_TEXT = ["1e-4","1e-3"][indices[3]]
 	return [
 		INNER_ACTIVATIONS,
 		OUTER_ACTIVATIONS,
@@ -238,4 +239,5 @@ def index_to_pde_hyperparameters(index):
 		USE_BIAS,
 		INNER_TEXT,
 		OUTER_TEXT,
-		OPTIMISER_TEXT]
+		OPTIMISER_TEXT,
+		LEARN_RATE_TEXT]
