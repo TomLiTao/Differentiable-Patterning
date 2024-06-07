@@ -1,7 +1,7 @@
 import numpy as np
 from Common.trainer.loss import l2,euclidean,vgg,spectral,random_sampled_euclidean
 import jax
-
+import optax
 
 
 """
@@ -206,14 +206,31 @@ def index_to_kaNCA_hyperparameters(index):
 
 
 def index_to_pde_hyperparameters(index):
-	indices = np.unravel_index(index,(2,3,4,4))
-
+	indices = np.unravel_index(index,(2,3,3,2,4,2))
+	
 	INNER_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
 	OUTER_ACTIVATIONS = [jax.nn.tanh,jax.nn.sigmoid,lambda x:x][indices[1]]
-	INIT_SCALES = [0,0.01,0.1,1][indices[2]]
-	STABILITY_FACTOR = [0,0.01,0.1,1][indices[3]]
-
+	#INIT_SCALES = [0.01,0.1][indices[2]]
+	#STABILITY_FACTOR = [0.01,0.1][indices[3]]
+	INIT_SCALES = 0.1
+	STABILITY_FACTOR = 0.1
+	OPTIMISER = [optax.nadam,optax.nadamw,optax.lamb][indices[2]]
+	LEARN_RATES = [1e-4,1e-3][indices[3]]
+	TRAJECTORY_LENGTH = [1,8,32,64][indices[4]]
+	USE_BIAS = [True,False][indices[5]]
 	INNER_TEXT = ["relu","tanh"][indices[0]]
 	OUTER_TEXT = ["tanh","sigmoid","identity"][indices[1]]
+	OPTIMISER_TEXT = ["nadam","nadamw","lamb"][indices[2]]
 
-	return INNER_ACTIVATIONS,OUTER_ACTIVATIONS,INIT_SCALES,STABILITY_FACTOR,INNER_TEXT,OUTER_TEXT
+	return [
+		INNER_ACTIVATIONS,
+		OUTER_ACTIVATIONS,
+		INIT_SCALES,
+		STABILITY_FACTOR,
+		OPTIMISER,
+		LEARN_RATES,
+		TRAJECTORY_LENGTH,
+		USE_BIAS,
+		INNER_TEXT,
+		OUTER_TEXT,
+		OPTIMISER_TEXT]
