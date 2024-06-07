@@ -88,4 +88,4 @@ trainer = PDE_Trainer(pde,
                       NCA_trajectory,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
                       model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/act_"+INTERNAL_TEXT+"_"+OUTER_TEXT+"_opt_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_tl_"+str(TRAJECTORY_LENGTH)+"_bias_"+str(USE_BIAS))
-trainer.train(TRAJECTORY_LENGTH,iters,optimiser=opt)
+trainer.train(TRAJECTORY_LENGTH,iters,optimiser=opt,LOG_EVERY=100)

@@ -41,7 +41,7 @@ class PDE_Train_log(object):
 			
 		self.train_summary_writer = train_summary_writer
 
-	def tb_training_loop_log_sequence(self,losses,x,i,pde,write_images=True):
+	def tb_training_loop_log_sequence(self,losses,x,i,pde,write_images=True,LOG_EVERY=10):
 		"""
 			Helper function to format some data logging during the training loop
 
@@ -76,7 +76,7 @@ class PDE_Train_log(object):
 			for b in range(BATCHES):
 				tf.summary.histogram("Loss of each timestep, batch "+str(b),losses[b],step=i)
 				tf.summary.scalar("Loss of averaged over each timestep,  batch "+str(b),np.mean(losses[b]),step=i)
-			if i%10==0:
+			if i%LOG_EVERY==0:
 
 				# Log weights and biasses of model every 10 training epochs
 				# #weight_matrix_image = []

@@ -146,7 +146,8 @@ class PDE_Trainer(object):
 			  iters,
 			  optimiser=None,  
 			  WARMUP=64,
-			  SAMPLING = 8,			        
+			  SAMPLING = 8,
+			  LOG_EVERY=10,	        
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
 		At each training iteration, select a random subsequence of length t to train to
@@ -267,7 +268,7 @@ class PDE_Trainer(object):
 			if self.IS_LOGGING:
 				full_trajectory = pde(jnp.linspace(0,self.TRAJECTORY_LENGTH,self.TRAJECTORY_LENGTH//t),x0)[1]
 				full_trajectory = repeat(full_trajectory,"T C X Y -> B T C X Y",B=1)
-				self.LOGGER.tb_training_loop_log_sequence(losses, full_trajectory, i, pde)
+				self.LOGGER.tb_training_loop_log_sequence(losses, full_trajectory, i, pde,LOG_EVERY=LOG_EVERY)
 			
 			
 			if jnp.isnan(mean_loss):
