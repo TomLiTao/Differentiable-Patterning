@@ -29,6 +29,7 @@ class F(eqx.Module):
                  INTERNAL_ACTIVATION=jax.nn.relu,
                  OUTER_ACTIVATION=jax.nn.tanh,
                  INIT_SCALE=0.01,
+                 USE_BIAS=True,
                  STABILITY_FACTOR=0.01,
                  key=jax.random.PRNGKey(int(time.time()))):
         self.CELL_CHANNELS = CELL_CHANNELS
@@ -44,6 +45,7 @@ class F(eqx.Module):
             INTERNAL_ACTIVATION,
             OUTER_ACTIVATION,
             INIT_SCALE,
+            USE_BIAS,
             key=key1)
         self.cell_reaction = Cell_reaction(
             CELL_CHANNELS,
@@ -51,6 +53,7 @@ class F(eqx.Module):
             INTERNAL_ACTIVATION,
             OUTER_ACTIVATION,
             INIT_SCALE,
+            USE_BIAS,
             STABILITY_FACTOR,
             key=key2)
         self.signal_diffusion= Signal_diffusion(
@@ -65,6 +68,7 @@ class F(eqx.Module):
             INTERNAL_ACTIVATION,
             OUTER_ACTIVATION,
             INIT_SCALE,
+            USE_BIAS,
             STABILITY_FACTOR,
             key=key4)
     
