@@ -199,10 +199,15 @@ def index_to_data_nca_type(index):
 
 
 def index_to_kaNCA_hyperparameters(index):
-	indices = np.unravel_index(index,(8,8))
-	BASIS_RESOLUTION = [2,3,4,5,8,11,16,25][indices[0]]
-	BASIS_WIDTH = [0.1,0.5,1,2,4,8,12,16][indices[1]]
-	return BASIS_RESOLUTION,BASIS_WIDTH
+	indices = np.unravel_index(index,(2,3,8,8,2))
+	LEARN_RATE = [1e-4,1e-3][indices[0]]
+	OPTIMISER = [optax.nadam,optax.nadamw,optax.lamb][indices[1]]
+	BASIS_RESOLUTION = [2,3,4,5,8,11,16,25][indices[2]]
+	BASIS_WIDTH = [0.1,0.5,1,2,4,8,12,16][indices[3]]
+	INIT_SCALE = [0.01,0.1][indices[4]]
+
+	OPTIMISER_TEXT = ["nadam","nadamw","lamb"][indices[1]]
+	return LEARN_RATE,OPTIMISER,BASIS_RESOLUTION,BASIS_WIDTH,INIT_SCALE,OPTIMISER_TEXT
 
 
 def index_to_pde_hyperparameters(index):

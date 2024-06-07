@@ -159,7 +159,7 @@ class gaussKAN(funcKAN):
                  key=jax.random.PRNGKey(int(time.time()))):
         #super().__init__(in_features,out_features,ORDER,scale,key)
         key1,key2 = jax.random.split(key,2)
-        self.weight = 0.01*scale*jax.random.normal(key=key1,shape=(in_features,out_features,ORDER))
+        self.weight = scale*jax.random.normal(key=key1,shape=(in_features,out_features,ORDER))
             
         self.ORDER = ORDER
         self.in_features = in_features

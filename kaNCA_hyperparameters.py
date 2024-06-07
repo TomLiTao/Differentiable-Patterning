@@ -15,7 +15,7 @@ index=int(sys.argv[1])-1
 key = jr.PRNGKey(int(time.time()))
 key = jr.fold_in(key,index)
 
-BASIS_FUNCS,BASIS_WIDTH=index_to_kaNCA_hyperparameters(index)
+LEARN_RATE,OPTIMISER,BASIS_FUNCS,BASIS_WIDTH,INIT_SCALE,OPTIMISER_TEXT=index_to_kaNCA_hyperparameters(index)
 
 CHANNELS=8
 DOWNSAMPLE=3
@@ -42,17 +42,18 @@ nca = kaNCA(CHANNELS,
             PADDING="REPLICATE",
             BASIS_FUNCS=BASIS_FUNCS,
             BASIS_WIDTH=BASIS_WIDTH,
+            INIT_SCALE=INIT_SCALE,
             key=key)
 
 opt = NCA_Trainer(nca,
                   data,
-                  model_filename="kaNCA_hyperparameters_res_"+str(BASIS_FUNCS)+"_width_"+str(BASIS_WIDTH)+"_data_"+data_filename,
+                  model_filename="kaNCA_hyperparameters/res_"+str(BASIS_FUNCS)+"_width_"+str(BASIS_WIDTH)+"_scale_"+str(INIT_SCALE)+"_optimiser_"+OPTIMISER_TEXT+"_lr_"+str(LEARN_RATE)+"_data_"+data_filename,
                   DATA_AUGMENTER=data_augmenter_subclass,
                   GRAD_LOSS=True)
 
-schedule = optax.exponential_decay(1e-3, transition_steps=ITERATIONS, decay_rate=0.99)
+schedule = optax.exponential_decay(LEARN_RATE, transition_steps=ITERATIONS, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
-                        optax.nadam(schedule))
+                        OPTIMISER(schedule))
 
 opt.train(T,
         ITERATIONS,
@@ -60,4 +61,5 @@ opt.train(T,
         optimiser=optimiser,
         LOSS_FUNC_STR="euclidean",
         LOOP_AUTODIFF="checkpointed",
+        LOG_EVERY=100,
         key=key)
