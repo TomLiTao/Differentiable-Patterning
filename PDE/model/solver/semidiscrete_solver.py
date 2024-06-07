@@ -19,8 +19,8 @@ class PDE_solver(AbstractModel):
 									   dt0=self.dt0,
 									   y0=y0,
 									   max_steps=100*ts.shape[0],
-									   #stepsize_controller=diffrax.ConstantStepSize(),
-									   stepsize_controller=diffrax.PIDController(rtol=1e-1, atol=1e-2),
+									   stepsize_controller=diffrax.ConstantStepSize(),
+									   #stepsize_controller=diffrax.PIDController(rtol=1e-1, atol=1e-2),
 									   saveat=diffrax.SaveAt(ts=ts))
 		return solution.ts,solution.ys
 	
