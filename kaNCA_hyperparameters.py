@@ -17,7 +17,7 @@ key = jr.fold_in(key,index)
 
 LEARN_RATE,OPTIMISER,BASIS_FUNCS,BASIS_WIDTH,INIT_SCALE,LEARN_RATE_TEXT,OPTIMISER_TEXT,BASIS_WIDTH_TEXT,INIT_SCALE_TEXT=index_to_kaNCA_hyperparameters(index)
 
-CHANNELS=8
+CHANNELS=12
 DOWNSAMPLE=3
 T=32
 ITERATIONS=2000
@@ -47,7 +47,7 @@ nca = kaNCA(CHANNELS,
 
 opt = NCA_Trainer(nca,
                   data,
-                  model_filename="kaNCA_hyperparameters/res_"+str(BASIS_FUNCS)+"_width_"+BASIS_WIDTH_TEXT+"_scale_"+INIT_SCALE_TEXT+"_optimiser_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_data_"+data_filename,
+                  model_filename="kaNCA_hyperparameters/channels_"+str(CHANNELS)+"_res_"+str(BASIS_FUNCS)+"_width_"+BASIS_WIDTH_TEXT+"_scale_"+INIT_SCALE_TEXT+"_optimiser_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_data_"+data_filename,
                   DATA_AUGMENTER=data_augmenter_subclass,
                   GRAD_LOSS=True)
 
