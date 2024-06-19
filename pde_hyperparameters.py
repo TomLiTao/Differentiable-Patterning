@@ -47,7 +47,7 @@ key = jax.random.fold_in(key,index)
 
 
 
-data = load_emoji_sequence(["microbe.png","avocado._1f951png","alien_monster.png"],downsample=DOWNSAMPLE)
+data = load_emoji_sequence(["microbe.png","avocado_1f951.png","alien_monster.png"],downsample=DOWNSAMPLE)
 data_filename = "mi_av_al"
 da = DataAugmenterNCA(data,28)
 da.data_init()
@@ -79,7 +79,7 @@ pde = PDE_solver(func,dt=0.1)
 
 
 # Define optimiser and lr schedule
-iters = 2000
+iters = 4000
 schedule = optax.exponential_decay(LEARN_RATE, transition_steps=iters, decay_rate=0.99)
 opt = non_negative_diffusion_chemotaxis(schedule,optimiser=OPTIMISER)
 
