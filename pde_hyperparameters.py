@@ -56,7 +56,7 @@ x0 = np.array(da.split_x_y()[0])[0,0]
 
 
 nca = NCA(CHANNELS,KERNEL_STR=["ID","LAP","GRAD"],KERNEL_SCALE=1,PADDING="REPLICATE")
-nca = nca.load("models/demo_lowres_stable_emoji_anisotropic_nca_"+data_filename+".eqx")
+nca = nca.load("models/demo_64bit_lowres_stable_emoji_anisotropic_nca_"+data_filename+".eqx")
 nca_type="_pure_anisotropic_"
 
 NCA_trajectory = nca.run(96,x0)
