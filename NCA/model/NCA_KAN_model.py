@@ -20,9 +20,9 @@ class kaNCA(NCA):
                  PADDING="CIRCULAR", 
                  FIRE_RATE=1.0, 
                  KERNEL_SCALE = 1,
-                 BASIS_FUNCS=11,
+                 BASIS_FUNCS=16,
                  BASIS_WIDTH=4,
-                 INIT_SCALE=0.01,
+                 INIT_SCALE=0.1,
                  key=jax.random.PRNGKey(int(time.time()))):
         super().__init__(N_CHANNELS, KERNEL_STR, jax.nn.relu, PADDING, FIRE_RATE, KERNEL_SCALE, key)
         # gaussKAN hyperparameters
