@@ -15,7 +15,7 @@ data_index=int(sys.argv[1])-1
 CHANNELS=12
 BASIS_FUNCS = 16
 DOWNSAMPLE = 2
-t=32
+T=32
 iters=8000
 
 key = jr.PRNGKey(int(time.time()))
