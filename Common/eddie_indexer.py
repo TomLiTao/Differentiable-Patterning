@@ -214,7 +214,7 @@ def index_to_kaNCA_hyperparameters(index):
 
 
 def index_to_pde_hyperparameters(index):
-	indices = np.unravel_index(index,(2,3,3,2,4,2))
+	indices = np.unravel_index(index,(2,3,2,4,2,4))
 	
 	INNER_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
 	OUTER_ACTIVATIONS = [jax.nn.tanh,jax.nn.sigmoid,lambda x:x][indices[1]]
@@ -224,14 +224,15 @@ def index_to_pde_hyperparameters(index):
 	#INIT_SCALE_TEXT = "1e-1"
 	STABILITY_FACTOR = 0.1
 	#STABILITY_FACTOR_TEXT = "1e-1"
-	OPTIMISER = [optax.nadam,optax.nadamw,optax.lamb][indices[2]]
-	LEARN_RATES = [1e-4,1e-3][indices[3]]
-	TRAJECTORY_LENGTH = [1,8,32,64][indices[4]]
-	USE_BIAS = [True,False][indices[5]]
+	OPTIMISER = [optax.nadam,optax.nadamw,optax.lamb][0]#[indices[2]]
+	LEARN_RATES = [1e-4,1e-3][indices[2]]
+	TRAJECTORY_LENGTH = [1,8,32,64][indices[3]]
+	USE_BIAS = [True,False][indices[4]]
 	INNER_TEXT = ["relu","tanh"][indices[0]]
 	OUTER_TEXT = ["tanh","sigmoid","identity"][indices[1]]
-	OPTIMISER_TEXT = ["nadam","nadamw","lamb"][indices[2]]
-	LEARN_RATE_TEXT = ["1e4","1e3"][indices[3]]
+	OPTIMISER_TEXT = ["nadam","nadamw","lamb"][0]#[indices[2]]
+	LEARN_RATE_TEXT = ["1e4","1e3"][indices[2]]
+	EQUATION_INDEX = indices[5]
 	return [
 		INNER_ACTIVATIONS,
 		OUTER_ACTIVATIONS,
@@ -244,4 +245,5 @@ def index_to_pde_hyperparameters(index):
 		INNER_TEXT,
 		OUTER_TEXT,
 		OPTIMISER_TEXT,
-		LEARN_RATE_TEXT]
+		LEARN_RATE_TEXT,
+		EQUATION_INDEX]
