@@ -101,30 +101,32 @@ class Ops(eqx.Module):
 
         def gradx(scale,nstds):
             # Gabor filter with large wavelength, x direction
-            
-            sigma = scale*0.5
+            if scale==1:
+                return jnp.outer(jnp.array([1.0,2.0,1.0]),jnp.array([-1.0,0.0,1.0]))/8.0
+            else:
+                sigma = scale*0.5
 
-            # Bounding box
-            # Number of standard deviation sigma
-            xmax = nstds * sigma
-            #max(
-            #    abs( )
-            #)
-            xmax = jnp.ceil(max(1, xmax))
-            ymax = nstds * sigma
-            #max(
-            #    abs(nstds * sigma_x * np.sin(theta)), abs( * np.cos(theta))
-            #)
-            ymax = jnp.ceil(max(1, ymax))
-            xmin = -xmax
-            ymin = -ymax
-            (y, x) = jnp.meshgrid(jnp.arange(ymin, ymax + 1), jnp.arange(xmin, xmax + 1))
+                # Bounding box
+                # Number of standard deviation sigma
+                xmax = nstds * sigma
+                #max(
+                #    abs( )
+                #)
+                xmax = jnp.ceil(max(1, xmax))
+                ymax = nstds * sigma
+                #max(
+                #    abs(nstds * sigma_x * np.sin(theta)), abs( * np.cos(theta))
+                #)
+                ymax = jnp.ceil(max(1, ymax))
+                xmin = -xmax
+                ymin = -ymax
+                (y, x) = jnp.meshgrid(jnp.arange(ymin, ymax + 1), jnp.arange(xmin, xmax + 1))
 
 
-            gb = -(x/sigma**2)*jnp.exp(
-                -0.5 * (x**2 / sigma**2 + y**2 / sigma**2)
-            )
-            return gb / jnp.sum(jnp.abs(gb))
+                gb = -(x/sigma**2)*jnp.exp(
+                    -0.5 * (x**2 / sigma**2 + y**2 / sigma**2)
+                )
+                return gb / jnp.sum(jnp.abs(gb))
 
         def gaussian(sigma,nstds):
             # Gaussian
@@ -153,32 +155,39 @@ class Ops(eqx.Module):
 
         def laplacian(sigma,nstds):
             # Laplacian of gaussian
-            sigma_x = sigma*0.5
-            
+            if sigma==1:
+                lap = jnp.array([[0.25,0.5,0.25],
+						         [0.5,-3,0.5],
+						         [0.25,0.5,0.25]])
+                # lap = jnp.array([[0.0,1.0,0.0],
+                #                  [1.0,-4.0,1.0],
+                #                  [0.0,1.0,0.0]])
+            else:
+                sigma_x = sigma*0.5
+                
+                # Bounding box
+                # Number of standard deviation sigma
+                xmax = nstds * sigma_x
+                #max(
+                #    abs( )
+                #)
+                xmax = jnp.ceil(max(1, xmax))
+                ymax = nstds * sigma_x
+                
+                ymax = jnp.ceil(max(1, ymax))
+                xmin = -xmax
+                ymin = -ymax
+                (y, x) = jnp.meshgrid(jnp.arange(ymin, ymax + 1), jnp.arange(xmin, xmax + 1))
 
-            # Bounding box
-             # Number of standard deviation sigma
-            xmax = nstds * sigma_x
-            #max(
-            #    abs( )
-            #)
-            xmax = jnp.ceil(max(1, xmax))
-            ymax = nstds * sigma_x
-            
-            ymax = jnp.ceil(max(1, ymax))
-            xmin = -xmax
-            ymin = -ymax
-            (y, x) = jnp.meshgrid(jnp.arange(ymin, ymax + 1), jnp.arange(xmin, xmax + 1))
 
-
-            gb = jnp.exp(
-                -0.5 * (x**2 / sigma_x**2 + y**2 / sigma_x**2)
-            )
-            lgb = (1-4*(x**2+y**2)/(sigma_x**2))*gb
-            
-            lap = -lgb
-            lap = lap - jnp.mean(lap)
-            lap = lap/jnp.sum(jnp.abs(lap))
+                gb = jnp.exp(
+                    -0.5 * (x**2 / sigma_x**2 + y**2 / sigma_x**2)
+                )
+                lgb = (1-4*(x**2+y**2)/(sigma_x**2))*gb
+                
+                lap = -lgb
+                lap = lap - jnp.mean(lap)
+                lap = lap/jnp.sum(jnp.abs(lap))
             
             return lap
         
