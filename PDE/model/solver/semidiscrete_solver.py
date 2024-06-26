@@ -15,12 +15,14 @@ class PDE_solver(AbstractModel):
 	def __call__(self, ts, y0):
 		solution = diffrax.diffeqsolve(diffrax.ODETerm(self.func),
 									   diffrax.Heun(),
+									   #diffrax.Euler(),
+									   #diffrax.Tsit5(),
 									   t0=ts[0],t1=ts[-1],
 									   dt0=self.dt0,
 									   y0=y0,
-									   max_steps=100*ts.shape[0],
+									   max_steps=1000*ts.shape[0],
 									   #stepsize_controller=diffrax.ConstantStepSize(),
-									   stepsize_controller=diffrax.PIDController(rtol=1e-1, atol=1e-2),
+									   stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-3),
 									   saveat=diffrax.SaveAt(ts=ts))
 		return solution.ts,solution.ys
 	
