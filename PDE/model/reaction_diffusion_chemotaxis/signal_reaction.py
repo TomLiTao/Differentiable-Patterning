@@ -1,4 +1,5 @@
 import jax
+import jax.numpy as jnp
 import equinox as eqx
 from jaxtyping import Array, Float
 
@@ -10,6 +11,7 @@ class Signal_reaction(eqx.Module):
     SIGNAL_CHANNELS: int
     TOTAL_CHANNELS: int
     STABILITY_FACTOR: float
+
 
 
 
@@ -101,7 +103,7 @@ class Signal_reaction(eqx.Module):
         for L in self.decay_layers:
             decay = L(decay)
         
-        return production - signals*decay - self.STABILITY_FACTOR*signals
+        return production - signals*decay - self.STABILITY_FACTOR*signals**3#signals*jnp.max(jnp.abs(signals))*self.STABILITY_FACTOR#self.STABILITY_FACTOR*signals
     
     def partition(self):
         return eqx.partition(self,eqx.is_array)

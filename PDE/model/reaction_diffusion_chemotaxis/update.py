@@ -42,19 +42,19 @@ class F(eqx.Module):
             SIGNAL_CHANNELS,
             PADDING,
             dx,
-            INTERNAL_ACTIVATION,
-            OUTER_ACTIVATION,
-            INIT_SCALE,
-            USE_BIAS,
+            INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
+            OUTER_ACTIVATION=OUTER_ACTIVATION,
+            INIT_SCALE=INIT_SCALE,
+            USE_BIAS=USE_BIAS,
             key=key1)
         self.cell_reaction = Cell_reaction(
             CELL_CHANNELS,
             SIGNAL_CHANNELS,
-            INTERNAL_ACTIVATION,
-            OUTER_ACTIVATION,
-            INIT_SCALE,
-            USE_BIAS,
-            STABILITY_FACTOR,
+            INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
+            OUTER_ACTIVATION=OUTER_ACTIVATION,
+            INIT_SCALE=INIT_SCALE,
+            USE_BIAS=USE_BIAS,
+            STABILITY_FACTOR=STABILITY_FACTOR,
             key=key2)
         self.signal_diffusion= Signal_diffusion(
             CELL_CHANNELS,
@@ -65,11 +65,11 @@ class F(eqx.Module):
         self.signal_reaction = Signal_reaction(
             CELL_CHANNELS,
             SIGNAL_CHANNELS,
-            INTERNAL_ACTIVATION,
-            OUTER_ACTIVATION,
-            INIT_SCALE,
-            USE_BIAS,
-            STABILITY_FACTOR,
+            INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
+            OUTER_ACTIVATION=jax.nn.relu,
+            INIT_SCALE=INIT_SCALE,
+            USE_BIAS=USE_BIAS,
+            STABILITY_FACTOR=STABILITY_FACTOR,
             key=key4)
     
     @eqx.filter_jit

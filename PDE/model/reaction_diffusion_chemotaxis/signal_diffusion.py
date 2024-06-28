@@ -22,6 +22,7 @@ class Signal_diffusion(eqx.Module):
                                                  groups=self.SIGNAL_CHANNELS)
         
         
+        
         self.ops = Ops(PADDING=PADDING,dx=dx)
         where = lambda l: l.weight
         self.diffusion_constants= eqx.tree_at(where,self.diffusion_constants,jax.numpy.abs(self.diffusion_constants.weight))

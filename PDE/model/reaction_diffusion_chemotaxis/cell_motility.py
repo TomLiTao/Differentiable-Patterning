@@ -64,6 +64,7 @@ class Cell_motility(eqx.Module):
             ),
             OUTER_ACTIVATION
         ]
+        
         where = lambda l:l.weight 
         self.chemotaxis_layers[0] = eqx.tree_at(where,
                                                  self.chemotaxis_layers[0],

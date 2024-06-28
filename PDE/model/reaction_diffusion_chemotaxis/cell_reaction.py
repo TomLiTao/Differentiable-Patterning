@@ -1,6 +1,8 @@
 import jax
+import jax.numpy as jnp
 import equinox as eqx
 from jaxtyping import Array, Float
+
 
 
 class Cell_reaction(eqx.Module):
@@ -60,7 +62,7 @@ class Cell_reaction(eqx.Module):
         cells = X[:self.CELL_CHANNELS]
         for L in self.layers:
             X = L(X)
-        return X - self.STABILITY_FACTOR*cells
+        return X - self.STABILITY_FACTOR*cells**3#cells*jnp.max(jnp.abs(cells))*self.STABILITY_FACTOR#self.STABILITY_FACTOR*cells
     def partition(self):
         return eqx.partition(self,eqx.is_array)
     

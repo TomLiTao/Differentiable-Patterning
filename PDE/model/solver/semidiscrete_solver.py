@@ -9,9 +9,13 @@ from Common.model.abstract_model import AbstractModel
 class PDE_solver(AbstractModel):
 	func: eqx.Module	
 	dt0: float
-	def __init__(self,F,dt=0.1):
+	rtol: float
+	atol: float
+	def __init__(self,F,dt=0.1,rtol=1e-3,atol=1e-3):
 		self.func = F
 		self.dt0 = dt
+		self.rtol=rtol
+		self.atol=atol
 	def __call__(self, ts, y0):
 		solution = diffrax.diffeqsolve(diffrax.ODETerm(self.func),
 									   diffrax.Heun(),
@@ -22,7 +26,7 @@ class PDE_solver(AbstractModel):
 									   y0=y0,
 									   max_steps=1000*ts.shape[0],
 									   #stepsize_controller=diffrax.ConstantStepSize(),
-									   stepsize_controller=diffrax.PIDController(rtol=1e-3, atol=1e-3),
+									   stepsize_controller=diffrax.PIDController(rtol=self.rtol, atol=self.atol),
 									   saveat=diffrax.SaveAt(ts=ts))
 		return solution.ts,solution.ys
 	
