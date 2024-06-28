@@ -6,6 +6,7 @@ from jax.experimental import mesh_utils
 from Common.utils import key_pytree_gen
 from Common.trainer.abstract_data_augmenter_tree import DataAugmenterAbstract
 import itertools
+
 class DataAugmenter(DataAugmenterAbstract):
 	
 	def __init__(self,data_true,hidden_channels=0):
