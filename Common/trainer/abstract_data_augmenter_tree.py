@@ -225,7 +225,7 @@ class DataAugmenterAbstract(object):
 	def noise(self,
 		   	  data:PyTree[Float[Array, "N C W H"]],
 			  am:Int[Scalar, ""],
-			  full=True,
+			  mode="full",
 			  key:Key=jr.PRNGKey(int(time.time()))):
 		"""
 		Adds uniform noise to the data
@@ -236,8 +236,8 @@ class DataAugmenterAbstract(object):
 			data to augment.
 		am : float in (0,1)
 			amount of noise, with 0 being none and 1 being pure noise
-		full : boolean optional
-			apply noise to observable channels, or all channels?. Defaults to True (all channels)
+		mode : string from "observable","hidden","full
+			apply noise to observable channels, hidden channels, or all channels?. Defaults to 0 (all channels)
 		key : jax.random.PRNGKey, optional
 			Jax random number key. The default is jax.random.PRNGKey(int(time.time())).
 		Returns
@@ -247,12 +247,13 @@ class DataAugmenterAbstract(object):
 
 		"""
 		key_array = key_pytree_gen(key, [len(data)])
-		#print(data[0].shape)
-		#noisy = am*jax.random.uniform(key,shape=data.shape) + (1-am)*data
+		
 		noisy = jtu.tree_map(lambda x,key:am*jr.uniform(key,shape=x.shape) + (1-am)*x,data,key_array)
 		
-		if not full:
+		if mode=="observable": # Overwrite correct data onto hidden channels
 			noisy = jtu.tree_map(lambda x,y:x.at[:,self.OBS_CHANNELS:].set(y[:,self.OBS_CHANNELS:]),noisy,data)
+		elif mode=="hidden": # Overwrite correct data onto observable channels
+			noisy = jtu.tree_map(lambda x,y:x.at[:,:self.OBS_CHANNELS].set(y[:,:self.OBS_CHANNELS]),noisy,data)
 		return noisy
 	
 

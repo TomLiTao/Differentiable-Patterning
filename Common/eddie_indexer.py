@@ -247,3 +247,12 @@ def index_to_pde_hyperparameters(index):
 		OPTIMISER_TEXT,
 		LEARN_RATE_TEXT,
 		EQUATION_INDEX]
+
+
+def index_to_kaNCA_pde_parameters(index):
+	indices = np.unravel_index(index,(4,6,3))
+	EQUATION_INDEX = indices[0]
+	MINIBATCHES = [1,2,4,8,16,32][indices[1]]
+	NCA_STEPS_PER_PDE_STEP = [1,8,16][indices[2]]
+
+	return EQUATION_INDEX,MINIBATCHES,NCA_STEPS_PER_PDE_STEP
