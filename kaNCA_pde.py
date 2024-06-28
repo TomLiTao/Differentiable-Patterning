@@ -28,7 +28,7 @@ key = jax.random.fold_in(key,index)
 #MINIBATCHES = 32
 #EQUATION_INDEX = 0
 #NCA_STEPS_PER_PDE_STEP = 1
-EQUATION_INDEX,MINIBATCHES,NCA_STEPS_PER_PDE_STEP = index_to_kaNCA_pde_parameters
+EQUATION_INDEX,MINIBATCHES,NCA_STEPS_PER_PDE_STEP = index_to_kaNCA_pde_parameters(index)
 
 ITERS = 8000
 CHANNELS = 8
