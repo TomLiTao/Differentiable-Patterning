@@ -6,7 +6,7 @@ import datetime
 import Common.trainer.loss as loss
 import jaxpruner
 from functools import partial
-from NCA.trainer.tensorboard_log import NCA_Train_log, kaNCA_Train_log
+from NCA.trainer.tensorboard_log import NCA_Train_log, kaNCA_Train_log, kaNCA_Train_pde_log
 from NCA.model.NCA_KAN_model import kaNCA
 from NCA.trainer.data_augmenter_nca import DataAugmenter
 from Common.utils import key_pytree_gen
@@ -97,7 +97,7 @@ class NCA_Trainer(object):
 			self.IS_LOGGING = True
 			self.LOG_DIR = "logs/"+self.model_filename+"/train"
 			if isinstance(self.NCA_model ,kaNCA):
-				self.LOGGER = kaNCA_Train_log(self.LOG_DIR,data)
+				self.LOGGER = kaNCA_Train_pde_log(self.LOG_DIR,data)
 			else:
 				self.LOGGER = NCA_Train_log(self.LOG_DIR, data)
 			print("Logging training to: "+self.LOG_DIR)
@@ -352,6 +352,8 @@ class NCA_Trainer(object):
 			
 			# Do data augmentation update
 			if error==0:
+				#print(x)
+				#print(y)
 				x,y = self.DATA_AUGMENTER.data_callback(x, y, i)
 				
 				# Save model whenever mean_loss beats the previous best loss
@@ -376,6 +378,7 @@ class NCA_Trainer(object):
 			print("|-|-|-|-|-|-  Training did not converge, model was not saved  -|-|-|-|-|-|")
 		elif self.IS_LOGGING and model_saved:
 			x,y = self.DATA_AUGMENTER.split_x_y(1)
+			x,y = self.DATA_AUGMENTER.data_callback(x,y,0)
 			self.LOGGER.tb_training_end_log(self.NCA_model,x,t*2*x[0].shape[0],self.BOUNDARY_CALLBACK)
 		#self.NCA_model = nca
 		#self.NCA_model.save(self.MODEL_PATH,overwrite=True)
