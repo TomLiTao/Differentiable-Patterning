@@ -44,7 +44,7 @@ key = jax.random.fold_in(key,index)
 
 
 
-CHANNELS = 16
+CHANNELS = 8
 CELL_CHANNELS = 1
 SIGNAL_CHANNELS = CHANNELS-CELL_CHANNELS
 SIZE = 64
@@ -100,6 +100,7 @@ elif EQUATION_INDEX==3:
 
 Y = rearrange(Y,"T B C X Y -> B T C X Y")
 Y = Y[:,:,:1] # Only include main channel, not inhibitor/other chemical
+Y = 2*(Y-jnp.min(Y))/(jnp.max(Y)-jnp.min(Y)) - 1
 Y = jnp.pad(Y,((0,0),(0,0),(0,CHANNELS-1),(0,0),(0,0)),mode="constant")
 print(Y.shape)
 
@@ -107,7 +108,7 @@ print(Y.shape)
 # Define PDE model
 func = F(CELL_CHANNELS,
          SIGNAL_CHANNELS,
-         PADDING="REPLICATE",
+         PADDING="CIRCULAR",
          dx=1.0,
          INTERNAL_ACTIVATION=INTERNAL_ACTIVATIONS,
          OUTER_ACTIVATION=OUTER_ACTIVATIONS,
@@ -128,5 +129,5 @@ opt = non_negative_diffusion_chemotaxis(schedule,optimiser=OPTIMISER)
 trainer = PDE_Trainer(pde,
                       Y,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_chemreacdiff/"+PDE_STR+"_act_"+INTERNAL_TEXT+"_"+OUTER_TEXT+"_opt_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_tl_"+str(TRAJECTORY_LENGTH)+"_bias_"+str(USE_BIAS))
+                      model_filename="pde_hyperparameters_chemreacdiff/cubic_stablised_"+PDE_STR+"_act_"+INTERNAL_TEXT+"_"+OUTER_TEXT+"_opt_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_tl_"+str(TRAJECTORY_LENGTH)+"_bias_"+str(USE_BIAS))
 trainer.train(TRAJECTORY_LENGTH,iters,optimiser=opt,LOG_EVERY=100)

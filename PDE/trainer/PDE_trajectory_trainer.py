@@ -242,7 +242,7 @@ class PDE_Trainer(object):
 		pde = self.PDE_solver
 		pde_diff,pde_static = pde.partition()
 		if optimiser is None:
-			schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
+			schedule = optax.exponential_decay(1e-4, transition_steps=iters, decay_rate=0.99)
 			#self.OPTIMISER = optax.adam(schedule)
 			self.OPTIMISER = non_negative_diffusion_chemotaxis(schedule)
 		else:

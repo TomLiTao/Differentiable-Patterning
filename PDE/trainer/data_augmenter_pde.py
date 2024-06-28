@@ -2,6 +2,7 @@ import jax
 import time
 from Common.trainer.abstract_data_augmenter_tree import DataAugmenterAbstract
 
+
 class DataAugmenter(DataAugmenterAbstract):
 	"""
 		Inherits the methods of DataAugmenter, but overwrites the batch cloning in the init
