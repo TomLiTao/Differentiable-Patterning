@@ -253,6 +253,6 @@ def index_to_kaNCA_pde_parameters(index):
 	indices = np.unravel_index(index,(4,4))
 	EQUATION_INDEX = indices[0]
 	
-	TIME_SAMPLING = [8,16,32,64][indices[2]]
+	TIME_SAMPLING = [8,16,32,64][indices[1]]
 
 	return EQUATION_INDEX,TIME_SAMPLING
