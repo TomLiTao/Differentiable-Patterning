@@ -66,7 +66,7 @@ elif EQUATION_INDEX==1:
     func = F_chhabra(PADDING="CIRCULAR",dx=0.5,KERNEL_SCALE=1)
     v_func = eqx.filter_vmap(func,in_axes=(None,0,None),out_axes=0)
     solver = PDE_solver(v_func,dt=0.1)
-    T,Y = solver(ts=jnp.linspace(0,5000,257),y0=x0)
+    T,Y = solver(ts=jnp.linspace(0,5000,513),y0=x0)
 
 elif EQUATION_INDEX==2:
     PDE_STR = "hillen_painter"
@@ -78,7 +78,7 @@ elif EQUATION_INDEX==2:
                             KERNEL_SCALE=1)
     v_func = eqx.filter_vmap(func,in_axes=(None,0,None),out_axes=0)
     solver = PDE_solver(v_func,dt=0.01)
-    T,Y = solver(ts=jnp.linspace(0,100,257),y0=x0)
+    T,Y = solver(ts=jnp.linspace(0,100,513),y0=x0)
 elif EQUATION_INDEX==3:
     PDE_STR = "cahn_hilliard"
     scale=2.0
@@ -86,7 +86,7 @@ elif EQUATION_INDEX==3:
     func = F_cahn_hilliard(PADDING="CIRCULAR",dx=1.5,KERNEL_SCALE=1)
     v_func = eqx.filter_vmap(func,in_axes=(None,0,None),out_axes=0)
     solver = PDE_solver(v_func,dt=0.5)
-    T,Y = solver(ts=jnp.linspace(0,20000,257),y0=x0)
+    T,Y = solver(ts=jnp.linspace(0,20000,513),y0=x0)
 
 Y = rearrange(Y,"T B C X Y -> B T C X Y")
 Y = Y[:,:,:1] # Only include main channel, not inhibitor/other chemical
