@@ -1,5 +1,5 @@
 # Differentiable-Patterning
-A collection of different projects and ideas that use differentiable programming to explore self organising systems with emergent pattern formation. Primarily for my PhD research
+A collection of different projects and ideas that use differentiable programming to explore self organising systems with emergent pattern formation. Primarily for my PhD research. Built with JAX.
 
 ## Requirements 
  - tensorflow 2.13.0 (just for tensorboard logging)
@@ -13,25 +13,51 @@ A collection of different projects and ideas that use differentiable programming
  - jaxlib 0.4.13
  - optax 0.1.7
  - equinox 0.10.4
+ - jaxtyping 0.2.25
+ - einops 0.7.0
 
 
-## Code Structure
+# Code Structure
+There are 3 main branches of work here: 
+ - NCA (neural cellular automata)
+ - PDE (partial differential equations)
+ - ABM (agent based modelling)
 
-- Neural Cellular Automata (NCA)
-  - NCA/model/NCA_model.py includes a JAX/Equinox implementation of the NCA model
-  - NCA/model/boundary.py includes handling of complex boundary conditions and hard coded environment channels
-  - NCA/trainer/NCA_trainer.py includes a class that uses Optax to fit the NCA models to data
-  - NCA/trainer/data_augmenter.py includes a class for augmenting data during and before training. Handles explicit multi-gpu parallelism as well.
-  - NCA/trainer/data_augmenter_tree.py performs the same data augmentation as above, but on PyTrees of data, to allow training simultaneously on multiple trajectories of different sizes
-  - NCA/trainer/loss.py includes loss function definitions
-  - NCA/trainer/tensorboard_log.py logs performance of model during training to tensorboard
-  - NCA/NCA_visualiser.py includes methods for visualising and interpretting trained NCA
-  - NCA/utils.py includes various file io and data pre-processing methods
-- Partial Differential Equations (PDE)
-  - PDE/reaction_diffusion_advection/update.py includes a spatially discretised version of a general multi-species reaction diffusion advection equation, as an Equinox module
-  - PDE/solver/semi_discrete_solver.py includes an auto-differentiable numerical solver of spatially discretised PDEs, implemented in Diffrax
-  - PDE/trainer/data_augmenter_pde.py includes a subclass of NCA/trainer/data_augmenter_tree, tailored to PDE training
-  - PDE/trainer/PDE_trainer.py includes a class that uses Optax to fit PDE paramaters such that the solutions of the PDE approximate a given time series
-  - PDE/trainer/optimiser.py includes a custom Optax optimiser that keeps diffusion coefficients non-negative
-  - PDE/trainer/tensorboard_log.py logs performance of model during training to tensorboard
-  - PDE/PDE_visualiser.py includes methods for visualising and interpretting trained PDE
+There is considerable overlap between these, so they all inherit from base classes in Common. Everything that builds into a model is a subclass of ```equinox.Module```, so that propagation of gradients works correctly.
+## Common structure
+- ```Common.model.abstract_model.py``` contains the ```AbstractModel``` class, a subclass of ```equinox.Module```
+  - This contains a few extra utility methods like saving to / loading from files
+- ```Common.model.spatial_operators.py``` contains the ```Ops``` class, a subclass of ```equinox.Module```
+  - This performs finite difference approximations of any 2D vector calculus operations (divergence, gradient, laplacians etc.)
+- ```Common.model.boundary.py``` contains the ```model_boundary``` class
+  - This enforces complex boundary conditions on model states during training and evalutation
+- ```Common.trainer.abstract_data_augmenter_tree.py``` contains a ```DataAugmenterAbstract``` class
+  - Subclasses of this handle any data augmentation during training of models.
+  - Data should be a PyTree (list) of arrays, which allows for simultaneously training to different sized patterns
+- ```Common.trainer.abstract_data_augmenter_array.py``` contains a ```DataAugmenterAbstract``` class
+  - Same as above, but only accepts data as one array. Does multi-gpu data parallelism through JAX sharding
+- ```Common.trainer.abstract_tensorboard_log.py``` contains a ```Train_log``` class
+  - Subclasses of this save various aspects of model parameters/state during and after training
+- ```Common.trainer.loss.py``` contains various custom loss functions
+- ```Common.utils.py``` contains various helper functions for loading and processing specific datasets
+
+## NCA structure
+Everything is subclassed from Common. Important details are that:
+- Everything in ```NCA.model.``` is an ```AbstractModel``` subclass that also uses the ```Ops``` class
+- ```NCA.trainer.NCA_trainer.py``` includes the ```NCA_Trainer``` class
+  - This uses Optax to fit the NCA models to data
+- ```NCA.trainer.data_augmenter_*``` Include various ```DataAugmenter``` subclasses, each for training to a different task 
+- ```NCA.trainer.tensorboard_log.py``` subclasses ```Train_log``` to visualise model parameters during training
+- ```NCA.NCA_visualiser.py``` produces nice plots summarizing model parameters of an ```NCA``` model
+
+## PDE structure
+Everything is subclassed from Common. Important details are that:
+- ```PDE.model.solver.semidiscrete_solver.py``` contains the ```PDE_solver``` class, a subclass of ```AbstractModel```
+  - This uses ```diffrax``` to perform a fully auto-differentiable numerical ODE solve on a spatially discretised PDE (i.e. a system of ODEs)
+  - Needs to be initialised with the RHS of the PDE, an ```equinox.Module``` with call signature ```F: t,X,args -> X```  
+- ```PDE.model.reaction_diffusion_advection.update.py``` includes an auto-differentiable multi-species reaction diffusion advection equation, parameterised by neural networks
+- ```PDE.model.reaction_diffusion_chemotaxis.update.py``` includes an auto-differentiable multi-cell multi-signal reaction diffusion chemotaxis equation, parameterised by neural networks
+- ```PDE.model.fixed_models.update_*``` contains four nice example PDEs that perform pattern formation
+- ```PDE.trainer.PDE_trainer.py``` includes the ```PDE_Trainer``` that uses Optax to fit PDE paramaters such that the solutions of the PDE approximate a given time series
+- ```PDE/trainer/optimiser.py``` includes custom ```optax.GradientTransformation()``` that keeps diffusion coefficients non-negative
+  
