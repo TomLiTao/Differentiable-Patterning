@@ -1,5 +1,7 @@
 # Differentiable-Patterning
-A collection of different projects and ideas that use differentiable programming to explore self organising systems with emergent pattern formation. Primarily for my PhD research. Built with JAX.
+A collection of different projects and ideas that use differentiable programming to explore self organising systems with emergent pattern formation. Primarily for my PhD research. 
+
+The general idea is to build auto-differentiable complex systems that can be efficiently trained to yield specified (via data) spatio-temporal patterning.
 
 ## Requirements 
  - tensorflow 2.13.0 (just for tensorboard logging)
