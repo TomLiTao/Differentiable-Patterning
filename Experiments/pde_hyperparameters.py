@@ -7,7 +7,7 @@ from PDE.trainer.optimiser import non_negative_diffusion_chemotaxis
 from einops import repeat
 from PDE.model.reaction_diffusion_chemotaxis.update import F
 from PDE.model.solver.semidiscrete_solver import PDE_solver
-from PDE.trainer.PDE_trajectory_trainer import PDE_Trainer
+from PDE.trainer.PDE_trainer import PDE_Trainer
 from PDE.model.fixed_models.update_gray_scott import F as F_gray_scott
 from PDE.model.fixed_models.update_chhabra import F as F_chhabra
 from PDE.model.fixed_models.update_hillen_painter import F as F_hillen_painter
