@@ -19,7 +19,6 @@ from einops import rearrange
 import time
 import sys
 
-
 index=int(sys.argv[1])-1
 
 
