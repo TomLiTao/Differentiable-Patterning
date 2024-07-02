@@ -10,7 +10,7 @@ from NCA.trainer.tensorboard_log import NCA_Train_log, kaNCA_Train_log, kaNCA_Tr
 from NCA.model.NCA_KAN_model import kaNCA
 from NCA.trainer.data_augmenter_nca import DataAugmenter
 from Common.utils import key_pytree_gen
-from NCA.model.boundary import NCA_boundary
+from Common.model.boundary import model_boundary
 from tqdm import tqdm
 from jaxtyping import Float,Array,Key
 import time
@@ -83,9 +83,9 @@ class NCA_Trainer(object):
 		for b in range(self.BATCHES):
 			if BOUNDARY_MASK is not None:
 			
-				self.BOUNDARY_CALLBACK.append(NCA_boundary(BOUNDARY_MASK[b]))
+				self.BOUNDARY_CALLBACK.append(model_boundary(BOUNDARY_MASK[b]))
 			else:
-				self.BOUNDARY_CALLBACK.append(NCA_boundary(None))
+				self.BOUNDARY_CALLBACK.append(model_boundary(None))
 		
 		#print(jax.tree_util.tree_structure(self.BOUNDARY_CALLBACK))
 		# Set logging behvaiour based on provided filename
@@ -97,7 +97,7 @@ class NCA_Trainer(object):
 			self.IS_LOGGING = True
 			self.LOG_DIR = "logs/"+self.model_filename+"/train"
 			if isinstance(self.NCA_model ,kaNCA):
-				self.LOGGER = kaNCA_Train_pde_log(self.LOG_DIR,data)
+				self.LOGGER = kaNCA_Train_log(self.LOG_DIR,data)
 			else:
 				self.LOGGER = NCA_Train_log(self.LOG_DIR, data)
 			print("Logging training to: "+self.LOG_DIR)
