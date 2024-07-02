@@ -1,25 +1,31 @@
+import jax
+# import os
+# os.environ['XLA_FLAGS'] = (
+#     '--xla_gpu_triton_gemm_any=True '
+# )
+
+from NCA.model.NCA_model import NCA
+from NCA.model.NCA_gated_model import gNCA
 from NCA.model.NCA_KAN_model import kaNCA
-from Common.utils import load_emoji_sequence
-from Common.eddie_indexer import index_to_kaNCA_hyperparameters
-from NCA.trainer.data_augmenter_nca import DataAugmenter
 from NCA.trainer.NCA_trainer import NCA_Trainer
+from Common.utils import load_emoji_sequence
+from Common.eddie_indexer import index_to_data_nca_type
+from NCA.trainer.data_augmenter_nca import DataAugmenter
 import time
 import optax
-import jax
-import jax.random as jr
 import sys
 
 data_index=int(sys.argv[1])-1
-#data_index,nca_type_index = index_to_data_nca_type(index)
 
-CHANNELS=12
-BASIS_FUNCS = 16
-DOWNSAMPLE = 2
-T=32
-iters=8000
+print(data_index)
 
-key = jr.PRNGKey(int(time.time()))
-key = jr.fold_in(key,data_index)
+CHANNELS=32
+DOWNSAMPLE = 3
+t=32
+iters=2000
+
+key = jax.random.PRNGKey(int(time.time()))
+key = jax.random.fold_in(key,data_index)
 
 class data_augmenter_subclass(DataAugmenter):
     #Redefine how data is pre-processed before training
@@ -55,37 +61,34 @@ if data_index == 7:
     data = load_emoji_sequence(["lizard_1f98e.png","microbe.png","anatomical_heart.png","anatomical_heart.png"],downsample=DOWNSAMPLE)
     data_filename = "li_mi_an"
 
+# print(data_filename)
+# print(nca_type_index)
 
-
-schedule = optax.exponential_decay(1e-4, transition_steps=iters, decay_rate=0.99)
+schedule = optax.exponential_decay(1e-3, transition_steps=iters, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
-                        optax.nadam(schedule))
+                        optax.nadamw(schedule))
+#optimiser = optax.sgd(1e-3)
 
-
-
-nca = kaNCA(CHANNELS,
+print("Training anisotropic nca")
+nca = NCA(CHANNELS,
             KERNEL_STR=["ID","LAP","GRAD"],
             KERNEL_SCALE=1,
             FIRE_RATE=0.5,
             PADDING="REPLICATE",
-            BASIS_FUNCS=BASIS_FUNCS,
-            BASIS_WIDTH=4,
-            INIT_SCALE=0.1,
             key=key)
-
-
-				  	    
 opt = NCA_Trainer(nca,
-                  data,
-                  model_filename="kaNCA_demo/channels_"+str(CHANNELS)+"_res_"+str(BASIS_FUNCS)+"_data_"+data_filename,
-                  DATA_AUGMENTER=data_augmenter_subclass,
-                  GRAD_LOSS=True)
+                    data,
+                    model_filename="test_sparse_emoji_anisotropic_nca_"+data_filename,
+                    DATA_AUGMENTER=data_augmenter_subclass,
+                    GRAD_LOSS=True)
 
-opt.train(T,
-        iters,
-        WARMUP=10,
-        optimiser=optimiser,
-        LOSS_FUNC_STR="euclidean",
-        LOOP_AUTODIFF="checkpointed",
-        LOG_EVERY=50,
-        key=key)
+opt.train(t,
+    iters,
+    WARMUP=20,
+    optimiser=optimiser,
+    LOSS_FUNC_STR="euclidean",
+    SPARSE_PRUNING=True,
+    LOG_EVERY=10,
+    LOOP_AUTODIFF="lax",
+    key=key)
+    
