@@ -7,7 +7,7 @@ import datetime
 import time
 from PDE.trainer.data_augmenter_pde import DataAugmenter
 import Common.trainer.loss as loss
-from NCA.model.boundary import NCA_boundary
+from Common.model.boundary import model_boundary
 from PDE.trainer.tensorboard_log import PDE_Train_log
 from PDE.trainer.optimiser import non_negative_diffusion_chemotaxis
 from PDE.model.solver.semidiscrete_solver import PDE_solver
@@ -87,9 +87,9 @@ class PDE_Trainer(object):
 		for b in range(self.BATCHES):
 			if BOUNDARY_MASK is not None:
 			
-				self.BOUNDARY_CALLBACK.append(NCA_boundary(BOUNDARY_MASK[b]))
+				self.BOUNDARY_CALLBACK.append(model_boundary(BOUNDARY_MASK[b]))
 			else:
-				self.BOUNDARY_CALLBACK.append(NCA_boundary(None))
+				self.BOUNDARY_CALLBACK.append(model_boundary(None))
 		
 		#print(jax.tree_util.tree_structure(self.BOUNDARY_CALLBACK))
 		# Set logging behvaiour based on provided filename
