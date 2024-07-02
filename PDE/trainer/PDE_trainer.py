@@ -1,4 +1,5 @@
 import jax
+jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import optax
 import equinox as eqx
@@ -10,9 +11,12 @@ from NCA.model.boundary import NCA_boundary
 from PDE.trainer.tensorboard_log import PDE_Train_log
 from PDE.trainer.optimiser import non_negative_diffusion_chemotaxis
 from PDE.model.solver.semidiscrete_solver import PDE_solver
+from functools import partial
+from Common.model.spatial_operators import Ops
 from jaxtyping import Float, Array, Int, Scalar, Key
 import diffrax
 from tqdm import tqdm
+from einops import repeat,rearrange
 class PDE_Trainer(object):
 	
 	
@@ -21,7 +25,8 @@ class PDE_Trainer(object):
 				 data: Float[Array, "Batches T C W H"],
 				 model_filename=None,
 				 DATA_AUGMENTER = DataAugmenter,
-				 BOUNDARY_MASK = None, 
+				 BOUNDARY_MASK = None,
+				 GRAD_LOSS = True,
 				 SHARDING = None, 
 				 directory="models/"):
 		"""
@@ -66,14 +71,15 @@ class PDE_Trainer(object):
 		# Set up variables 
 
 		self.OBS_CHANNELS = self.PDE_solver.func.CELL_CHANNELS#data[0].shape[1]
-		self.CHANNELS = self.PDE_solver.func.CELL_CHANNELS + self.PDE_solver.func.SIGNAL_CHANNELS
+		self.GRAD_LOSS = GRAD_LOSS
+		self._op = Ops(PADDING=PDE_solver.func.PADDING,dx=PDE_solver.func.dx)
+		
 		# Set up data and data augmenter class
 		self.DATA_AUGMENTER = DATA_AUGMENTER(data)
 		self.DATA_AUGMENTER.data_init()
 		self.BATCHES = len(data)
-		self.DATA_STEPS = data.shape[1]
+		self.TRAJECTORY_LENGTH = data.shape[1]
 		print("Batches = "+str(self.BATCHES))
-		print("Data timesteps = "+str(self.DATA_STEPS))
 		# Set up boundary augmenter class
 		# length of BOUNDARY_MASK PyTree should be same as number of batches
 		
@@ -101,43 +107,56 @@ class PDE_Trainer(object):
 		print("Saving model to: "+self.MODEL_PATH)
 	
 	
-	
+	def spatial_loss_gradients(self,X: Float[Array, "T C W H"])->Float[Array, "T s W H"]:
+		def _spatial(X: Float[Array, "C W H"]):
+			_grad = self._op.Grad(X)
+			_gx = _grad[0]
+			_gy = _grad[1]
+			_lap = self._op.Lap(X)
+			return rearrange([_gx,_gy,_lap],"b C x y -> (b C) x y")
+		return jax.vmap(_spatial,in_axes=0,out_axes=0)(X)
 	@eqx.filter_jit	
 	def loss_func(self,
-			   	  y_pred: Float[Array, "{self.DATA_STEPS}-1 {self.CHANNELS} W H"],
-				  y: Float[Array, "{self.DATA_STEPS}-1 {self.CHANNELS} W H"])->Float[Array,"{self.DATA_STEPS}-1"]:
+			   	  x: Float[Array, "T C W H"],
+				  y: Float[Array, "T C_OBS W H"])->Float[Array,"T"]:
 		"""
 		NOTE: VMAP THIS OVER BATCHES TO HANDLE DIFFERENT SIZES OF GRID IN EACH BATCH
 	
 		Parameters
 		----------
-		x : float32 array [N,CHANNELS,_,_]
+		x : float32 array [T,CHANNELS,_,_]
 			NCA state
-		y : float32 array [N,OBS_CHANNELS,_,_]
+		y : float32 array [T,OBS_CHANNELS,_,_]
 			data
 		Returns
 		-------
 		loss : float32 array [N]
 			loss for each timestep of trajectory
 		"""
-		y_pred_obs = y_pred[:,:self.OBS_CHANNELS]
+		x_obs = x[:,:self.OBS_CHANNELS]
 		y_obs = y[:,:self.OBS_CHANNELS]
-		return loss.euclidean(y_pred_obs,y_obs)
+		L = loss.euclidean(x_obs,y_obs)
+		if self.GRAD_LOSS:
+			x_obs_spatial = self.spatial_loss_gradients(x_obs)
+			y_obs_spatial = self.spatial_loss_gradients(y_obs)
+			L += 0.1*loss.euclidean(x_obs_spatial,y_obs_spatial)
+		return L
 	
 	def train(self,
 		      t,
 			  iters,
 			  optimiser=None,  
 			  WARMUP=64,
-			  SAMPLING = 8,			        
+			  SAMPLING = 8,
+			  LOG_EVERY=10,	        
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
-		
+		At each training iteration, select a random subsequence of length t to train to
 
 		Parameters
 		----------
 		t : Int
-			Number of timesteps for the PDE to predict at once. 
+			Length of sub-sequence of full data trajectory to fit PDE to
 		iters : Int
 			Number of training iterations.
 		optimiser : optax.GradientTransformation
@@ -163,10 +182,10 @@ class PDE_Trainer(object):
 		"""
 		
 		
-		@eqx.filter_jit
+		@partial(eqx.filter_jit,donate="all-except-first")
 		def make_step(pde,
-					  x: Float[Array,"Batches 1 {self.CHANNELS} W H"],
-					  y: Float[Array,"Batches {self.DATA_STEPS}-1 {self.CHANNELS} W H"],
+					  x: Float[Array,"Batches T C W H"],
+					  y: Float[Array,"Batches T C W H"],
 					  t: Int[Scalar,""],
 					  opt_state,
 					  key: Key):	
@@ -182,7 +201,7 @@ class PDE_Trainer(object):
 			y : float32 array [BATCHES,N,OBS_CHANNELS,_,_]
 				true predictions (time offset with respect to input axes)
 			t : int
-				number of PDE timesteps between each data step
+				number of PDE timesteps to predict - mapping X[:,i]->X[:,i+1:i+t]
 			opt_state : optax.OptState
 				internal state of self.OPTIMISER
 			key : jax.random.PRNGKey, optional
@@ -200,17 +219,11 @@ class PDE_Trainer(object):
 
 			"""
 			@eqx.filter_value_and_grad(has_aux=True)
-			def compute_loss(pde_diff,
-							 pde_static,
-							 x: Float[Array,"Batches 1 {self.CHANNELS} W H"],
-							 y: Float[Array,"Batches {self.DATA_STEPS}-1 {self.CHANNELS} W H"],
-							 t: Int[Scalar,""],
-							 key: Key):
-				
+			def compute_loss(pde_diff,pde_static,x,y,t,key):
 				_pde = eqx.combine(pde_diff,pde_static)
 				#v_pde = jax.vmap(lambda x:_pde(jnp.linspace([0,t,t+1]),x)[1][1:],in_axes=0,out_axes=0,axis_name="N")
-				w_pde = lambda x:_pde(jnp.linspace(0,t*self.DATA_STEPS,self.DATA_STEPS),x)[1][1:] # Only return y[1:] from PDE
-				vv_pde= lambda x: jax.tree_util.tree_map(w_pde,x) # treemap rather than vmap as different data batches can have different sizes
+				v_pde = lambda x:_pde(jnp.linspace(0,t,t+1),x)[1][1:] # Don't need to vmap over N
+				vv_pde= lambda x: jax.tree_util.tree_map(v_pde,x) # different data batches can have different sizes
 				v_loss_func = lambda x,y: jnp.array(jax.tree_util.tree_map(self.loss_func,x,y))
 				y_pred=vv_pde(x)
 				losses = v_loss_func(y_pred,y)
@@ -221,14 +234,15 @@ class PDE_Trainer(object):
 			loss_x,grads = compute_loss(pde_diff, pde_static, x, y, t, key)
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, pde_diff)
 			pde = eqx.apply_updates(pde,updates)
-			return pde,opt_state,loss_x
+			(mean_loss,(x,losses)) = loss_x
+			return pde,x,y,t,opt_state,mean_loss,losses,key
 		
 		
 		# Initialise training
 		pde = self.PDE_solver
 		pde_diff,pde_static = pde.partition()
 		if optimiser is None:
-			schedule = optax.exponential_decay(1e-2, transition_steps=iters, decay_rate=0.99)
+			schedule = optax.exponential_decay(1e-4, transition_steps=iters, decay_rate=0.99)
 			#self.OPTIMISER = optax.adam(schedule)
 			self.OPTIMISER = non_negative_diffusion_chemotaxis(schedule)
 		else:
@@ -244,13 +258,18 @@ class PDE_Trainer(object):
 		model_saved = False
 		error = 0
 		error_at = 0
+		x0 = self.DATA_AUGMENTER.data_saved[0][0]
 		for i in tqdm(range(iters)):
 			key = jax.random.fold_in(key,i)
 			x,y = self.DATA_AUGMENTER.sub_trajectory_split(L=t,key=key)
-			pde,opt_state,(mean_loss,(x,losses)) = make_step(pde, x, y, t, opt_state,key)
-			
+			#pde,opt_state, = make_step(pde, x, y, t, opt_state,key)
+			pde,x,y,t,opt_state,mean_loss,losses,key = make_step(pde, x, y, t, opt_state,key)
+			#print(mean_loss)
+			#print(losses.shape)
 			if self.IS_LOGGING:
-				self.LOGGER.tb_training_loop_log_sequence(losses, x, i, pde)
+				full_trajectory = pde(jnp.linspace(0,self.TRAJECTORY_LENGTH,self.TRAJECTORY_LENGTH//t),x0)[1]
+				full_trajectory = repeat(full_trajectory,"T C X Y -> B T C X Y",B=1)
+				self.LOGGER.tb_training_loop_log_sequence(losses, full_trajectory, i, pde,LOG_EVERY=LOG_EVERY)
 			
 			
 			if jnp.isnan(mean_loss):
