@@ -66,36 +66,36 @@ def euclidean(x,y,key=None):
 	"""
 	return jnp.sqrt(jnp.mean(((x-y)**2),axis=[-1,-2,-3]))
 
-@jax.jit
-def sinkhorn_divergence_loss(x,y):
-	"""
-		Sinkhorn loss - OT distance between 2 point clouds in 2D space
+# @jax.jit
+# def sinkhorn_divergence_loss(x,y):
+# 	"""
+# 		Sinkhorn loss - OT distance between 2 point clouds in 2D space
 
-		Parameters
-		----------
-		x : float32 [N_x,2]
-			predictions
-		y : float32 [N_y,2]
-			true data
+# 		Parameters
+# 		----------
+# 		x : float32 [N_x,2]
+# 			predictions
+# 		y : float32 [N_y,2]
+# 			true data
 
-		Returns
-		-------
-		loss : float32 
-			loss 
+# 		Returns
+# 		-------
+# 		loss : float32 
+# 			loss 
 
-	"""
+# 	"""
 
 
-	geom = pointcloud.PointCloud(x,y)
-	ot = sinkhorn_divergence.sinkhorn_divergence(
-		geom,
-		x=geom.x,
-		y=geom.y,
-		static_b=True,
-	)
-	return ot.divergence
-	# ot = sinkhorn.Sinkhorn()(linear_problem.LinearProblem(geom))
-	# return ot.reg_ot_cost
+# 	geom = pointcloud.PointCloud(x,y)
+# 	ot = sinkhorn_divergence.sinkhorn_divergence(
+# 		geom,
+# 		x=geom.x,
+# 		y=geom.y,
+# 		static_b=True,
+# 	)
+# 	return ot.divergence
+# 	# ot = sinkhorn.Sinkhorn()(linear_problem.LinearProblem(geom))
+# 	# return ot.reg_ot_cost
 	
 	
 
