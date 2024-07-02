@@ -1,9 +1,9 @@
 import jax.numpy as jnp
 import jax
-from ott.geometry import pointcloud
-from ott.tools import sinkhorn_divergence
-from ott.problems.linear import linear_problem
-from ott.solvers.linear import sinkhorn
+#from ott.geometry import pointcloud
+#from ott.tools import sinkhorn_divergence
+#from ott.problems.linear import linear_problem
+#from ott.solvers.linear import sinkhorn
 #from eqxvision.models import alexnet
 #from eqxvision.utils import CLASSIFICATION_URLS
 import equinox as eqx
