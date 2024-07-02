@@ -9,6 +9,7 @@ import os
 import scipy as sp
 import glob
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from matplotlib.patches import Circle
 from tqdm import tqdm
 from tensorflow.python.framework import tensor_util
@@ -711,3 +712,32 @@ def adhesion_mask_batch(data):
     masks[i] = adhesion_mask(data[:,i:i+1])
   return masks
 
+
+
+def my_animate(img,clip=True):
+	"""
+	Boilerplate code to produce matplotlib animation
+	Parameters
+	----------
+	img : float32 or int array [N,rgb,_,_]
+		img must be float in range [0,1] 
+	"""
+	if clip:
+		im_min = 0
+		im_max = 1
+		img = np.clip(img,im_min,im_max)
+	else:
+		im_min = np.min(img)
+		im_max = np.max(img)
+
+	
+	
+	img = np.einsum("ncxy->nxyc",img)
+	frames = [] # for storing the generated images
+	fig = plt.figure()
+	for i in range(img.shape[0]):
+		
+		frames.append([plt.imshow(img[i],vmin=im_min,vmax=im_max,animated=True)])
+		
+	ani = animation.ArtistAnimation(fig, frames, interval=50, blit=True,repeat_delay=0)
+	plt.show()
