@@ -17,6 +17,7 @@ The general idea is to build auto-differentiable complex systems that can be eff
  - equinox 0.10.4
  - jaxtyping 0.2.25
  - einops 0.7.0
+ - diffrax 0.5.
 
 
 # Code Structure
