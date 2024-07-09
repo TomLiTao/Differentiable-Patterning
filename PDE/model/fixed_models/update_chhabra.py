@@ -19,7 +19,7 @@ class F(eqx.Module):
     def __init__(self,
                  PADDING,
                  dx,
-                 KERNEL_SCALE,
+                 KERNEL_SCALE=1,
                  KA=0.0,
                  KI=1.0,
                  KdA=0.001,
@@ -29,7 +29,7 @@ class F(eqx.Module):
                  DA=0.0025, # 0.0025 or 0.014
                  DI=0.4
                  ):
-        """Implementation of basic pattern formation model from figure 4 in Hillen & Painter "A users guide to PDE models for chemotaxis"
+        """Implementation of basic pattern formation model from Chhabra et al 2019
 
         Args:
             PADDING (str): Boundary type: 'ZEROS', 'REFLECT', 'REPLICATE' or 'CIRCULAR'
