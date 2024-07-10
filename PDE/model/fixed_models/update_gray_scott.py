@@ -16,7 +16,7 @@ class F(eqx.Module):
     def __init__(self,
                  PADDING,
                  dx,
-                 KERNEL_SCALE,
+                 KERNEL_SCALE=1,
                  DA=0.1,
                  DB=0.05,
                  alpha=0.06230,
