@@ -11,13 +11,13 @@ The general idea is to build auto-differentiable complex systems that can be eff
  - scikit-image 0.19.1
  - tqdm 4.64.0
  - matplotlib 3.7.2
- - jax 0.4.13
- - jaxlib 0.4.13
- - optax 0.1.7
- - equinox 0.10.4
+ - jax 0.4.30
+ - jaxlib 0.4.30
+ - optax 0.2.2
+ - equinox 0.11.4
  - jaxtyping 0.2.25
  - einops 0.7.0
- - diffrax 0.5.
+ - diffrax 0.5.1
 
 
 # Code Structure
