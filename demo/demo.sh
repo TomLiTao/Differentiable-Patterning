@@ -1,6 +1,6 @@
 #!/bin/sh
 # Grid Engine options (lines prefixed with #$)
-#$ -N gray              
+#$ -N NCA_DEMO              
 #$ -cwd
 #$ -e ../Eddie_OP
 #$ -o ../Eddie_OP                  
@@ -22,5 +22,5 @@ module load anaconda/2024.02
 source activate jax
 
 # Run the program
-python ./gray_scott_pde_demo.py
+python ./train_nca_to_pde_demo.py
 conda deactivate
