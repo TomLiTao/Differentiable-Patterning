@@ -1,8 +1,0 @@
-WARNING: If you use conda to create environments, your home directory may fill up. Please see our documentation at 
- https://www.wiki.ed.ac.uk/display/ResearchServices/Anaconda for advice.
-/exports/eddie/scratch/s2009765/anaconda/envs/jax/lib/python3.11/site-packages/jax/_src/core.py:678: FutureWarning: unhashable type: <class 'jax._src.interpreters.partial_eval.DynamicJaxprTracer'>. Attempting to hash a tracer will lead to an error in a future JAX release.
-  warnings.warn(
-/exports/eddie/scratch/s2009765/anaconda/envs/jax/lib/python3.11/site-packages/jax/_src/core.py:678: FutureWarning: unhashable type: <class 'jax._src.interpreters.partial_eval.DynamicJaxprTracer'>. Attempting to hash a tracer will lead to an error in a future JAX release.
-  warnings.warn(
-/exports/eddie/scratch/s2009765/anaconda/envs/jax/lib/python3.11/site-packages/jax/_src/core.py:678: FutureWarning: unhashable type: <class 'jax._src.interpreters.partial_eval.DynamicJaxprTracer'>. Attempting to hash a tracer will lead to an error in a future JAX release.
-  warnings.warn(

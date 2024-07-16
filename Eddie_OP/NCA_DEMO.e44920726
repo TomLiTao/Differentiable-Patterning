@@ -1,0 +1,8 @@
+WARNING: If you use conda to create environments, your home directory may fill up. Please see our documentation at 
+ https://www.wiki.ed.ac.uk/display/ResearchServices/Anaconda for advice.
+Traceback (most recent call last):
+  File "/exports/eddie/scratch/s2009765/Differentiable-Patterning/demo/./train_nca_to_pde_demo.py", line 13, in <module>
+    from NCA.trainer.NCA_trainer import NCA_Trainer
+  File "/exports/eddie/scratch/s2009765/Differentiable-Patterning/demo/../NCA/trainer/NCA_trainer.py", line 7, in <module>
+    import jaxpruner
+ModuleNotFoundError: No module named 'jaxpruner'

@@ -1,0 +1,3 @@
+Batches = 2
+Logging training to: logs/demo/nca_pde_chhabra_example/train
+Saving model to: models/demo/nca_pde_chhabra_example
