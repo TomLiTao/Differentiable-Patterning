@@ -352,10 +352,7 @@ class NCA_Trainer(object):
 			
 			# Do data augmentation update
 			if error==0:
-				#print(x)
-				#print(y)
 				x,y = self.DATA_AUGMENTER.data_callback(x, y, i)
-				
 				# Save model whenever mean_loss beats the previous best loss
 				if i>WARMUP:
 					if mean_loss < best_loss:
@@ -373,12 +370,9 @@ class NCA_Trainer(object):
 			print("|-|-|-|-|-|-  X reached NaN at step "+str(error_at)+" -|-|-|-|-|-|")
 		elif error==3:
 			print( "|-|-|-|-|-|-  Loss exceded "+str(loss_thresh)+" at step "+str(error_at)+", optimisation probably diverging  -|-|-|-|-|-|")
-		#assert model_saved, "|-|-|-|-|-|-  Training did not converge, model was not saved  -|-|-|-|-|-|"
 		if error!=0 and model_saved==False:
 			print("|-|-|-|-|-|-  Training did not converge, model was not saved  -|-|-|-|-|-|")
 		elif self.IS_LOGGING and model_saved:
 			x,y = self.DATA_AUGMENTER.split_x_y(1)
 			x,y = self.DATA_AUGMENTER.data_callback(x,y,0)
 			self.LOGGER.tb_training_end_log(self.NCA_model,x,t*2*x[0].shape[0],self.BOUNDARY_CALLBACK)
-		#self.NCA_model = nca
-		#self.NCA_model.save(self.MODEL_PATH,overwrite=True)
