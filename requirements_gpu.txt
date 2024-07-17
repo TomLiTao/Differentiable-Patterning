@@ -30,7 +30,7 @@ jax-cuda12-pjrt==0.4.30
 jax-cuda12-plugin==0.4.30
 jaxlib==0.4.30
 jaxopt==0.8.3
-jaxpruner==0.1
+jaxpruner @ git+https://github.com/google-research/jaxpruner
 jaxtyping==0.2.31
 keras==3.4.1
 kiwisolver==1.4.5
