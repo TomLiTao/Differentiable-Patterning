@@ -5,6 +5,7 @@ import jax
 #     '--xla_gpu_triton_gemm_any=True '
 # )
 
+
 from NCA.model.NCA_model import NCA
 from NCA.model.NCA_gated_model import gNCA
 from NCA.model.NCA_KAN_model import kaNCA
