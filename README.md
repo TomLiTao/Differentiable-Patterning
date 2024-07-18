@@ -4,20 +4,11 @@ A collection of different projects and ideas that use differentiable programming
 The general idea is to build auto-differentiable complex systems that can be efficiently trained to yield specified (via data) spatio-temporal patterning.
 
 ## Requirements 
- - tensorflow 2.13.0 (just for tensorboard logging)
- - tensorboard 2.13.0
- - numpy 1.24.4
- - scipy 1.9.0
- - scikit-image 0.19.1
- - tqdm 4.64.0
- - matplotlib 3.7.2
- - jax 0.4.13
- - jaxlib 0.4.13
- - optax 0.1.7
- - equinox 0.10.4
- - jaxtyping 0.2.25
- - einops 0.7.0
- - diffrax 0.5.
+To run this code, either:
+ - `pip install -r requirements_<DEVICE>.txt`
+ - `conda env create -f env_<DEVICE>.yml`
+
+Where `<DEVICE>` is either `cpu` or `gpu`.
 
 
 # Code Structure
