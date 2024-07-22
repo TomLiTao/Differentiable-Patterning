@@ -119,5 +119,5 @@ opt = optax.chain(optax.scale_by_param_block_norm(),
 trainer = PDE_Trainer(pde,
                       Y,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_advreacdiff/cubic_stablised_"+PDE_STR+"_act_"+INTERNAL_TEXT+"_"+OUTER_TEXT+"_opt_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_tl_"+str(TRAJECTORY_LENGTH)+"_bias_"+str(USE_BIAS))
+                      model_filename="pde_hyperparameters_advreacdiff/cubic_stablised_"+PDE_STR+"_act_"+INTERNAL_TEXT+"_"+OUTER_TEXT+"_opt_"+OPTIMISER_TEXT+"_lr_"+LEARN_RATE_TEXT+"_tl_"+str(TRAJECTORY_LENGTH)+"_bias_"+str(USE_BIAS)+"_zero_"+str(ZERO_INIT))
 trainer.train(TRAJECTORY_LENGTH,iters,optimiser=opt,LOG_EVERY=100)
