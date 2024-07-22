@@ -36,6 +36,7 @@ OUTER_TEXT = PARAMS[9]
 OPTIMISER_TEXT = PARAMS[10]
 LEARN_RATE_TEXT = PARAMS[11]
 EQUATION_INDEX = PARAMS[12]
+ZERO_INIT = PARAMS[13]
 
 key = jax.random.PRNGKey(int(time.time()))
 key = jax.random.fold_in(key,index)
@@ -103,6 +104,7 @@ func = F(CHANNELS,
          INIT_SCALE=INIT_SCALE,
          STABILITY_FACTOR=STABILITY_FACTOR,
          USE_BIAS=USE_BIAS,
+         ZERO_INIT=ZERO_INIT,
          key=key)
 pde = PDE_solver(func,dt=0.1)
 
@@ -110,7 +112,9 @@ pde = PDE_solver(func,dt=0.1)
 # Define optimiser and lr schedule
 iters = 2000
 schedule = optax.exponential_decay(LEARN_RATE, transition_steps=iters, decay_rate=0.99)
-opt = non_negative_diffusion(schedule,optimiser=OPTIMISER)
+#opt = non_negative_diffusion(schedule,optimiser=OPTIMISER)
+opt = optax.chain(optax.scale_by_param_block_norm(),
+			OPTIMISER(schedule))
 
 trainer = PDE_Trainer(pde,
                       Y,

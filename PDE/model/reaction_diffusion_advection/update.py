@@ -11,7 +11,7 @@ import jax.numpy as jnp
 import time
 from PDE.model.reaction_diffusion_advection.advection import V
 from PDE.model.reaction_diffusion_advection.reaction import R
-from PDE.model.reaction_diffusion_advection.diffusion import D
+from PDE.model.reaction_diffusion_advection.diffusion_nonlinear import D
 from jaxtyping import Array, Float, PyTree, Scalar
 
 class F(eqx.Module):
@@ -58,6 +58,11 @@ class F(eqx.Module):
 		self.f_d = D(N_CHANNELS=N_CHANNELS,
 			   		 PADDING=PADDING,
 					 dx=dx,
+			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
+			   		 OUTER_ACTIVATION=OUTER_ACTIVATION,
+					 INIT_SCALE=INIT_SCALE,
+					 USE_BIAS=USE_BIAS,
+					 ZERO_INIT=ZERO_INIT,
 					 key=key3)
 
 	@eqx.filter_jit

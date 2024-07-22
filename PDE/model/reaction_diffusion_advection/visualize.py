@@ -42,8 +42,11 @@ def plot_weight_matrices(pde):
 	w1_v = pde.func.f_v.layers[0].weight[:,:,0,0]
 	w2_v = pde.func.f_v.layers[2].weight[:,:,0,0]
 	
-	w1_d = pde.func.f_d.diffusion_constants.weight[:,:,0,0]
-	
+	#w1_d = pde.func.f_d.diffusion_constants.weight[:,:,0,0]
+	w1_d = pde.func.f_d.layers[0].weight[:,:,0,0]
+	w2_d = pde.func.f_d.layers[2].weight[:,:,0,0]
+
+
 	w1_r_p = pde.func.f_r.production_layers[0].weight[:,:,0,0]
 	w2_r_p = pde.func.f_r.production_layers[2].weight[:,:,0,0]
 
@@ -68,13 +71,21 @@ def plot_weight_matrices(pde):
 	figs.append(plot_to_image(figure))
 	
 	figure = plt.figure(figsize=(5,5))
-	#col_range = max(np.max(w1_d),-np.min(w1_d))
-	#plt.imshow(w1_d,cmap="seismic",vmax=col_range,vmin=-col_range)
-	plt.plot(w1_d)
-	plt.ylabel("Weight")
-	plt.xlabel("Channel")
-	plt.title("Diffusion weights")
+	col_range = max(np.max(w1_d),-np.min(w1_d))
+	plt.imshow(w1_d,cmap="seismic",vmax=col_range,vmin=-col_range)
+	plt.ylabel("Output")
+	plt.xlabel("Input")
+	plt.title("Nonlinear diffusion layer 1")
 	figs.append(plot_to_image(figure))
+
+	figure = plt.figure(figsize=(5,5))
+	col_range = max(np.max(w2_d),-np.min(w2_d))
+	plt.imshow(w2_d,cmap="seismic",vmax=col_range,vmin=-col_range)
+	plt.ylabel("Output")
+	plt.xlabel("Input")
+	plt.title("Nonlinear diffusion layer 2")
+	figs.append(plot_to_image(figure))
+
 
 	figure = plt.figure(figsize=(5,5))
 	col_range = max(np.max(w1_r_p),-np.min(w1_r_p))
