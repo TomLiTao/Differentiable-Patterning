@@ -70,7 +70,7 @@ class PDE_Trainer(object):
 		
 		# Set up variables 
 
-		self.OBS_CHANNELS = self.PDE_solver.func.CELL_CHANNELS#data[0].shape[1]
+		self.OBS_CHANNELS = data[0].shape[1]
 		self.GRAD_LOSS = GRAD_LOSS
 		self._op = Ops(PADDING=PDE_solver.func.PADDING,dx=PDE_solver.func.dx)
 		
