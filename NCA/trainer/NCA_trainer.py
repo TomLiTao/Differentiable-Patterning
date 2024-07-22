@@ -174,6 +174,7 @@ class NCA_Trainer(object):
 			  LOSS_FUNC_STR = "euclidean",
 			  LOOP_AUTODIFF = "checkpointed",
 			  SPARSE_PRUNING = False,
+			  TARGET_SPARSITY = 0.5,
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
 		Perform t steps of NCA on x, compare output to y, compute loss and gradients of loss wrt model parameters, and update parameters.
@@ -187,7 +188,7 @@ class NCA_Trainer(object):
 		optimiser : optax.GradientTransformation
 			the optax optimiser to use when applying gradient updates to model parameters.
 			if None, constructs adamw with exponential learning rate schedule
-		STATE_REGULARISER : int optional
+		STATE_REGULARISER : float optional
 			Strength of intermediate state regulariser. Defaults to 1.0
 		WARMUP : int optional
 			Number of iterations to wait for until starting model checkpointing
@@ -199,6 +200,10 @@ class NCA_Trainer(object):
 			Which loss function to use
 		LOOP_AUTODIFF : string 
 			How to save gradients through loop over timesteps. "checkpointed" or "lax"
+		SPARSE_PRUNING : boolean
+			Whether to prune model weights to a target sparsity
+		TARGET_SPARSITY : float
+			Target sparsity for model pruning - [0,1]
 		key : jax.random.PRNGKey, optional
 			Jax random number key. The default is jax.random.PRNGKey(int(time.time())).
 		Returns
@@ -314,7 +319,7 @@ class NCA_Trainer(object):
 		model_saved = False
 		error = 0
 		error_at = 0
-		SPARSITY = jnp.concat((jnp.zeros(WARMUP),jnp.linspace(0,0.5,iters-WARMUP)))
+		SPARSITY = jnp.concat((jnp.zeros(WARMUP),jnp.linspace(0,TARGET_SPARSITY,iters-WARMUP)))
 		#--- Do training run ---
 		for i in tqdm(range(iters)):
 			key = jax.random.fold_in(key,i)
