@@ -14,5 +14,5 @@ export CUDA_VISIBLE_DEVICES=$SGE_HGR_gpu
 module load anaconda
 source activate jax_gpu
 
-python ./pde_hyperparameters.py $1
+python ./pde_hyperparameters_advection.py $1
 source deactivate
