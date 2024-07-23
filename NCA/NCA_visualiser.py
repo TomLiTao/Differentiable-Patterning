@@ -188,23 +188,25 @@ def plot_weight_kernel_boxplot_show(nca):
 	return fig,ax
 
 def plot_weight_matrix_kernel_subplots(nca):
-	
+	ws = nca.get_weights()
 	w_in = nca.layers[0].weight[:,:,0,0]
 	w_out= nca.layers[2].weight[:,:,0,0]
+	print(len(ws))
 	N_KERNELS = nca.N_FEATURES // nca.N_CHANNELS
 	K_STR = nca.KERNEL_STR.copy()
-	if "DIFF" in K_STR:
+	K_STR = sort_kstr(K_STR)
+	if "GRAD" in K_STR:
 		for i in range(len(K_STR)):
-			if K_STR[i]=="DIFF":
-				K_STR[i]="DIFF X"
-				K_STR.insert(i,"DIFF Y")
+			if K_STR[i]=="GRAD":
+				K_STR[i]="GRAD X"
+				K_STR.insert(i,"GRAD Y")
 	
 	#weights_split = []
 	#figs = []
 	fig,ax = plt.subplots(1,N_KERNELS + 1,sharey=True,figsize=(12,6))
 	for k in range(N_KERNELS):
-		w_k = w_in[:,k::N_KERNELS]
-		
+		#w_k = w_in[:,k::N_KERNELS]
+		w_k = w_in[:,k*nca.N_CHANNELS:(k+1)*nca.N_CHANNELS]
 		col_range = max(np.max(w_k),-np.min(w_k))
 		ax[k].imshow(w_k,cmap="seismic",vmax=col_range,vmin=-col_range)
 		ax[k].set_xlabel("Channel inputs")
@@ -222,7 +224,7 @@ def plot_weight_matrix_kernel_subplots(nca):
 
 
 
-def my_animate(img):
+def my_animate(img,clip=True):
 	"""
 	Boilerplate code to produce matplotlib animation
 	Parameters
@@ -230,11 +232,31 @@ def my_animate(img):
 	img : float32 or int array [N,rgb,_,_]
 		img must be float in range [0,1] 
 	"""
-	img = np.clip(img,0,1)
+	if clip:
+		im_min = 0
+		im_max = 1
+		img = np.clip(img,im_min,im_max)
+	else:
+		im_min = np.min(img)
+		im_max = np.max(img)
+
+	
+	
 	img = np.einsum("ncxy->nxyc",img)
 	frames = [] # for storing the generated images
 	fig = plt.figure()
 	for i in range(img.shape[0]):
-		frames.append([plt.imshow(img[i],vmin=0,vmax=1,animated=True)])
+		
+		frames.append([plt.imshow(img[i],vmin=im_min,vmax=im_max,animated=True)])
+		
 	ani = animation.ArtistAnimation(fig, frames, interval=50, blit=True,repeat_delay=0)
 	plt.show()
+
+
+def sort_kstr(K_STR):
+	# Want list of kernel types in a specific order for plotting things correctly
+	K_SORTED = []
+	for s in ["ID","DIFF","GRAD","AV","LAP"]:
+		if s in K_STR:
+			K_SORTED.append(s)
+	return K_SORTED
