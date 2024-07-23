@@ -4,7 +4,7 @@ import numpy as np
 from NCA.NCA_visualiser import *
 from Common.trainer.abstract_tensorboard_log import Train_log
 from tqdm import tqdm
-
+from jaxtyping import Float,Array,Key,PyTree
 
 class NCA_Train_log(Train_log):
 	"""
@@ -30,7 +30,9 @@ class NCA_Train_log(Train_log):
 			kernel_weight_figs = plot_weight_kernel_boxplot(nca)
 			tf.summary.image("Input weights per kernel",np.array(kernel_weight_figs)[:,0],step=i)
 
-	def log_model_outputs(self, x, i):
+	def log_model_outputs(self,
+					      x: PyTree[Float[Array, "N CHANNELS x y"], "B"],
+						  i):
 		with self.train_summary_writer.as_default():
 			BATCHES = len(x)
 			for b in range(BATCHES):
@@ -58,7 +60,12 @@ class NCA_Train_log(Train_log):
 	
 
 	
-	def tb_training_end_log(self,nca,x,t,boundary_callback,write_images=True):
+	def tb_training_end_log(self,
+						 	nca,
+							x: PyTree[Float[Array, "N CHANNELS x y"], "B"],
+							t,
+							boundary_callback,
+							write_images=True):
 		"""
 		
 
@@ -66,31 +73,35 @@ class NCA_Train_log(Train_log):
 
 		"""
 		#print(nca)
+		BATCHES = len(x)
+		CHANNELS = x[0].shape[1]
+		print("Running final trained model for "+str(t)+" steps")
 		with self.train_summary_writer.as_default():
 			trs = []
 			trs_h = []
 			
-			for b in tqdm(range(len(x))):
+			for b in tqdm(range(BATCHES)):
 				
 				T =nca.run(t,x[b][0],boundary_callback[b])
 				T_h = []
-				
-				for i in range(t):
-					t_h = T[i][4:]
-					extra_zeros = (-t_h.shape[0])%3
-					t_h = np.pad(t_h,((0,extra_zeros),(0,0),(0,0)))
-					t_h = np.reshape(t_h,(3,-1,t_h.shape[-1]))
-					T_h.append(t_h)
+				if CHANNELS>4:
+					for i in range(t):
+						t_h = T[i][4:]
+						extra_zeros = (-t_h.shape[0])%3
+						t_h = np.pad(t_h,((0,extra_zeros),(0,0),(0,0)))
+						t_h = np.reshape(t_h,(3,-1,t_h.shape[-1]))
+						T_h.append(t_h)
 
+					trs_h.append(np.array(T_h))
 					#print(t_h.shape)
 				trs.append(T)
-				trs_h.append(np.array(T_h))
 			for i in range(t):
 				outputs = [tr[i,:3] for tr in trs]
-				outputs_hidden = [tr[i,:3] for tr in trs_h]
-				#for b in range(len(x)):
 				tf.summary.image("Final NCA trajectory",np.einsum("ncxy->nxyc",outputs),step=i,max_outputs=len(outputs))	
-				tf.summary.image("Final NCA trajectory hidden channels",np.einsum("ncxy->nxyc",outputs_hidden),step=i,max_outputs=len(outputs_hidden))
+				#for b in range(len(x)):
+				if CHANNELS>4:
+					outputs_hidden = [tr[i,:3] for tr in trs_h]
+					tf.summary.image("Final NCA trajectory hidden channels",np.einsum("ncxy->nxyc",outputs_hidden),step=i,max_outputs=len(outputs_hidden))
 				
 				#tf.summary.image("Final NCA trajectory, batch "+str(b),np.einsum("ncxy->nxyc",trs[b][i][np.newaxis,:3,...]),step=i)
 				#tf.summary.image("Final NCA trajectory hidden channels, batch "+str(b),np.einsum("ncxy->nxyc",trs_h[b][i][np.newaxis,...]),step=i)
