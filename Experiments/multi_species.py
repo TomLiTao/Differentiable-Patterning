@@ -1,6 +1,6 @@
 from NCA.trainer.NCA_trainer import NCA_Trainer
 from Common.utils import load_emoji_sequence
-from Common.eddie_indexer import index_to_data_nca_type
+from Common.eddie_indexer import index_to_data_nca_type_multi_species
 from NCA.trainer.data_augmenter_nca import DataAugmenter
 from NCA.model.NCA_model import NCA
 from NCA.model.NCA_gated_model import gNCA
@@ -10,7 +10,7 @@ import jax
 import jax.numpy as np
 import optax
 import matplotlib.pyplot as plt
-
+import sys
 
 
 CHANNELS = 32           # How many channels to use in the model
@@ -20,7 +20,7 @@ NCA_STEPS = 64          # How many NCA steps between each image in the data sequ
 
 
 index=int(sys.argv[1])-1
-data_index,model_index = index
+data_index,model_index = index_to_data_nca_type_multi_species(index)
 
 class data_augmenter_subclass(DataAugmenter):
     #Redefine how data is pre-processed before training
