@@ -196,6 +196,11 @@ def index_to_data_nca_type(index):
 	nca_type_index = indices[1]
 	return data_index,nca_type_index
 
+def index_to_data_nca_type_multi_species(index):
+	indices = np.unravel_index(index,(2,2))
+	data_index = indices[0]
+	nca_type_index = indices[1]
+	return data_index,nca_type_index
 
 
 def index_to_kaNCA_hyperparameters(index):
