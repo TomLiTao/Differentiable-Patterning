@@ -1,5 +1,3 @@
-import sys
-sys.path.append('..')
 from NCA.trainer.NCA_trainer import NCA_Trainer
 from Common.utils import load_emoji_sequence
 from Common.eddie_indexer import index_to_data_nca_type
