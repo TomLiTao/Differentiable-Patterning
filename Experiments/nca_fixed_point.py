@@ -22,10 +22,10 @@ CHANNELS=32
 DOWNSAMPLE = 1
 t=64
 iters=8000
-
+PATCH_SIZE=32
 
 #@jax.jit
-def sample_random_patch(trajectory,key,size=8):
+def sample_random_patch(trajectory,key,size=PATCH_SIZE):
     T = trajectory.shape[0]
     t =  jr.randint(key,(1,),0,T-1)[0]
     inds = jr.randint(key,(2,),0,trajectory.shape[2]-size)
@@ -146,4 +146,4 @@ for i in tqdm(range(iters)):
     fp = nca_fixed_point(nca_deterministic,x_patch,key)
     fps.append(fp)
 fps = np.array(fps)
-np.save("data/fps_"+filename+".npy",fps)
+np.save("data/fps_32_"+filename+".npy",fps)
