@@ -68,6 +68,7 @@ if model_index == 0:
                 ACTIVATION=jax.nn.relu,
                 PADDING="CIRCULAR",
                 FIRE_RATE=0.5)
+    nca_filename = "nca"
     
 if model_index==1:
     print("Training gated NCA model on "+data_filename)
@@ -76,13 +77,12 @@ if model_index==1:
                 ACTIVATION=jax.nn.relu,
                 PADDING="CIRCULAR",
                 FIRE_RATE=0.5)
-
-
+    nca_filename = "gnca"
 
 trainer = NCA_Trainer(model,
                       data,
                       DATA_AUGMENTER=data_augmenter_subclass,
-                      model_filename="multi_species_stable_"+data_filename)
+                      model_filename="multi_species_stable_"+nca_filename+"_"+data_filename)
 
 schedule = optax.exponential_decay(1e-3, transition_steps=TRAINING_STEPS, decay_rate=0.99)
 optimiser = optax.chain(optax.scale_by_param_block_norm(),
