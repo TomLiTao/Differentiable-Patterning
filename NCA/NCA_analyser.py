@@ -56,4 +56,5 @@ def nca_fixed_point(nca,x_guess,key,rtol=1e-1,atol=1e-1):
 
     func = lambda x,args: nca(x,lambda x:x,key=key)
     solver = optx.LevenbergMarquardt(rtol=rtol,atol=atol)
-    return optx.fixed_point(func,solver,y0=x_guess)
+    sol = optx.fixed_point(func,solver,y0=x_guess)
+    return sol.value
