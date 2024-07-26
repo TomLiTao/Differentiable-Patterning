@@ -4,7 +4,7 @@ from Common.eddie_indexer import index_to_data_nca_type_multi_species
 from NCA.trainer.data_augmenter_nca import DataAugmenter
 from NCA.model.NCA_model import NCA
 from NCA.model.NCA_gated_model import gNCA
-from einops import rearrange
+from einops import rearrange,repeat
 import time
 import jax
 import jax.numpy as np
@@ -26,7 +26,7 @@ class data_augmenter_subclass(DataAugmenter):
     #Redefine how data is pre-processed before training
     def data_init(self,SHARDING=None):
         data = self.return_saved_data()
-        data = self.duplicate_batches(data,2)
+        #data = self.duplicate_batches(data,2)
         data = self.pad(data, 10) 		
         self.save_data(data)
         return None
@@ -48,7 +48,11 @@ if data_index == 4:
     data = load_emoji_sequence(["crab.png","microbe.png","avocado_1f951.png","alien_monster.png"],downsample=DOWNSAMPLE)
     data_filename = "cr_mi_av_al"
 
+
 data = rearrange(data,"B T C W H -> T B C W H")
+
+data = repeat(data,"B T C W H -> (B b) T C W H",b=2)
+
 initial_condition = np.array(data)
 
 W = initial_condition.shape[-2]
