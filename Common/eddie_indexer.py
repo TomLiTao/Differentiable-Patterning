@@ -256,6 +256,34 @@ def index_to_pde_hyperparameters(index):
 		ZERO_INIT]
 
 
+
+def index_to_pde_advection_hyperparameters(index):
+	indices = np.unravel_index(index,(2,2,2,2,3,4))
+	INTERNAL_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
+	ADVECTION_OUTER_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[1]]
+	OPTIMISER = [optax.nadam,optax.nadamw][indices[2]]
+	LEARN_RATE = [1e-4,1e-3][indices[3]]
+	TRAJECTORY_LENGTH = [8,32,64][indices[4]]
+	EQUATION_INDEX = indices[5]
+
+	INTERNAL_TEXT = ["relu","tanh"][indices[0]]
+	OUTER_TEXT = ["relu","tanh"][indices[1]]
+
+	OPTIMISER_TEXT = ["nadam","nadamw"][indices[2]]
+	LEARN_RATE_TEXT = ["1e-4","1e-3"][indices[3]]
+	params = {"INTERNAL_ACTIVATIONS":INTERNAL_ACTIVATIONS,
+		   	  "ADVECTION_OUTER_ACTIVATIONS":ADVECTION_OUTER_ACTIVATIONS,
+			  "OPTIMISER":OPTIMISER,
+			  "LEARN_RATE":LEARN_RATE,
+			  "TRAJECTORY_LENGTH":TRAJECTORY_LENGTH,
+			  "INTERNAL_TEXT":INTERNAL_TEXT,
+			  "OUTER_TEXT":OUTER_TEXT,
+			  "OPTIMISER_TEXT":OPTIMISER_TEXT,
+			  "LEARN_RATE_TEXT":LEARN_RATE_TEXT,
+			  "EQUATION_INDEX":EQUATION_INDEX}
+	return params
+
+
 def index_to_kaNCA_pde_parameters(index):
 	indices = np.unravel_index(index,(4,4))
 	EQUATION_INDEX = indices[0]
