@@ -26,10 +26,11 @@ class F(eqx.Module):
 				 PADDING,
 				 dx,
 				 INTERNAL_ACTIVATION=jax.nn.relu,
-				 OUTER_ACTIVATION=jax.nn.tanh,
+				 ADVECTION_OUTER_ACTIVATION=jax.nn.tanh,
 				 INIT_SCALE=0.01,
 				 USE_BIAS=True,
 				 STABILITY_FACTOR=0.01,
+				 REACTION_INIT_SCALE_RATIO=0.01,
 				 ZERO_INIT=True,
 				 key=jax.random.PRNGKey(int(time.time()))):
 		self.N_CHANNELS = N_CHANNELS
@@ -39,8 +40,8 @@ class F(eqx.Module):
 
 		self.f_r = R(N_CHANNELS=N_CHANNELS,
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
-					 OUTER_ACTIVATION=OUTER_ACTIVATION,
-					 INIT_SCALE=INIT_SCALE,
+					 OUTER_ACTIVATION=jax.nn.relu, # SHOULD BE STRICTLY NON NEGATIVE FOR INTERPRETABILITY
+					 INIT_SCALE=INIT_SCALE*REACTION_INIT_SCALE_RATIO, # Should be much smaller initial scaling
 					 USE_BIAS=USE_BIAS,
 					 STABILITY_FACTOR=STABILITY_FACTOR,
 					 ZERO_INIT=ZERO_INIT,
@@ -49,7 +50,7 @@ class F(eqx.Module):
 			   		 PADDING=PADDING,
 					 dx=dx,
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
-			   		 OUTER_ACTIVATION=OUTER_ACTIVATION,
+			   		 OUTER_ACTIVATION=ADVECTION_OUTER_ACTIVATION, # Can be any activation function
 					 INIT_SCALE=INIT_SCALE,
 					 USE_BIAS=USE_BIAS,
 					 ZERO_INIT=ZERO_INIT,
@@ -59,10 +60,10 @@ class F(eqx.Module):
 			   		 PADDING=PADDING,
 					 dx=dx,
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
-			   		 OUTER_ACTIVATION=OUTER_ACTIVATION,
+			   		 OUTER_ACTIVATION=jax.nn.relu, # MUST BE STRICTLY NON NEGATIVE FOR NUMERICAL STABILITY
 					 INIT_SCALE=INIT_SCALE,
 					 USE_BIAS=USE_BIAS,
-					 ZERO_INIT=ZERO_INIT,
+					 ZERO_INIT=False,
 					 key=key3)
 
 	@eqx.filter_jit

@@ -140,7 +140,7 @@ def plot_weight_kernel_boxplot(pde):
 	w1_v = pde.func.f_v.layers[0].weight[:,:,0,0]
 	#w2_v = pde.func.f_v.layers[2].weight[:,:,0,0]
 	
-	#w1_d = pde.func.f_d.layers[-1].weight[:,:,0,0]
+	w1_d = pde.func.f_d.layers[0].weight[:,:,0,0]
 	
 	w1_r_p = pde.func.f_r.production_layers[0].weight[:,:,0,0]
 	
@@ -158,12 +158,12 @@ def plot_weight_kernel_boxplot(pde):
 	plt.title("Advection 1st layer")
 	figs.append(plot_to_image(figure))
 	
-	#figure = plt.figure(figsize=(5,5))
-	#plt.boxplot(w1_d.T)
-	#plt.xlabel("Channels")
-	#plt.ylabel("Weights")
-	#plt.title("Diffusion 1st layer")
-	#figs.append(plot_to_image(figure))
+	figure = plt.figure(figsize=(5,5))
+	plt.boxplot(w1_d.T)
+	plt.xlabel("Channels")
+	plt.ylabel("Weights")
+	plt.title("Diffusion 1st layer")
+	figs.append(plot_to_image(figure))
 	
 	figure = plt.figure(figsize=(5,5))
 	plt.boxplot(w1_r_p.T)
