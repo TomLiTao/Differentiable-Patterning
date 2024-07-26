@@ -26,6 +26,7 @@ class data_augmenter_subclass(DataAugmenter):
     #Redefine how data is pre-processed before training
     def data_init(self,SHARDING=None):
         data = self.return_saved_data()
+        data = self.duplicate_batches(data,2)
         data = self.pad(data, 10) 		
         self.save_data(data)
         return None
@@ -53,10 +54,10 @@ initial_condition = np.array(data)
 W = initial_condition.shape[-2]
 H = initial_condition.shape[-1]
 
-initial_condition = initial_condition.at[:,:,:,:W//2-2].set(0)
-initial_condition = initial_condition.at[:,:,:,W//2+1:].set(0)
-initial_condition = initial_condition.at[:,:,:,:,:H//2-2].set(0)
-initial_condition = initial_condition.at[:,:,:,:,H//2+1:].set(0)
+initial_condition = initial_condition.at[:,:,:,:W//2-3].set(0)
+initial_condition = initial_condition.at[:,:,:,W//2+2:].set(0)
+initial_condition = initial_condition.at[:,:,:,:,:H//2-3].set(0)
+initial_condition = initial_condition.at[:,:,:,:,H//2+2:].set(0)
 data = np.concatenate([initial_condition,data,data],axis=1) # Join initial condition and data along the time axis
 print("(Batch, Time, Channels, Width, Height): "+str(data.shape))
 
