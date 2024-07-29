@@ -80,16 +80,9 @@ if nca_type_index==0:
               key=key)
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_anisotropic_nca_"+data_filename,
+                      model_filename="demo_stable_sparse_emoji_anisotropic_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
-
-    opt.train(t,
-        iters,
-        WARMUP=10,
-        optimiser=optimiser,
-        LOSS_FUNC_STR="euclidean",
-        key=key)
 
 if nca_type_index==1: 
     print("Training anisotropic gated nca")
@@ -101,16 +94,10 @@ if nca_type_index==1:
                key=key)
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_anisotropic_gated_nca_"+data_filename,
+                      model_filename="demo_stable_sparse_emoji_anisotropic_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
                     
-    opt.train(t,
-            iters,
-            WARMUP=10,
-            optimiser=optimiser,
-            LOSS_FUNC_STR="euclidean",
-            key=key)
 
 
 if nca_type_index==2:
@@ -123,16 +110,10 @@ if nca_type_index==2:
               key=key)
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_isotropic_nca_"+data_filename,
+                      model_filename="demo_stable_sparse_emoji_isotropic_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
-                
-    opt.train(t,
-            iters,
-            WARMUP=10,
-            optimiser=optimiser,
-            LOSS_FUNC_STR="euclidean",
-            key=key)
+
 
 if nca_type_index==3: 
     print("Training isotropic gated nca")
@@ -144,18 +125,20 @@ if nca_type_index==3:
                key=key)
     opt = NCA_Trainer(nca,
                       data,
-                      model_filename="demo_stable_emoji_isotropic_gated_nca_"+data_filename,
+                      model_filename="demo_stable_sparse_emoji_isotropic_gated_nca_"+data_filename,
                       DATA_AUGMENTER=data_augmenter_subclass,
                       GRAD_LOSS=True)
             
-    opt.train(t,
-            iters,
-            WARMUP=10,
-            optimiser=optimiser,
-            LOSS_FUNC_STR="euclidean",
-            key=key)
 
 
 
 
-				  	    
+
+opt.train(t,
+    iters,
+    WARMUP=10,
+    optimiser=optimiser,
+    LOSS_FUNC_STR="euclidean",
+    SPARSE_PRUNING=True,
+    TARGET_SPARSITY=0.5,
+    key=key)  	    

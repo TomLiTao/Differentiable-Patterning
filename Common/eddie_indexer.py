@@ -196,6 +196,11 @@ def index_to_data_nca_type(index):
 	nca_type_index = indices[1]
 	return data_index,nca_type_index
 
+def index_to_data_nca_type_multi_species(index):
+	indices = np.unravel_index(index,(5,2))
+	data_index = indices[0]
+	nca_type_index = indices[1]
+	return data_index,nca_type_index
 
 
 def index_to_kaNCA_hyperparameters(index):
@@ -214,7 +219,7 @@ def index_to_kaNCA_hyperparameters(index):
 
 
 def index_to_pde_hyperparameters(index):
-	indices = np.unravel_index(index,(2,4,2,4,2,4))
+	indices = np.unravel_index(index,(2,4,1,3,2,4,2))
 	
 	INNER_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
 	OUTER_ACTIVATIONS = [jax.nn.tanh,jax.nn.sigmoid,jax.nn.relu,lambda x:x][indices[1]]
@@ -224,15 +229,16 @@ def index_to_pde_hyperparameters(index):
 	#INIT_SCALE_TEXT = "1e-1"
 	STABILITY_FACTOR = 0.5
 	#STABILITY_FACTOR_TEXT = "1e-1"
-	OPTIMISER = [optax.nadam,optax.nadamw,optax.lamb][0]#[indices[2]]
+	OPTIMISER = [optax.nadam,optax.nadamw][0]#[indices[2]]
 	LEARN_RATES = [1e-4,1e-3][indices[2]]
-	TRAJECTORY_LENGTH = [1,8,32,64][indices[3]]
+	TRAJECTORY_LENGTH = [8,32,64][indices[3]]
 	USE_BIAS = [True,False][indices[4]]
 	INNER_TEXT = ["relu","tanh"][indices[0]]
 	OUTER_TEXT = ["tanh","sigmoid","relu","identity"][indices[1]]
-	OPTIMISER_TEXT = ["nadam","nadamw","lamb"][0]#[indices[2]]
+	OPTIMISER_TEXT = ["nadam","nadamw"][0]#[indices[2]]
 	LEARN_RATE_TEXT = ["1e4","1e3"][indices[2]]
 	EQUATION_INDEX = indices[5]
+	ZERO_INIT = indices[6]
 	return [
 		INNER_ACTIVATIONS,
 		OUTER_ACTIVATIONS,
@@ -246,7 +252,36 @@ def index_to_pde_hyperparameters(index):
 		OUTER_TEXT,
 		OPTIMISER_TEXT,
 		LEARN_RATE_TEXT,
-		EQUATION_INDEX]
+		EQUATION_INDEX,
+		ZERO_INIT]
+
+
+
+def index_to_pde_advection_hyperparameters(index):
+	indices = np.unravel_index(index,(2,2,2,2,3,4))
+	INTERNAL_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
+	ADVECTION_OUTER_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[1]]
+	OPTIMISER = [optax.nadam,optax.nadamw][indices[2]]
+	LEARN_RATE = [1e-4,1e-3][indices[3]]
+	TRAJECTORY_LENGTH = [8,32,64][indices[4]]
+	EQUATION_INDEX = indices[5]
+
+	INTERNAL_TEXT = ["relu","tanh"][indices[0]]
+	OUTER_TEXT = ["relu","tanh"][indices[1]]
+
+	OPTIMISER_TEXT = ["nadam","nadamw"][indices[2]]
+	LEARN_RATE_TEXT = ["1e-4","1e-3"][indices[3]]
+	params = {"INTERNAL_ACTIVATIONS":INTERNAL_ACTIVATIONS,
+		   	  "ADVECTION_OUTER_ACTIVATIONS":ADVECTION_OUTER_ACTIVATIONS,
+			  "OPTIMISER":OPTIMISER,
+			  "LEARN_RATE":LEARN_RATE,
+			  "TRAJECTORY_LENGTH":TRAJECTORY_LENGTH,
+			  "INTERNAL_TEXT":INTERNAL_TEXT,
+			  "OUTER_TEXT":OUTER_TEXT,
+			  "OPTIMISER_TEXT":OPTIMISER_TEXT,
+			  "LEARN_RATE_TEXT":LEARN_RATE_TEXT,
+			  "EQUATION_INDEX":EQUATION_INDEX}
+	return params
 
 
 def index_to_kaNCA_pde_parameters(index):

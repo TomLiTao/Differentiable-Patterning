@@ -70,16 +70,18 @@ class PDE_Trainer(object):
 		
 		# Set up variables 
 
-		self.OBS_CHANNELS = self.PDE_solver.func.CELL_CHANNELS#data[0].shape[1]
+		self.OBS_CHANNELS = data[0].shape[1]
+		self.CHANNELS = self.PDE_solver.func.N_CHANNELS
 		self.GRAD_LOSS = GRAD_LOSS
 		self._op = Ops(PADDING=PDE_solver.func.PADDING,dx=PDE_solver.func.dx)
 		
 		# Set up data and data augmenter class
-		self.DATA_AUGMENTER = DATA_AUGMENTER(data)
+		self.DATA_AUGMENTER = DATA_AUGMENTER(data,hidden_channels=self.CHANNELS-self.OBS_CHANNELS)
 		self.DATA_AUGMENTER.data_init()
 		self.BATCHES = len(data)
 		self.TRAJECTORY_LENGTH = data.shape[1]
 		print("Batches = "+str(self.BATCHES))
+		print(f"Observable channels: {self.OBS_CHANNELS}")
 		# Set up boundary augmenter class
 		# length of BOUNDARY_MASK PyTree should be same as number of batches
 		
@@ -170,14 +172,6 @@ class PDE_Trainer(object):
 		key : jax.random.PRNGKey, optional
 			Jax random number key. The default is jax.random.PRNGKey(int(time.time())).
 
-		Returns
-		-------
-		TYPE
-			DESCRIPTION.
-		TYPE
-			DESCRIPTION.
-		TYPE
-			DESCRIPTION.
 
 		"""
 		
@@ -231,10 +225,10 @@ class PDE_Trainer(object):
 				return mean_loss,(y_pred,losses)
 			
 			pde_diff,pde_static=pde.partition()
-			loss_x,grads = compute_loss(pde_diff, pde_static, x, y, t, key)
+			loss_y,grads = compute_loss(pde_diff, pde_static, x, y, t, key)
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, pde_diff)
 			pde = eqx.apply_updates(pde,updates)
-			(mean_loss,(x,losses)) = loss_x
+			(mean_loss,(y,losses)) = loss_y
 			return pde,x,y,t,opt_state,mean_loss,losses,key
 		
 		
@@ -252,24 +246,36 @@ class PDE_Trainer(object):
 		#x_full,y_full = self.DATA_AUGMENTER.split_x_y(1)
 		#x,y=self.DATA_AUGMENTER.random_N_select(x_full,y_full,SAMPLING)
 		data_steps = self.DATA_AUGMENTER.data_saved[0].shape[0]
-		
+		x,y = self.DATA_AUGMENTER.data_load(L=t,key=key)
+
+
 		best_loss = 100000000
 		loss_thresh = 1e16
 		model_saved = False
 		error = 0
 		error_at = 0
-		x0 = self.DATA_AUGMENTER.data_saved[0][0]
+		#x0 = self.DATA_AUGMENTER.data_saved[0][0]
+		
 		for i in tqdm(range(iters)):
 			key = jax.random.fold_in(key,i)
-			x,y = self.DATA_AUGMENTER.sub_trajectory_split(L=t,key=key)
-			#pde,opt_state, = make_step(pde, x, y, t, opt_state,key)
+			#print(self.DATA_AUGMENTER.data_saved[0].shape)
+			"""
+			# 	y output is predicted state at each timestep,
+			#	x output is passed through UNCHANGED for argument donation
+			# 	pde output is updated model
+			# 	opt_state output is updated optimiser state
+			# 	mean_loss output is	average loss over all batches
+			# 	losses output is loss for each batch
+			# 	key output is UNCHANGED random key, passe through for argument donation
+			"""
 			pde,x,y,t,opt_state,mean_loss,losses,key = make_step(pde, x, y, t, opt_state,key)
-			#print(mean_loss)
-			#print(losses.shape)
+
+
 			if self.IS_LOGGING:
-				full_trajectory = pde(jnp.linspace(0,self.TRAJECTORY_LENGTH,self.TRAJECTORY_LENGTH//t),x0)[1]
-				full_trajectory = repeat(full_trajectory,"T C X Y -> B T C X Y",B=1)
-				self.LOGGER.tb_training_loop_log_sequence(losses, full_trajectory, i, pde,LOG_EVERY=LOG_EVERY)
+				#full_trajectory = pde(jnp.linspace(0,self.TRAJECTORY_LENGTH,self.TRAJECTORY_LENGTH//t),x0)[1]
+				#full_trajectory = repeat(full_trajectory,"T C X Y -> B T C X Y",B=1)
+
+				self.LOGGER.tb_training_loop_log_sequence(losses, y, i, pde,LOG_EVERY=LOG_EVERY)
 			
 			
 			if jnp.isnan(mean_loss):
@@ -287,8 +293,9 @@ class PDE_Trainer(object):
 			# Check if training has crashed or diverged yet
 			if error==0:
 				# Do data augmentation update
-				#x,y = self.DATA_AUGMENTER.data_callback(x, y, i)
-				#x_full,y_full = self.DATA_AUGMENTER.split_x_y(1)
+				x,y = self.DATA_AUGMENTER.data_callback(x, y, i, L=t, key=key)
+				
+				
 				# Save model whenever mean_loss beats the previous best loss
 				if i>WARMUP:
 					if mean_loss < best_loss:

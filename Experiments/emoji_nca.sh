@@ -1,5 +1,5 @@
 #! /bin/sh
-#$ -N image_morph_nca
+#$ -N image_morph_sparse_nca
 #$ -M s1605376@ed.ac.uk
 #$ -cwd
 #$ -l h_rt=24:00:00

@@ -147,8 +147,8 @@ class NCA(AbstractModel):
 		b_where = lambda l: l.bias
 
 		self.layers[0] = eqx.tree_at(w_where,self.layers[0],w0)
-		self.layers[-1] = eqx.tree_at(w_where,self.layers[-1],w1)
-		self.layers[-1] = eqx.tree_at(b_where,self.layers[-1],b1)
+		self.layers[2] = eqx.tree_at(w_where,self.layers[2],w1)
+		self.layers[2] = eqx.tree_at(b_where,self.layers[2],b1)
 
 	def partition(self):
 		"""
