@@ -1,10 +1,4 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Tue Nov 28 11:17:42 2023
-
-@author: Alex Richardson
-
 Function that handles the advection bit. Function call does div(V(X)*X), trainable parameters are attached to V only.
 V: Re^c->Re^(2c)
 """
@@ -16,11 +10,15 @@ import time
 from Common.model.spatial_operators import Ops
 from einops import rearrange,repeat
 from jaxtyping import Array, Float
+from Common.model.custom_functions import construct_polynomials
+from jaxtyping import Array, Float
 class V(eqx.Module):
     layers: list
     N_CHANNELS: int
     DIM: int
     ops: eqx.Module
+    ORDER: int
+    polynomial_preprocess: callable
     def __init__(self,
                  N_CHANNELS,
                  PADDING,
@@ -29,22 +27,29 @@ class V(eqx.Module):
                  OUTER_ACTIVATION,
                  INIT_SCALE,
                  USE_BIAS,
+                 ORDER,
                  ZERO_INIT=True,
                  DIM=2,
                  key=jax.random.PRNGKey(int(time.time()))):
         keys = jr.split(key,4)
         self.N_CHANNELS = N_CHANNELS
+        self.ORDER = ORDER
+        N_FEATURES = len(construct_polynomials(jnp.zeros((N_CHANNELS,)),self.ORDER))
+        _v_poly = jax.vmap(lambda x: construct_polynomials(x,self.ORDER),in_axes=1,out_axes=1)
+        self.polynomial_preprocess = jax.vmap(_v_poly,in_axes=1,out_axes=1)
+
+
         self.DIM = DIM
         self.ops = Ops(PADDING=PADDING,dx=dx)
 
-        self.layers = [eqx.nn.Conv2d(in_channels=self.N_CHANNELS,
-                                     out_channels=self.N_CHANNELS,
+        self.layers = [eqx.nn.Conv2d(in_channels=N_FEATURES,
+                                     out_channels=N_FEATURES,
                                      kernel_size=1,
                                      padding=0,
                                      use_bias=USE_BIAS,
                                      key=keys[0]),
                        INTERNAL_ACTIVATION,
-                       eqx.nn.Conv2d(in_channels=self.N_CHANNELS,
+                       eqx.nn.Conv2d(in_channels=N_FEATURES,
                                      out_channels=self.DIM*self.N_CHANNELS,
                                      kernel_size=1,
                                      padding=0,
@@ -79,6 +84,8 @@ class V(eqx.Module):
         
     @eqx.filter_jit
     def f(self,X: Float[Array, "{self.N_CHANNELS} x y"])->Float[Array,"{self.N_CHANNELS} x y"]:
+        X = self.polynomial_preprocess(X)
+        print(f"Advection shape: {X.shape}")
         for L in self.layers:
             X = L(X)
         return X

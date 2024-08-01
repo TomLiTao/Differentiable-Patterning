@@ -27,10 +27,10 @@ class F(eqx.Module):
 				 dx,
 				 INTERNAL_ACTIVATION=jax.nn.relu,
 				 ADVECTION_OUTER_ACTIVATION=jax.nn.tanh,
-				 INIT_SCALE=0.01,
+				 INIT_SCALE={"reaction":0.5,"advection":0.5,"diffusion":0.5},
 				 USE_BIAS=True,
 				 STABILITY_FACTOR=0.01,
-				 REACTION_INIT_SCALE_RATIO=0.01,
+				 ORDER=1,
 				 ZERO_INIT=True,
 				 key=jax.random.PRNGKey(int(time.time()))):
 		self.N_CHANNELS = N_CHANNELS
@@ -41,9 +41,10 @@ class F(eqx.Module):
 		self.f_r = R(N_CHANNELS=N_CHANNELS,
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
 					 OUTER_ACTIVATION=jax.nn.relu, # SHOULD BE STRICTLY NON NEGATIVE FOR INTERPRETABILITY
-					 INIT_SCALE=INIT_SCALE*REACTION_INIT_SCALE_RATIO, # Should be much smaller initial scaling
+					 INIT_SCALE=INIT_SCALE["reaction"], # Should be much smaller initial scaling
 					 USE_BIAS=USE_BIAS,
 					 STABILITY_FACTOR=STABILITY_FACTOR,
+					 ORDER=ORDER,
 					 ZERO_INIT=ZERO_INIT,
 					 key=key1)
 		self.f_v = V(N_CHANNELS=N_CHANNELS,
@@ -51,8 +52,9 @@ class F(eqx.Module):
 					 dx=dx,
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
 			   		 OUTER_ACTIVATION=ADVECTION_OUTER_ACTIVATION, # Can be any activation function
-					 INIT_SCALE=INIT_SCALE,
+					 INIT_SCALE=INIT_SCALE["advection"],
 					 USE_BIAS=USE_BIAS,
+					 ORDER=ORDER,
 					 ZERO_INIT=ZERO_INIT,
 					 DIM = 2,																
 			   		 key=key2)
@@ -61,8 +63,9 @@ class F(eqx.Module):
 					 dx=dx,
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
 			   		 OUTER_ACTIVATION=jax.nn.relu, # MUST BE STRICTLY NON NEGATIVE FOR NUMERICAL STABILITY
-					 INIT_SCALE=INIT_SCALE,
+					 INIT_SCALE=INIT_SCALE["diffusion"],
 					 USE_BIAS=USE_BIAS,
+					 ORDER=ORDER,
 					 ZERO_INIT=False,
 					 key=key3)
 
