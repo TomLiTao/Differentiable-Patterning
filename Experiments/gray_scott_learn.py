@@ -36,22 +36,29 @@ ITERS = 2000
 SIZE = 64
 BATCHES = 4
 PADDING = "CIRCULAR"
-TRAJECTORY_LENGTH = 16
+TRAJECTORY_LENGTH = 8
 
-PDE_STR = "gray_scott"
-x0 = jr.uniform(key,shape=(BATCHES,2,SIZE,SIZE))
-op = Ops(PADDING="CIRCULAR",dx=1.0,KERNEL_SCALE=3)
-v_av = eqx.filter_vmap(op.Average,in_axes=0,out_axes=0)
-for i in range(5):
-    x0 = v_av(x0)
-x0 = x0.at[:,0].set(jnp.where(x0[:,0]>0.51,1.0,0.0))
-x0 = x0.at[:,1].set(1-x0[:,0])
-func = F_gray_scott(PADDING=PADDING,dx=1.0,KERNEL_SCALE=1)
+
+# PDE_STR = "gray_scott"
+# x0 = jr.uniform(key,shape=(BATCHES,2,SIZE,SIZE))
+# op = Ops(PADDING="CIRCULAR",dx=1.0,KERNEL_SCALE=3)
+# v_av = eqx.filter_vmap(op.Average,in_axes=0,out_axes=0)
+# for i in range(5):
+#     x0 = v_av(x0)
+# x0 = x0.at[:,0].set(jnp.where(x0[:,0]>0.51,1.0,0.0))
+# x0 = x0.at[:,1].set(1-x0[:,0])
+# func = F_gray_scott(PADDING=PADDING,dx=1.0,KERNEL_SCALE=1)
+# v_func = eqx.filter_vmap(func,in_axes=(None,0,None),out_axes=0)
+# solver = PDE_solver(v_func,dt=0.1)
+# T,Y = solver(ts=jnp.linspace(0,10000,101),y0=x0)
+
+PDE_STR = "cahn_hilliard"
+scale=2.0
+x0 = jr.uniform(key,shape=(BATCHES,1,SIZE,SIZE))*scale - 1
+func = F_cahn_hilliard(PADDING=PADDING,dx=1.5,KERNEL_SCALE=1)
 v_func = eqx.filter_vmap(func,in_axes=(None,0,None),out_axes=0)
-solver = PDE_solver(v_func,dt=0.1)
-T,Y = solver(ts=jnp.linspace(0,10000,101),y0=x0)
-
-
+solver = PDE_solver(v_func,dt=0.5)
+T,Y = solver(ts=jnp.linspace(0,20000,101),y0=x0)
 Y = rearrange(Y,"T B C X Y -> B T C X Y")
 Y = Y[:,:,:1] # Only include main channel, not inhibitor/other chemical
 Y = 2*(Y-jnp.min(Y))/(jnp.max(Y)-jnp.min(Y)) - 1
