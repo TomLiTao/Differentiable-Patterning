@@ -12,7 +12,7 @@ class DataAugmenter(DataAugmenterAbstract):
 	"""
 	def __init__(self,*args,**kwargs):
 		super().__init__(*args,**kwargs)
-		self.OVERWRITE_OBS_CHANNELS = True
+		self.OVERWRITE_OBS_CHANNELS = False
 	def data_init(self,SHARDING=None):
 		return None
 	
