@@ -149,8 +149,12 @@ class PDE_Trainer(object):
 			  iters,
 			  optimiser=None,  
 			  WARMUP=64,
-			  SAMPLING = 8,
-			  LOG_EVERY=10,	        
+			  LOG_EVERY=10,
+			  UPDATE_X0_PARAMS = {"iters":32,
+						 		  "update_every":10,
+								  "optimiser":optax.nadam,
+								  "learn_rate":1e-3,
+								  "verbose":False},
 			  key=jax.random.PRNGKey(int(time.time()))):
 		"""
 		At each training iteration, select a random subsequence of length t to train to
@@ -174,7 +178,8 @@ class PDE_Trainer(object):
 
 
 		"""
-		
+		UPDATE_X0_PARAMS.update({"t":t})
+		UPDATE_X0_PARAMS.update({"loss_func":self.loss_func})
 		
 		@partial(eqx.filter_jit,donate="all-except-first")
 		def make_step(pde,
@@ -223,7 +228,8 @@ class PDE_Trainer(object):
 				losses = v_loss_func(y_pred,y)
 				mean_loss = jnp.mean(losses)
 				return mean_loss,(y_pred,losses)
-			
+			#jax.debug.print("Outer loop batch number: {}",len(x))
+			#jax.debug.print("Outer loop X shape: {}",x[0].shape)
 			pde_diff,pde_static=pde.partition()
 			loss_y,grads = compute_loss(pde_diff, pde_static, x, y, t, key)
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, pde_diff)
@@ -295,6 +301,11 @@ class PDE_Trainer(object):
 				# Do data augmentation update
 				x,y = self.DATA_AUGMENTER.data_callback(x, y, i, L=t, key=key)
 				
+
+				# Update x0 parameters
+				if i%UPDATE_X0_PARAMS["update_every"]==0 and i>WARMUP:
+					self.DATA_AUGMENTER.update_initial_condition_hidden_channels(pde,i,UPDATE_X0_PARAMS)
+					
 				
 				# Save model whenever mean_loss beats the previous best loss
 				if i>WARMUP:
