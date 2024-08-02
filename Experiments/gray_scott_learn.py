@@ -36,7 +36,7 @@ ITERS = 2000
 SIZE = 64
 BATCHES = 4
 PADDING = "CIRCULAR"
-TRAJECTORY_LENGTH = 8
+TRAJECTORY_LENGTH = 16
 
 
 PDE_STR = "gray_scott"
@@ -96,7 +96,7 @@ pde = PDE_solver(func,dt=0.1)
 schedule = optax.exponential_decay(PARAMS["LEARN_RATE"], transition_steps=ITERS, decay_rate=0.99)
 opt = multi_learnrate(
     schedule,
-    rate_ratios={"advection": 1,
+    rate_ratios={"advection": PARAMS["LEARN_RATE_ADVECTION_RATIO"],
                  "reaction": PARAMS["LEARN_RATE_REACTION_RATIO"],
                  "diffusion": 1},
     optimiser=optax.nadam,
@@ -106,7 +106,7 @@ opt = multi_learnrate(
 trainer = PDE_Trainer(pde,
                       Y,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_advreacdiff/"+PDE_STR+"_nadam_ord_"+str(PARAMS["ORDER"])+"_lr_"+PARAMS["LEARN_RATE_TEXT"]+"_"+PARAMS["LEARN_RATE_REACTION_RATIO_TEXT"]+"_loss_sampling_"+str(PARAMS["LOSS_TIME_SAMPLING"])+PARAMS["UPDATE_X0_EVERY_TEXT"])
+                      model_filename="pde_hyperparameters_advreacdiff/"+PDE_STR+"_nadam_ord_"+str(PARAMS["ORDER"])+"_LR_"+PARAMS["LEARN_RATE_TEXT"]+"_r"+PARAMS["LEARN_RATE_REACTION_RATIO_TEXT"]+"_a"+PARAMS["LEARN_RATE_ADVECTION_RATIO_TEXT"]+"_loss_sampling_"+str(PARAMS["LOSS_TIME_SAMPLING"])+PARAMS["UPDATE_X0_EVERY_TEXT"])
 
 UPDATE_X0_PARAMS = {"iters":16,
                     "update_every":PARAMS["UPDATE_X0_EVERY"],
