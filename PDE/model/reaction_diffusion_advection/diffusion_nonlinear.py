@@ -83,7 +83,7 @@ class D(eqx.Module):
     @eqx.filter_jit
     def __call__(self,X: Float[Array, "{self.N_CHANNELS} x y"])->Float[Array, "{self.N_CHANNELS} x y"]:
         Dx = self.polynomial_preprocess(X)
-        print(f"Diffusion shape: {Dx.shape}")
+        #print(f"Diffusion shape: {Dx.shape}")
         for L in self.layers:
             Dx = L(Dx)
         return self.ops.NonlinearDiffusion(Dx,X)

@@ -85,7 +85,7 @@ class V(eqx.Module):
     @eqx.filter_jit
     def f(self,X: Float[Array, "{self.N_CHANNELS} x y"])->Float[Array,"{self.N_CHANNELS} x y"]:
         X = self.polynomial_preprocess(X)
-        print(f"Advection shape: {X.shape}")
+        #print(f"Advection shape: {X.shape}")
         for L in self.layers:
             X = L(X)
         return X

@@ -125,7 +125,7 @@ class R(eqx.Module):
 
     def __call__(self,X: Float[Array, "{self.N_CHANNELS} x y"])->Float[Array,"{self.N_CHANNELS} x y"]:
         X_poly = self.polynomial_preprocess(X)
-        print(f"Reaction shape: {X_poly.shape}")
+        #print(f"Reaction shape: {X_poly.shape}")
         production = X_poly
         decay = X_poly
         for L in self.production_layers:

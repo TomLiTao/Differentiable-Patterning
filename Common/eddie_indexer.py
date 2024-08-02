@@ -286,28 +286,36 @@ def index_to_pde_advection_hyperparameters(index):
 
 
 def index_to_pde_gray_scott_hyperparameters(index):
-	indices = np.unravel_index(index,(2,3,3,3,2))
+	indices = np.unravel_index(index,(2,3,2,4,2))
 	#INTERNAL_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
 	
-	ADVECTION_OUTER_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
-	LEARN_RATE = [1e-4,1e-3,1e-2][indices[1]]
-	LEARN_RATE_REACTION_RATIO = [1,0.1,0.01][indices[2]]
-	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(2.0)][indices[3]]
-	ORDER = [1,2][indices[4]]
-	ACTIVATION_TEXT = ["relu","tanh"][indices[0]]
-	LEARN_RATE_TEXT = ["1e-4","1e-3","1e-2"][indices[1]]
-	LEARN_RATE_REACTION_RATIO_TEXT = ["1","1e-1","1e-2"][indices[2]]
-	OPTIMISER_PRE_PROCESS_TEXT = ["none","scale_by_param_block_norm","adaptive_grad_clip"][indices[3]]
+	#ADVECTION_OUTER_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
+	LEARN_RATE = [1e-3,1e-2][indices[0]]
+	LEARN_RATE_REACTION_RATIO = [1,0.1,0.01][indices[1]]
+	#OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(2.0)][indices[3]]
+	ORDER = [1,2][indices[2]]
+	LOSS_TIME_SAMPLING = [1,2,4,8][indices[3]]
+	UPDATE_X0_EVERY = [100,10000][indices[4]]
+	#ACTIVATION_TEXT = ["relu","tanh"][indices[0]]
+	LEARN_RATE_TEXT = ["1e-3","1e-2"][indices[0]]
+	LEARN_RATE_REACTION_RATIO_TEXT = ["1","1e-1","1e-2"][indices[1]]
+	UPDATE_X0_EVERY_TEXT = ["_update_x0_",""][indices[4]]
+	#OPTIMISER_PRE_PROCESS_TEXT = ["none","scale_by_param_block_norm","adaptive_grad_clip"][indices[3]]
 
-	params = {"ADVECTION_OUTER_ACTIVATIONS":ADVECTION_OUTER_ACTIVATIONS,
-			  "LEARN_RATE":LEARN_RATE,
-			  "LEARN_RATE_REACTION_RATIO":LEARN_RATE_REACTION_RATIO,
-			  "OPTIMISER_PRE_PROCESS":OPTIMISER_PRE_PROCESS,
-			  "ORDER":ORDER,
-			  "ACTIVATION_TEXT":ACTIVATION_TEXT,
-			  "LEARN_RATE_TEXT":LEARN_RATE_TEXT,
-			  "LEARN_RATE_REACTION_RATIO_TEXT":LEARN_RATE_REACTION_RATIO_TEXT,
-			  "OPTIMISER_PRE_PROCESS_TEXT":OPTIMISER_PRE_PROCESS_TEXT}
+	params = {
+		#"ADVECTION_OUTER_ACTIVATIONS":ADVECTION_OUTER_ACTIVATIONS,
+		"LOSS_TIME_SAMPLING":LOSS_TIME_SAMPLING,
+		"LEARN_RATE":LEARN_RATE,
+		"LEARN_RATE_REACTION_RATIO":LEARN_RATE_REACTION_RATIO,
+		"UPDATE_X0_EVERY":UPDATE_X0_EVERY,
+		#"OPTIMISER_PRE_PROCESS":OPTIMISER_PRE_PROCESS,
+		"ORDER":ORDER,
+		#"ACTIVATION_TEXT":ACTIVATION_TEXT,
+		"LEARN_RATE_TEXT":LEARN_RATE_TEXT,
+		"LEARN_RATE_REACTION_RATIO_TEXT":LEARN_RATE_REACTION_RATIO_TEXT,
+		"UPDATE_X0_EVERY_TEXT":UPDATE_X0_EVERY_TEXT
+		#"OPTIMISER_PRE_PROCESS_TEXT":OPTIMISER_PRE_PROCESS_TEXT
+		}
 	return params
 def index_to_kaNCA_pde_parameters(index):
 	indices = np.unravel_index(index,(4,4))
