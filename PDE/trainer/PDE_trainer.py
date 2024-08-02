@@ -135,8 +135,8 @@ class PDE_Trainer(object):
 		loss : float32 array [N]
 			loss for each timestep of trajectory
 		"""
-		x_obs = x[:,:self.OBS_CHANNELS]
-		y_obs = y[:,:self.OBS_CHANNELS]
+		x_obs = x[::self.LOSS_TIME_SAMPLING,:self.OBS_CHANNELS]
+		y_obs = y[::self.LOSS_TIME_SAMPLING,:self.OBS_CHANNELS]
 		L = loss.euclidean(x_obs,y_obs)
 		if self.GRAD_LOSS:
 			x_obs_spatial = self.spatial_loss_gradients(x_obs)
@@ -150,6 +150,7 @@ class PDE_Trainer(object):
 			  optimiser=None,  
 			  WARMUP=64,
 			  LOG_EVERY=10,
+			  LOSS_TIME_SAMPLING=1,
 			  UPDATE_X0_PARAMS = {"iters":32,
 						 		  "update_every":10,
 								  "optimiser":optax.nadam,
@@ -180,7 +181,8 @@ class PDE_Trainer(object):
 		"""
 		UPDATE_X0_PARAMS.update({"t":t})
 		UPDATE_X0_PARAMS.update({"loss_func":self.loss_func})
-		
+		self.LOSS_TIME_SAMPLING = LOSS_TIME_SAMPLING
+
 		@partial(eqx.filter_jit,donate="all-except-first")
 		def make_step(pde,
 					  x: Float[Array,"Batches T C W H"],
