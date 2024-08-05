@@ -1,5 +1,5 @@
 import jax
-jax.config.update("jax_enable_x64", True)
+#jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import jax.random as jr
 import equinox as eqx
@@ -24,8 +24,8 @@ index=int(sys.argv[1])-1
 
 
 PARAMS = index_to_pde_gray_scott_hyperparameters(index)
-INIT_SCALE = {"reaction":0.1,"advection":0.3,"diffusion":0.3}
-STABILITY_FACTOR = 0.1
+# INIT_SCALE = {"reaction":0.1,"advection":0.3,"diffusion":0.3}
+STABILITY_FACTOR = 0.01
 
 
 key = jax.random.PRNGKey(int(time.time()))
@@ -76,12 +76,13 @@ Y = 2*(Y-jnp.min(Y))/(jnp.max(Y)-jnp.min(Y)) - 1
 func = F(CHANNELS,
          PADDING=PADDING,
          dx=1.0,
-         INTERNAL_ACTIVATION=jax.nn.tanh,
+         INTERNAL_ACTIVATION=PARAMS["INTERNAL_ACTIVATIONS"],
          ADVECTION_OUTER_ACTIVATION=jax.nn.tanh,
-         INIT_SCALE=INIT_SCALE,
+         INIT_SCALE={"reaction":PARAMS["REACTION_RATIO"],"advection":PARAMS["ADVECTION_RATIO"],"diffusion":1.0},
+         INIT_TYPE={"reaction":PARAMS["REACTION_INIT"],"advection":"orthogonal","diffusion":PARAMS["DIFFUSION_INIT"]},
          STABILITY_FACTOR=STABILITY_FACTOR,
          USE_BIAS=True,
-         ORDER = PARAMS["ORDER"],
+         ORDER = 2,
          ZERO_INIT=False,
          key=key)
 pde = PDE_solver(func,dt=0.1)
@@ -93,11 +94,11 @@ pde = PDE_solver(func,dt=0.1)
 #opt = non_negative_diffusion(schedule,optimiser=OPTIMISER)
 #opt = optax.chain(optax.scale_by_param_block_norm(),
 			#PARAMS["OPTIMISER"](schedule))
-schedule = optax.exponential_decay(PARAMS["LEARN_RATE"], transition_steps=ITERS, decay_rate=0.99)
+schedule = optax.exponential_decay(1e-3, transition_steps=ITERS, decay_rate=0.99)
 opt = multi_learnrate(
     schedule,
-    rate_ratios={"advection": PARAMS["LEARN_RATE_ADVECTION_RATIO"],
-                 "reaction": PARAMS["LEARN_RATE_REACTION_RATIO"],
+    rate_ratios={"advection": PARAMS["ADVECTION_RATIO"],
+                 "reaction": PARAMS["REACTION_RATIO"],
                  "diffusion": 1},
     optimiser=optax.nadam,
     pre_process=optax.identity(),
@@ -106,10 +107,10 @@ opt = multi_learnrate(
 trainer = PDE_Trainer(pde,
                       Y,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_advreacdiff/"+PDE_STR+"_nadam_ord_"+str(PARAMS["ORDER"])+"_LR_"+PARAMS["LEARN_RATE_TEXT"]+"_r"+PARAMS["LEARN_RATE_REACTION_RATIO_TEXT"]+"_a"+PARAMS["LEARN_RATE_ADVECTION_RATIO_TEXT"]+"_loss_sampling_"+str(PARAMS["LOSS_TIME_SAMPLING"])+PARAMS["UPDATE_X0_EVERY_TEXT"])
+                      model_filename="pde_hyperparameters_advreacdiff/"+PDE_STR+"_nadam_ord_2_act_"+PARAMS["INTERNAL_ACTIVATIONS_TEXT"]+"_R_"+PARAMS["REACTION_RATIO_TEXT"]+"_"+PARAMS["REACTION_INIT"]+"_A_"+PARAMS["ADVECTION_RATIO_TEXT"]+"_orthogonal_D_1_"+PARAMS["DIFFUSION_INIT"]+"_loss_sampling_"+str(PARAMS["LOSS_TIME_SAMPLING"]))
 
 UPDATE_X0_PARAMS = {"iters":16,
-                    "update_every":PARAMS["UPDATE_X0_EVERY"],
+                    "update_every":10000,
                     "optimiser":optax.nadam,
                     "learn_rate":1e-4,
                     "verbose":True}

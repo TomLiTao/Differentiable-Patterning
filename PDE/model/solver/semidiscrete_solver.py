@@ -19,8 +19,6 @@ class PDE_solver(AbstractModel):
 	def __call__(self, ts, y0):
 		solution = diffrax.diffeqsolve(diffrax.ODETerm(self.func),
 									   diffrax.Heun(),
-									   #diffrax.Euler(),
-									   #diffrax.Tsit5(),
 									   t0=ts[0],t1=ts[-1],
 									   dt0=self.dt0,
 									   y0=y0,

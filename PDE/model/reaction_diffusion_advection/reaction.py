@@ -1,9 +1,11 @@
 import jax
 import equinox as eqx
 import jax.numpy as jnp
+import jax.random as jr
 import time
 from jaxtyping import Array, Float
 from Common.model.custom_functions import construct_polynomials
+from einops import rearrange,repeat
 
 class R(eqx.Module):
     production_layers: list
@@ -17,6 +19,7 @@ class R(eqx.Module):
                  INTERNAL_ACTIVATION,
                  OUTER_ACTIVATION,
                  INIT_SCALE,
+                 INIT_TYPE,
                  USE_BIAS,
                  STABILITY_FACTOR,
                  ORDER,
@@ -72,19 +75,44 @@ class R(eqx.Module):
             OUTER_ACTIVATION
         ]
         where = lambda l:l.weight
+        def set_layer_weights(shape,key):
+            if INIT_TYPE=="orthogonal":
+                r = jr.orthogonal(key,n=max(shape[0],shape[1]))
+                r = r[:shape[0],:shape[1]]
+                r = repeat(r,"i j -> i j () ()")
+                return INIT_SCALE*r
+            if INIT_TYPE=="normal":
+                return INIT_SCALE*jr.normal(key,shape)
+            if INIT_TYPE=="diagonal":
+                a = 0.9
+                i = jnp.eye(shape[0],shape[1])
+                i = repeat(i,"i j -> i j () ()")
+                r = jr.normal(key,shape)
+                return INIT_SCALE*(a*i+(1-a)*r)
+            if INIT_TYPE=="permuted":
+                a = 0.9
+                i = jr.permutation(key,jnp.eye(shape[0],shape[1]))
+                i = repeat(i,"i j -> i j () ()")
+                r = jr.normal(key,shape)
+                return INIT_SCALE*(a*i+(1-a)*r)
+
         self.decay_layers[0] = eqx.tree_at(where,
                                             self.decay_layers[0],
-                                            INIT_SCALE*jax.random.normal(key=keys[0],shape=self.decay_layers[0].weight.shape))
+                                            #INIT_SCALE*jax.random.normal(key=keys[0],shape=self.decay_layers[0].weight.shape))
+                                            set_layer_weights(self.decay_layers[0].weight.shape,keys[0]))
         self.production_layers[0] = eqx.tree_at(where,
                                             self.production_layers[0],
-                                            INIT_SCALE*jax.random.normal(key=keys[1],shape=self.production_layers[0].weight.shape))
+                                            #INIT_SCALE*jax.random.normal(key=keys[1],shape=self.production_layers[0].weight.shape))
+                                            set_layer_weights(self.production_layers[0].weight.shape,keys[1]))
 
         self.decay_layers[-2] = eqx.tree_at(where,
                                             self.decay_layers[-2],
-                                            INIT_SCALE*jax.random.normal(key=keys[2],shape=self.decay_layers[-2].weight.shape))
+                                            #INIT_SCALE*jax.random.normal(key=keys[2],shape=self.decay_layers[-2].weight.shape))
+                                            set_layer_weights(self.decay_layers[-2].weight.shape,keys[2]))
         self.production_layers[-2] = eqx.tree_at(where,
                                             self.production_layers[-2],
-                                            INIT_SCALE*jax.random.normal(key=keys[3],shape=self.production_layers[-2].weight.shape))
+                                            #INIT_SCALE*jax.random.normal(key=keys[3],shape=self.production_layers[-2].weight.shape))
+                                            set_layer_weights(self.production_layers[-2].weight.shape,keys[3]))
         
 
         if USE_BIAS:

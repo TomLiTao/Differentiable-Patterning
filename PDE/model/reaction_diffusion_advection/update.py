@@ -28,11 +28,14 @@ class F(eqx.Module):
 				 INTERNAL_ACTIVATION=jax.nn.relu,
 				 ADVECTION_OUTER_ACTIVATION=jax.nn.tanh,
 				 INIT_SCALE={"reaction":0.5,"advection":0.5,"diffusion":0.5},
+				 INIT_TYPE={"reaction":"normal","advection":"normal","diffusion":"normal"},
 				 USE_BIAS=True,
 				 STABILITY_FACTOR=0.01,
 				 ORDER=1,
 				 ZERO_INIT=True,
 				 key=jax.random.PRNGKey(int(time.time()))):
+		
+		
 		self.N_CHANNELS = N_CHANNELS
 		self.PADDING = PADDING
 		self.dx = dx
@@ -42,6 +45,7 @@ class F(eqx.Module):
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
 					 OUTER_ACTIVATION=jax.nn.relu, # SHOULD BE STRICTLY NON NEGATIVE FOR INTERPRETABILITY
 					 INIT_SCALE=INIT_SCALE["reaction"], # Should be much smaller initial scaling
+					 INIT_TYPE=INIT_TYPE["reaction"],
 					 USE_BIAS=USE_BIAS,
 					 STABILITY_FACTOR=STABILITY_FACTOR,
 					 ORDER=ORDER,
@@ -53,6 +57,7 @@ class F(eqx.Module):
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
 			   		 OUTER_ACTIVATION=ADVECTION_OUTER_ACTIVATION, # Can be any activation function
 					 INIT_SCALE=INIT_SCALE["advection"],
+					 INIT_TYPE=INIT_TYPE["advection"],
 					 USE_BIAS=USE_BIAS,
 					 ORDER=ORDER,
 					 ZERO_INIT=ZERO_INIT,
@@ -64,6 +69,7 @@ class F(eqx.Module):
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
 			   		 OUTER_ACTIVATION=jax.nn.relu, # MUST BE STRICTLY NON NEGATIVE FOR NUMERICAL STABILITY
 					 INIT_SCALE=INIT_SCALE["diffusion"],
+					 INIT_TYPE=INIT_TYPE["diffusion"],
 					 USE_BIAS=USE_BIAS,
 					 ORDER=ORDER,
 					 ZERO_INIT=False,

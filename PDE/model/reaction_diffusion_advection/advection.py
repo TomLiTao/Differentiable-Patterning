@@ -26,6 +26,7 @@ class V(eqx.Module):
                  INTERNAL_ACTIVATION,
                  OUTER_ACTIVATION,
                  INIT_SCALE,
+                 INIT_TYPE,
                  USE_BIAS,
                  ORDER,
                  ZERO_INIT=True,
@@ -58,12 +59,36 @@ class V(eqx.Module):
                         OUTER_ACTIVATION]
         
         w_where = lambda l: l.weight
+
+
+        def set_layer_weights(shape,key):
+            if INIT_TYPE=="orthogonal":
+                r = jr.orthogonal(key,n=max(shape[0],shape[1]))
+                r = r[:shape[0],:shape[1]]
+                r = repeat(r,"i j -> i j () ()")
+                return INIT_SCALE*r
+            if INIT_TYPE=="normal":
+                return INIT_SCALE*jr.normal(key,shape)
+            if INIT_TYPE=="diagonal":
+                a = 0.9
+                i = jnp.eye(shape[0],shape[1])
+                i = repeat(i,"i j -> i j () ()")
+                r = jr.normal(key,shape)
+                return INIT_SCALE*(a*i+(1-a)*r)
+            if INIT_TYPE=="permuted":
+                a = 0.9
+                i = jr.permutation(key,jnp.eye(shape[0],shape[1]))
+                i = repeat(i,"i j -> i j () ()")
+                r = jr.normal(key,shape)
+                return INIT_SCALE*(a*i+(1-a)*r)
         self.layers[0] = eqx.tree_at(w_where,
                                      self.layers[0],
-                                     INIT_SCALE*jr.normal(keys[0],self.layers[0].weight.shape))
+                                     #INIT_SCALE*jr.normal(keys[0],self.layers[0].weight.shape))
+                                     set_layer_weights(self.layers[0].weight.shape,keys[0]))
         self.layers[2] = eqx.tree_at(w_where,
                                      self.layers[2],
-                                     INIT_SCALE*jr.normal(keys[1],self.layers[2].weight.shape))
+                                     #INIT_SCALE*jr.normal(keys[1],self.layers[2].weight.shape))
+                                     set_layer_weights(self.layers[2].weight.shape,keys[1]))
         
         if USE_BIAS:
             b_where = lambda l: l.bias
