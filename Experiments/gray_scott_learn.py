@@ -31,8 +31,8 @@ STABILITY_FACTOR = 0.01
 key = jax.random.PRNGKey(int(time.time()))
 key = jax.random.fold_in(key,index)
 
-CHANNELS = 8
-ITERS = 2000
+CHANNELS = 4
+ITERS = 1000
 SIZE = 64
 BATCHES = 4
 PADDING = "CIRCULAR"
