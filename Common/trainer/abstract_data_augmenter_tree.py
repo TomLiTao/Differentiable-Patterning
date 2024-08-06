@@ -56,15 +56,16 @@ class DataAugmenterAbstract(object):
 		self.save_data(data)
 		return None
 	
-	def data_load(self):	
+	def data_load(self,key):	
 		x0,y0 = self.split_x_y(1)
-		x0,y0 = self.data_callback(x0,y0,0)
+		x0,y0 = self.data_callback(x0,y0,0,key)
 		return x0,y0
 	
 	def data_callback(self,
 				   	  x:PyTree[Float[Array, "N C W H"]],
 					  y:PyTree[Float[Array, "N C W H"]],
-					  i:Int[Scalar, ""]):
+					  i:Int[Scalar, ""],
+					  key):
 		"""
 		Called after every training iteration to perform data augmentation and processing		
 
