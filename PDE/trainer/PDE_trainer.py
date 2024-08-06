@@ -8,6 +8,7 @@ import time
 from PDE.trainer.data_augmenter_pde import DataAugmenter
 import Common.trainer.loss as loss
 from Common.model.boundary import model_boundary
+from Common.trainer.custom_functions import check_training_diverged
 from PDE.trainer.tensorboard_log import PDE_Train_log
 from PDE.trainer.optimiser import non_negative_diffusion_chemotaxis
 from PDE.model.solver.semidiscrete_solver import PDE_solver
@@ -124,6 +125,7 @@ class PDE_Trainer(object):
 		"""
 		NOTE: VMAP THIS OVER BATCHES TO HANDLE DIFFERENT SIZES OF GRID IN EACH BATCH
 	
+		
 		Parameters
 		----------
 		x : float32 array [T,CHANNELS,_,_]
@@ -278,37 +280,20 @@ class PDE_Trainer(object):
 			"""
 			pde,x,y,t,opt_state,mean_loss,losses,key = make_step(pde, x, y, t, opt_state,key)
 
-
 			if self.IS_LOGGING:
-				#full_trajectory = pde(jnp.linspace(0,self.TRAJECTORY_LENGTH,self.TRAJECTORY_LENGTH//t),x0)[1]
-				#full_trajectory = repeat(full_trajectory,"T C X Y -> B T C X Y",B=1)
-
 				self.LOGGER.tb_training_loop_log_sequence(losses, y, i, pde,LOG_EVERY=LOG_EVERY)
 			
 			
-			if jnp.isnan(mean_loss):
-				error = 1
-				error_at=i
-				break
-			elif any(list(map(lambda x: jnp.any(jnp.isnan(x)), x))):
-				error = 2
-				error_at=i
-				break
-			elif mean_loss>loss_thresh:
-				error = 3
-				error_at=i
-				break
 			# Check if training has crashed or diverged yet
+			error = check_training_diverged(mean_loss,x,i)
 			if error==0:
 				# Do data augmentation update
 				x,y = self.DATA_AUGMENTER.data_callback(x, y, i, L=t, key=key)
 				
-
 				# Update x0 parameters
 				if i%UPDATE_X0_PARAMS["update_every"]==0 and i>WARMUP:
 					self.DATA_AUGMENTER.update_initial_condition_hidden_channels(pde,i,UPDATE_X0_PARAMS)
-					
-				
+									
 				# Save model whenever mean_loss beats the previous best loss
 				if i>WARMUP:
 					if mean_loss < best_loss:
@@ -317,14 +302,11 @@ class PDE_Trainer(object):
 						self.PDE_solver.save(self.MODEL_PATH,overwrite=True)
 						best_loss = mean_loss
 						tqdm.write("--- Model saved at "+str(i)+" epochs with loss "+str(mean_loss)+" ---")
+			else:
+				break
+		
 		if error==0:
 			print("Training completed successfully")
-		elif error==1:
-			print("|-|-|-|-|-|-  Loss reached NaN at step "+str(error_at)+" -|-|-|-|-|-|")
-		elif error==2:
-			print("|-|-|-|-|-|-  X reached NaN at step "+str(error_at)+" -|-|-|-|-|-|")
-		elif error==3:
-			print( "|-|-|-|-|-|-  Loss exceded "+str(loss_thresh)+" at step "+str(error_at)+", optimisation probably diverging  -|-|-|-|-|-|")
 		#assert model_saved, "|-|-|-|-|-|-  Training did not converge, model was not saved  -|-|-|-|-|-|"
 		if error!=0 and model_saved==False:
 			print("|-|-|-|-|-|-  Training did not converge, model was not saved  -|-|-|-|-|-|")
