@@ -332,6 +332,30 @@ def index_to_pde_gray_scott_hyperparameters(index):
 		#"OPTIMISER_PRE_PROCESS_TEXT":OPTIMISER_PRE_PROCESS_TEXT
 		}
 	return params
+
+
+
+
+
+
+def index_to_pde_texture_hyperparameters(index):
+	indices = np.unravel_index(index,(6,2))
+	filename = ["honeycombed/honeycombed_0078.jpg",
+			    "banded/banded_0109.jpg",
+				"smeared/smeared_0131.jpg",
+				"cracked/cracked_0077.jpg",
+				"dotted/dotted_0116.jpg",
+				"interlaced/interlaced_0172.jpg"][indices[0]]
+	filename_short = ["honeycombed",
+			    	  "banded",
+					  "smeared",
+					  "cracked",
+					  "dotted",
+					  "interlaced"][indices[0]]
+	advection_ratio = [1,0][indices[1]]
+	return {"FILENAME":filename,
+		 	"FILENAME_SHORT":filename_short,
+			"ADVECTION_RATIO":advection_ratio}
 def index_to_kaNCA_pde_parameters(index):
 	indices = np.unravel_index(index,(4,4))
 	EQUATION_INDEX = indices[0]
