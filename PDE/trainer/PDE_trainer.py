@@ -185,7 +185,8 @@ class PDE_Trainer(object):
 		UPDATE_X0_PARAMS.update({"loss_func":self.loss_func})
 		self.LOSS_TIME_SAMPLING = LOSS_TIME_SAMPLING
 
-		@partial(eqx.filter_jit,donate="all-except-first")
+		#@partial(eqx.filter_jit,donate="all-except-first")
+		@eqx.filter_jit
 		def make_step(pde,
 					  x: Float[Array,"Batches T C W H"],
 					  y: Float[Array,"Batches T C W H"],
