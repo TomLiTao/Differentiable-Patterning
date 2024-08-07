@@ -32,7 +32,8 @@ class F(eqx.Module):
 				 USE_BIAS=True,
 				 STABILITY_FACTOR=0.01,
 				 ORDER=1,
-				 ZERO_INIT=True,
+				 N_LAYERS=1,
+				 ZERO_INIT={"reaction":True,"advection":True,"diffusion":False},
 				 key=jax.random.PRNGKey(int(time.time()))):
 		
 		
@@ -49,7 +50,8 @@ class F(eqx.Module):
 					 USE_BIAS=USE_BIAS,
 					 STABILITY_FACTOR=STABILITY_FACTOR,
 					 ORDER=ORDER,
-					 ZERO_INIT=ZERO_INIT,
+					 N_LAYERS=N_LAYERS,
+					 ZERO_INIT=ZERO_INIT["reaction"],
 					 key=key1)
 		self.f_v = V(N_CHANNELS=N_CHANNELS,
 			   		 PADDING=PADDING,
@@ -60,7 +62,8 @@ class F(eqx.Module):
 					 INIT_TYPE=INIT_TYPE["advection"],
 					 USE_BIAS=USE_BIAS,
 					 ORDER=ORDER,
-					 ZERO_INIT=ZERO_INIT,
+					 N_LAYERS=N_LAYERS,
+					 ZERO_INIT=ZERO_INIT["advection"],
 					 DIM = 2,																
 			   		 key=key2)
 		self.f_d = D(N_CHANNELS=N_CHANNELS,
@@ -72,7 +75,8 @@ class F(eqx.Module):
 					 INIT_TYPE=INIT_TYPE["diffusion"],
 					 USE_BIAS=USE_BIAS,
 					 ORDER=ORDER,
-					 ZERO_INIT=False,
+					 N_LAYERS=N_LAYERS,
+					 ZERO_INIT=ZERO_INIT["diffusion"],
 					 key=key3)
 
 	@eqx.filter_jit

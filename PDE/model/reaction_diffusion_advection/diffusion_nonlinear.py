@@ -24,6 +24,7 @@ class D(eqx.Module):
                  INIT_TYPE,
                  USE_BIAS,
                  ORDER,
+                 N_LAYERS,
                  ZERO_INIT,
                  key):
         self.N_CHANNELS = N_CHANNELS
@@ -32,25 +33,33 @@ class D(eqx.Module):
         _v_poly = jax.vmap(lambda x: construct_polynomials(x,self.ORDER),in_axes=1,out_axes=1)
         self.polynomial_preprocess = jax.vmap(_v_poly,in_axes=1,out_axes=1)
         self.PADDING = PADDING
-        keys = jr.split(key,2)
-        self.layers = [eqx.nn.Conv2d(in_channels=N_FEATURES,
-                                     out_channels=N_FEATURES,
-                                     kernel_size=1,
-                                     padding=0,
-                                     use_bias=USE_BIAS,
-                                     key=keys[0]),
-                        INTERNAL_ACTIVATION,
-                        eqx.nn.Conv2d(in_channels=N_FEATURES,
-                                     out_channels=self.N_CHANNELS,
-                                     kernel_size=1,
-                                     padding=0,
-                                     use_bias=USE_BIAS,
-                                     key=keys[1]),
-                        OUTER_ACTIVATION ]
+        keys = jr.split(key,2*(N_LAYERS+1))
+        _inner_layers = [eqx.nn.Conv2d(in_channels=N_FEATURES,out_channels=self.N_CHANNELS,kernel_size=1,padding=0,use_bias=USE_BIAS,key=key) for key in keys[:N_LAYERS]]
+        _inner_activations = [lambda x:INTERNAL_ACTIVATION(self.polynomial_preprocess(x)) for _ in range(N_LAYERS)]
+        self.layers = _inner_layers + _inner_activations
+        self.layers[::2] = _inner_layers
+        self.layers[1::2] = _inner_activations
+        self.layers.append(eqx.nn.Conv2d(in_channels=N_FEATURES,out_channels=self.N_CHANNELS,kernel_size=1,padding=0,use_bias=USE_BIAS,key=keys[N_LAYERS]))
+        self.layers.append(OUTER_ACTIVATION)
+        # self.layers = [eqx.nn.Conv2d(in_channels=N_FEATURES,
+        #                              out_channels=N_FEATURES,
+        #                              kernel_size=1,
+        #                              padding=0,
+        #                              use_bias=USE_BIAS,
+        #                              key=keys[0]),
+        #                 INTERNAL_ACTIVATION,
+        #                 eqx.nn.Conv2d(in_channels=N_FEATURES,
+        #                              out_channels=self.N_CHANNELS,
+        #                              kernel_size=1,
+        #                              padding=0,
+        #                              use_bias=USE_BIAS,
+        #                              key=keys[1]),
+        #                 OUTER_ACTIVATION ]
         
 
         self.ops = Ops(PADDING=PADDING,dx=dx)
         w_where = lambda l: l.weight
+        b_where = lambda l: l.bias
         def set_layer_weights(shape,key):
             if INIT_TYPE=="orthogonal":
                 r = jr.orthogonal(key,n=max(shape[0],shape[1]))
@@ -71,39 +80,43 @@ class D(eqx.Module):
                 i = repeat(i,"i j -> i j () ()")
                 r = jr.normal(key,shape)
                 return INIT_SCALE*(a*i+(1-a)*r)
-        self.layers[0] = eqx.tree_at(w_where,
-                                     self.layers[0],
-                                     #INIT_SCALE*jr.normal(keys[0],self.layers[0].weight.shape))
-                                     set_layer_weights(self.layers[0].weight.shape,keys[0]))
-        self.layers[2] = eqx.tree_at(w_where,
-                                     self.layers[2],
-                                     #INIT_SCALE*jr.normal(keys[1],self.layers[2].weight.shape))
-                                     set_layer_weights(self.layers[2].weight.shape,keys[1]))
+        
+        
+        for i in range(0,len(self.layers)//2):
+            self.layers[2*i] = eqx.tree_at(w_where,
+                                           self.layers[2*i],
+                                           set_layer_weights(self.layers[2*i].weight.shape,keys[i]))
+            if USE_BIAS:
+                self.layers[2*i] = eqx.tree_at(b_where,
+                                               self.layers[2*i],
+                                               INIT_SCALE*jr.normal(keys[i+len(self.layers)],self.layers[2*i].bias.shape))
+        # self.layers[0] = eqx.tree_at(w_where,
+        #                              self.layers[0],
+        #                              #INIT_SCALE*jr.normal(keys[0],self.layers[0].weight.shape))
+        #                              set_layer_weights(self.layers[0].weight.shape,keys[0]))
+        # self.layers[2] = eqx.tree_at(w_where,
+        #                              self.layers[2],
+        #                              #INIT_SCALE*jr.normal(keys[1],self.layers[2].weight.shape))
+        #                              set_layer_weights(self.layers[2].weight.shape,keys[1]))
 
         #print(f"Diffusion layer 0: {self.layers[0].weight.shape}")        
-        if USE_BIAS:
-            b_where = lambda l: l.bias
-            self.layers[0] = eqx.tree_at(b_where,
-                                         self.layers[0],
-                                         INIT_SCALE*jr.normal(keys[2],self.layers[0].bias.shape))
-            self.layers[2] = eqx.tree_at(b_where,
-                                         self.layers[2],
-                                         INIT_SCALE*jr.normal(keys[3],self.layers[2].bias.shape))
+        # if USE_BIAS:
+        #     b_where = lambda l: l.bias
+        #     self.layers[0] = eqx.tree_at(b_where,
+        #                                  self.layers[0],
+        #                                  INIT_SCALE*jr.normal(keys[2],self.layers[0].bias.shape))
+        #     self.layers[2] = eqx.tree_at(b_where,
+        #                                  self.layers[2],
+        #                                  INIT_SCALE*jr.normal(keys[3],self.layers[2].bias.shape))
             
         if ZERO_INIT:
-            self.layers[0] = eqx.tree_at(w_where,
-                                         self.layers[0],
-                                         jnp.zeros(self.layers[0].weight.shape))
-            self.layers[2] = eqx.tree_at(w_where,
-                                         self.layers[2],
-                                         jnp.zeros(self.layers[2].weight.shape))
+            self.layers[-2] = eqx.tree_at(w_where,
+                                         self.layers[-2],
+                                         jnp.zeros(self.layers[-2].weight.shape))
             if USE_BIAS:
-                self.layers[0] = eqx.tree_at(b_where,
-                                             self.layers[0],
-                                             jnp.zeros(self.layers[0].bias.shape))
-                self.layers[2] = eqx.tree_at(b_where,
-                                             self.layers[2],
-                                             jnp.zeros(self.layers[2].bias.shape))
+                self.layers[-2] = eqx.tree_at(b_where,
+                                             self.layers[-2],
+                                             jnp.zeros(self.layers[-2].bias.shape))
     @eqx.filter_jit
     def __call__(self,X: Float[Array, "{self.N_CHANNELS} x y"])->Float[Array, "{self.N_CHANNELS} x y"]:
         Dx = self.polynomial_preprocess(X)
