@@ -336,7 +336,7 @@ def index_to_pde_gray_scott_hyperparameters(index):
 
 
 def index_to_pde_texture_hyperparameters(index):
-	indices = np.unravel_index(index,(6,2))
+	indices = np.unravel_index(index,(6,2,2))
 	filename = ["honeycombed/honeycombed_0078.jpg",
 			    "banded/banded_0109.jpg",
 				"smeared/smeared_0131.jpg",
@@ -350,9 +350,11 @@ def index_to_pde_texture_hyperparameters(index):
 					  "dotted",
 					  "interlaced"][indices[0]]
 	advection_ratio = [1,0][indices[1]]
+	n_layers = [1,2][indices[2]]
 	return {"FILENAME":filename,
 		 	"FILENAME_SHORT":filename_short,
-			"ADVECTION_RATIO":advection_ratio}
+			"ADVECTION_RATIO":advection_ratio,
+			"N_LAYERS":n_layers}
 def index_to_kaNCA_pde_parameters(index):
 	indices = np.unravel_index(index,(4,4))
 	EQUATION_INDEX = indices[0]

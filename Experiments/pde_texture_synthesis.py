@@ -20,17 +20,18 @@ index=int(sys.argv[1])-1
 PARAMS = index_to_pde_texture_hyperparameters(index)
 
 CHANNELS = 8
-ITERS = 1000
+ITERS = 1001
 TRAJECTORY_LENGTH = 64
-TRAJECTORY_SAMPLING = 4
+TRAJECTORY_SAMPLING = 1
 WARMUP_WINDOW = 48
-PADDING = "REPLICATE"
+PADDING = "CIRCULAR"
 LEARN_RATE = 1e-3
 BATCHES = 4
 
 
-INIT_SCALE = {"reaction":0.2,"advection":PARAMS["ADVECTION_RATIO"],"diffusion":1.0}
+INIT_SCALE = {"reaction":1.0,"advection":1.0,"diffusion":1.0}
 INIT_TYPE = {"reaction":"orthogonal","advection":"orthogonal","diffusion":"orthogonal"}
+ZERO_INIT = {"reaction":True,"advection":True,"diffusion":False}
 key = jr.PRNGKey(int(time.time()))
 key = jr.fold_in(key,index)
 func = F(CHANNELS,
@@ -43,7 +44,8 @@ func = F(CHANNELS,
          STABILITY_FACTOR=0.001,
          USE_BIAS=True,
          ORDER=2,
-         ZERO_INIT=False,
+         N_LAYERS=PARAMS["N_LAYERS"],
+         ZERO_INIT=ZERO_INIT,
          key=key)
 pde = PDE_solver(func,dt=0.1)
 
@@ -67,6 +69,6 @@ opt = multi_learnrate(
     pre_process=optax.identity(),
 )
 
-trainer = PDE_Trainer(pde,data,model_filename="pde_textures/"+PARAMS["FILENAME_SHORT"]+"_nadam_ord_2_act_tanh_A_"+str(PARAMS["ADVECTION_RATIO"])+"_orthogonal")
+trainer = PDE_Trainer(pde,data,model_filename="pde_textures/"+PARAMS["FILENAME_SHORT"]+"_nadam_ord_2_layers_"+str(PARAMS["N_LAYERS"])+"_act_tanh_A_"+str(PARAMS["ADVECTION_RATIO"])+"_orthogonal")
 
 trainer.train(t=TRAJECTORY_LENGTH,iters=ITERS,optimiser=opt,LOSS_TIME_WINDOW=WARMUP_WINDOW,LOSS_TIME_SAMPLING=TRAJECTORY_SAMPLING,LOG_EVERY=100,WARMUP=32)
