@@ -286,29 +286,31 @@ def index_to_pde_advection_hyperparameters(index):
 
 
 def index_to_pde_gray_scott_hyperparameters(index):
-	indices = np.unravel_index(index,(2,3,3,2,2,2))
-	INTERNAL_ACTIVATIONS = [lambda x:x,jax.nn.tanh][indices[0]]
-	#OPTIMISER = [optax.nadam,optax.nadamw][indices[1]]
-	#ADVECTION_OUTER_ACTIVATIONS = [jax.nn.relu,jax.nn.tanh][indices[0]]
-	#LEARN_RATE = [1e-3,1e-2][indices[0]]
-	REACTION_RATIO = [1,0.1,0.01][indices[1]]
-	ADVECTION_RATIO = [1,0.1,0][indices[2]]
-	#OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(2.0)][indices[3]]
+	indices = np.unravel_index(index,(2,2,2,2,2,2,2))
+	INTERNAL_ACTIVATIONS = [jax.nn.relu6,jax.nn.tanh][indices[0]]
+
+
+	REACTION_RATIO = [1,0.1,0.01][0]
+	ADVECTION_RATIO = [1,0.1,0][0]
+	REACTION_ZERO_INIT = [True,False][indices[1]]
+	ADVECTION_ZERO_INIT = [True,False][indices[2]]
+	DIFFUSION_ZERO_INIT = [True,False][1]
 	REACTION_INIT = ["orthogonal","permuted"][indices[3]]
 	DIFFUSION_INIT = ["orthogonal","diagonal"][indices[4]]
 	LOSS_TIME_SAMPLING = [1,8][indices[5]]
+	N_LAYERS = [1,2][indices[6]]
 	
-	#ACTIVATION_TEXT = ["relu","tanh"][indices[0]]
-	#LEARN_RATE_TEXT = ["1e-3","1e-2"][indices[0]]
-	INTERNAL_ACTIVATIONS_TEXT = ["identity","tanh"][indices[0]]
+	INTERNAL_ACTIVATIONS_TEXT = ["relu6","tanh"][indices[0]]
 	
-	REACTION_RATIO_TEXT = ["1","1e-1","1e-2"][indices[1]]
-	ADVECTION_RATIO_TEXT = ["1","1e-1","0"][indices[2]]
+	REACTION_RATIO_TEXT = ["1","1e-1","1e-2"][0]
+	ADVECTION_RATIO_TEXT = ["1","1e-1","0"][0]
+	REACTION_ZERO_INIT_TEXT = ["_zero_init",""][indices[1]]
+	ADVECTION_ZERO_INIT_TEXT = ["_zero_init",""][indices[2]]
+	DIFFUSION_ZERO_INIT_TEXT = ["_zero_init",""][1]
 	
 	#OPTIMISER_PRE_PROCESS_TEXT = ["none","scale_by_param_block_norm","adaptive_grad_clip"][indices[3]]
 
 	params = {
-		#"ADVECTION_OUTER_ACTIVATIONS":ADVECTION_OUTER_ACTIVATIONS,
 		"LOSS_TIME_SAMPLING":LOSS_TIME_SAMPLING,
 		"INTERNAL_ACTIVATIONS":INTERNAL_ACTIVATIONS,
 		"REACTION_RATIO":REACTION_RATIO,
@@ -317,19 +319,14 @@ def index_to_pde_gray_scott_hyperparameters(index):
 		"DIFFUSION_INIT":DIFFUSION_INIT,
 		"INTERNAL_ACTIVATIONS_TEXT":INTERNAL_ACTIVATIONS_TEXT,
 		"REACTION_RATIO_TEXT":REACTION_RATIO_TEXT,
-		"ADVECTION_RATIO_TEXT":ADVECTION_RATIO_TEXT
-		# "LEARN_RATE":LEARN_RATE,
-		# "LEARN_RATE_REACTION_RATIO":LEARN_RATE_REACTION_RATIO,
-		# "LEARN_RATE_ADVECTION_RATIO":LEARN_RATE_ADVECTION_RATIO,
-		# "UPDATE_X0_EVERY":UPDATE_X0_EVERY,
-		# #"OPTIMISER_PRE_PROCESS":OPTIMISER_PRE_PROCESS,
-		# "ORDER":ORDER,
-		#"ACTIVATION_TEXT":ACTIVATION_TEXT,
-		# "LEARN_RATE_TEXT":LEARN_RATE_TEXT,
-		# "LEARN_RATE_REACTION_RATIO_TEXT":LEARN_RATE_REACTION_RATIO_TEXT,
-		# "LEARN_RATE_ADVECTION_RATIO_TEXT":LEARN_RATE_ADVECTION_RATIO_TEXT,
-		# "UPDATE_X0_EVERY_TEXT":UPDATE_X0_EVERY_TEXT
-		#"OPTIMISER_PRE_PROCESS_TEXT":OPTIMISER_PRE_PROCESS_TEXT
+		"ADVECTION_RATIO_TEXT":ADVECTION_RATIO_TEXT,
+		"REACTION_ZERO_INIT":REACTION_ZERO_INIT,
+		"ADVECTION_ZERO_INIT":ADVECTION_ZERO_INIT,
+		"DIFFUSION_ZERO_INIT":DIFFUSION_ZERO_INIT,
+		"REACTION_ZERO_INIT_TEXT":REACTION_ZERO_INIT_TEXT,
+		"ADVECTION_ZERO_INIT_TEXT":ADVECTION_ZERO_INIT_TEXT,
+		"DIFFUSION_ZERO_INIT_TEXT":DIFFUSION_ZERO_INIT_TEXT,
+		"N_LAYERS":N_LAYERS
 		}
 	return params
 
