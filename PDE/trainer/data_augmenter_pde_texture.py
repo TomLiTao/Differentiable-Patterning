@@ -18,9 +18,19 @@ class DataAugmenter(DataAugmenterAbstract):
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
         self.OVERWRITE_OBS_CHANNELS = False
-    def data_init(self,SHARDING=None):
-        return None
-    
+        
+    def data_init(self,SHARDING=None,key=jax.random.PRNGKey(int(time.time()))):
+        data = self.return_saved_data()
+        B = len(data)
+        N = data[0].shape[0]
+        C = data[0].shape[1]
+        W = data[0].shape[2]
+        H = data[0].shape[3]
+        self.POOL_SIZE = 8*B
+        keys = jr.split(key,self.POOL_SIZE)
+        self.INITIAL_CONDITION_POOL = [jr.uniform(key,shape=(C,W,H)) for key in keys]
+        #return None
+
     
     # def sub_trajectory_split(self,L,key=jax.random.PRNGKey(int(time.time()))):
     #     """
@@ -49,8 +59,8 @@ class DataAugmenter(DataAugmenterAbstract):
         
         
     def data_callback(self,
-                    x: PyTree[Float[Array, "C W H"]], 
-                    y: PyTree[Float[Array, "N C W H"]], 
+                    X: PyTree[Float[Array, "C W H"]], 
+                    Y: PyTree[Float[Array, "N C W H"]], 
                     i: Int[Scalar, ""],
                     key):
         
@@ -69,10 +79,21 @@ class DataAugmenter(DataAugmenterAbstract):
         W = data[0].shape[2]
         H = data[0].shape[3]
         keys = jr.split(key,B)
-        x = [jr.uniform(key,shape=(C,W,H)) for key in keys]
-        y = data
+        pool_inds = jr.randint(key,shape=(3*B,),minval=0,maxval=self.POOL_SIZE)
+        pool_inds_reset = pool_inds[:B]
+        pool_inds_save = pool_inds[B:2*B]
+        pool_inds_load = pool_inds[2*B:]
+        for i in range(B):
+            self.INITIAL_CONDITION_POOL[pool_inds_reset[i]] = 0.5 + 0.1*jr.normal(keys[i],shape=(C,W,H))
+            self.INITIAL_CONDITION_POOL[pool_inds_save[i]] = Y[i][-1]
+            X[i] = self.INITIAL_CONDITION_POOL[pool_inds_load[i]]
 
-        return x,y
+        #self.INITIAL_CONDITION_POOL = [0.5 + 0.1*jr.normal(key,shape=(C,W,H)) for key in keys]
+        #self.INITIAL_CONDITION_POOL.append([y[-1] for y in Y])
+        #x = [0.5 + 0.1*jr.normal(key,shape=(C,W,H)) for key in keys]
+        Y = data
+
+        return X,Y
 
         
     # def data_load(self,L,key):

@@ -30,8 +30,8 @@ BATCHES = 4
 
 
 INIT_SCALE = {"reaction":1.0,"advection":1.0,"diffusion":1.0}
-INIT_TYPE = {"reaction":"orthogonal","advection":"orthogonal","diffusion":"orthogonal"}
-ZERO_INIT = {"reaction":True,"advection":True,"diffusion":False}
+INIT_TYPE = {"reaction":"orthogonal","advection":"orthogonal","diffusion":"diagonal"}
+ZERO_INIT = {"reaction":False,"advection":True,"diffusion":False}
 key = jr.PRNGKey(int(time.time()))
 key = jr.fold_in(key,index)
 func = F(CHANNELS,
@@ -62,13 +62,21 @@ schedule = optax.exponential_decay(LEARN_RATE, transition_steps=ITERS, decay_rat
 
 opt = multi_learnrate(
     schedule,
-    rate_ratios={"advection": 1,
-                 "reaction": PARAMS["ADVECTION_RATIO"],
+    rate_ratios={"advection": PARAMS["ADVECTION_RATIO"],
+                 "reaction": 1,
                  "diffusion": 1},
     optimiser=optax.nadam,
     pre_process=optax.identity(),
 )
 
-trainer = PDE_Trainer(pde,data,model_filename="pde_textures/"+PARAMS["FILENAME_SHORT"]+"_nadam_ord_2_layers_"+str(PARAMS["N_LAYERS"])+"_act_tanh_A_"+str(PARAMS["ADVECTION_RATIO"])+"_orthogonal")
+trainer = PDE_Trainer(pde,
+                      data,
+                      model_filename="pde_textures/"+PARAMS["FILENAME_SHORT"]+"_nadam_ord_2_layers_"+str(PARAMS["N_LAYERS"])+"_act_tanh_A_"+str(PARAMS["ADVECTION_RATIO"])+"_orthogonal")
 
-trainer.train(t=TRAJECTORY_LENGTH,iters=ITERS,optimiser=opt,LOSS_TIME_WINDOW=WARMUP_WINDOW,LOSS_TIME_SAMPLING=TRAJECTORY_SAMPLING,LOG_EVERY=100,WARMUP=32)
+trainer.train(t=TRAJECTORY_LENGTH,
+              iters=ITERS,
+              optimiser=opt,
+              LOSS_TIME_WINDOW=WARMUP_WINDOW,
+              LOSS_TIME_SAMPLING=TRAJECTORY_SAMPLING,
+              LOG_EVERY=100,
+              WARMUP=32)

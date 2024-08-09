@@ -2,6 +2,7 @@ import jax
 jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import jax.random as jr
+import jax.tree_util as jtu
 import optax
 import equinox as eqx
 import datetime
@@ -10,7 +11,7 @@ from PDE.trainer.data_augmenter_pde_texture import DataAugmenter
 import Common.trainer.loss as loss
 from Common.model.boundary import model_boundary
 from Common.trainer.custom_functions import check_training_diverged
-from PDE.trainer.tensorboard_log import PDE_Train_log
+from PDE.trainer.tensorboard_log_texture import PDE_Train_log
 from PDE.trainer.optimiser import non_negative_diffusion_chemotaxis
 from PDE.model.solver.semidiscrete_solver import PDE_solver
 from functools import partial
@@ -126,7 +127,7 @@ class PDE_Trainer(object):
                 y: Float[Array, "T C_OBS W H"],
                 key)->Float[Array,"T"]:
         """
-        NOTE: VMAP THIS OVER BATCHES TO HANDLE DIFFERENT SIZES OF GRID IN EACH BATCH
+        NOTE: Y is in the range [0,1], but loss.vgg expects it in the range [-1,1]
     
         
         Parameters
@@ -142,6 +143,8 @@ class PDE_Trainer(object):
         """
         x_obs = x[self.LOSS_TIME_WINDOW:,:self.OBS_CHANNELS][::self.LOSS_TIME_SAMPLING]
         y_obs = y[self.LOSS_TIME_WINDOW:,:self.OBS_CHANNELS][::self.LOSS_TIME_SAMPLING]
+        #y_obs = 2*y_obs-1
+        y_obs = jtu.tree_map(lambda y:2*y-1,y_obs)
         L = loss.vgg(x_obs,y_obs,key)
         if self.GRAD_LOSS:
             x_obs_spatial = self.spatial_loss_gradients(x_obs)
@@ -149,6 +152,7 @@ class PDE_Trainer(object):
             L += 0.1*loss.vgg(x_obs_spatial,y_obs_spatial,key)
         return L
     
+
     def train(self,
             t,
             iters,
@@ -303,4 +307,6 @@ class PDE_Trainer(object):
         elif self.IS_LOGGING and model_saved:
             x,y = self.DATA_AUGMENTER.split_x_y(1)
             x,y = self.DATA_AUGMENTER.data_callback(x, y, 0, key=key)
+            print(len(x))
+            print(x[0].shape)
             self.LOGGER.tb_training_end_log(self.PDE_solver,x,data_steps,self.BOUNDARY_CALLBACK)
