@@ -50,46 +50,7 @@ class R(eqx.Module):
         self.decay_layers.append(OUTER_ACTIVATION)
 
 
-        # self.production_layers = [
-        #     eqx.nn.Conv2d(
-        #         in_channels=N_FEATURES,
-        #         out_channels=N_FEATURES,
-        #         kernel_size=1,
-        #         padding=0,
-        #         use_bias=USE_BIAS,
-        #         key=keys[0]
-        #     ),
-        #     INTERNAL_ACTIVATION,
-        #     eqx.nn.Conv2d(
-        #         in_channels=N_FEATURES,
-        #         out_channels=self.N_CHANNELS,
-        #         kernel_size=1,
-        #         padding=0,
-        #         use_bias=USE_BIAS,
-        #         key=keys[1]
-        #     ),
-        #     OUTER_ACTIVATION
-        # ]
-        # self.decay_layers = [
-        #     eqx.nn.Conv2d(
-        #         in_channels=N_FEATURES,
-        #         out_channels=N_FEATURES,
-        #         kernel_size=1,
-        #         padding=0,
-        #         use_bias=USE_BIAS,
-        #         key=keys[2]
-        #     ),
-        #     INTERNAL_ACTIVATION,
-        #     eqx.nn.Conv2d(
-        #         in_channels=N_FEATURES,
-        #         out_channels=self.N_CHANNELS,
-        #         kernel_size=1,
-        #         padding=0,
-        #         use_bias=USE_BIAS,
-        #         key=keys[3]
-        #     ),
-        #     OUTER_ACTIVATION
-        # ]
+
         where = lambda l:l.weight
         where_b = lambda l:l.bias
         def set_layer_weights(shape,key):
@@ -127,48 +88,7 @@ class R(eqx.Module):
                 self.decay_layers[2*i] = eqx.tree_at(where_b,
                                                     self.decay_layers[2*i],
                                                     INIT_SCALE*jax.random.normal(key=keys[i+3*len(self.production_layers)//2],shape=self.decay_layers[2*i].bias.shape))
-        # self.decay_layers[0] = eqx.tree_at(where,
-        #                                     self.decay_layers[0],
-        #                                     #INIT_SCALE*jax.random.normal(key=keys[0],shape=self.decay_layers[0].weight.shape))
-        #                                     set_layer_weights(self.decay_layers[0].weight.shape,keys[0]))
-        # self.production_layers[0] = eqx.tree_at(where,
-        #                                     self.production_layers[0],
-        #                                     #INIT_SCALE*jax.random.normal(key=keys[1],shape=self.production_layers[0].weight.shape))
-        #                                     set_layer_weights(self.production_layers[0].weight.shape,keys[1]))
-
-        # self.decay_layers[-2] = eqx.tree_at(where,
-        #                                     self.decay_layers[-2],
-        #                                     #INIT_SCALE*jax.random.normal(key=keys[2],shape=self.decay_layers[-2].weight.shape))
-        #                                     set_layer_weights(self.decay_layers[-2].weight.shape,keys[2]))
-        # self.production_layers[-2] = eqx.tree_at(where,
-        #                                     self.production_layers[-2],
-        #                                     #INIT_SCALE*jax.random.normal(key=keys[3],shape=self.production_layers[-2].weight.shape))
-        #                                     set_layer_weights(self.production_layers[-2].weight.shape,keys[3]))
         
-
-        # if USE_BIAS:
-        #     where_b = lambda l:l.bias
-        #     for i in range(0,len(self.production_layers)//2):
-        #         self.production_layers[2*i] = eqx.tree_at(where_b,
-        #                                                 self.production_layers[2*i],
-        #                                                 INIT_SCALE*jax.random.normal(key=keys[i+len(self.production_layers)],shape=self.production_layers[2*i].bias.shape))
-        #         self.decay_layers[2*i] = eqx.tree_at(where_b,
-        #                                             self.decay_layers[2*i],
-        #                                             INIT_SCALE*jax.random.normal(key=keys[i+3*len(self.production_layers)//2],shape=self.decay_layers[2*i].bias.shape))
-            # self.decay_layers[0] = eqx.tree_at(where_b,
-            #                                     self.decay_layers[0],
-            #                                     INIT_SCALE*jax.random.normal(key=keys[4],shape=self.decay_layers[0].bias.shape))
-            # self.production_layers[0] = eqx.tree_at(where_b,
-            #                                     self.production_layers[0],
-            #                                     INIT_SCALE*jax.random.normal(key=keys[5],shape=self.production_layers[0].bias.shape))
-
-            # self.decay_layers[-2] = eqx.tree_at(where_b,
-            #                                     self.decay_layers[-2],
-            #                                     INIT_SCALE*jax.random.normal(key=keys[6],shape=self.decay_layers[-2].bias.shape))
-            # self.production_layers[-2] = eqx.tree_at(where_b,
-            #                                     self.production_layers[-2],
-            #                                     INIT_SCALE*jax.random.normal(key=keys[7],shape=self.production_layers[-2].bias.shape))
-
 
         if ZERO_INIT:
             self.production_layers[-2] = eqx.tree_at(where,

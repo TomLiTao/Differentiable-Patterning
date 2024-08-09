@@ -15,17 +15,14 @@ class PDE_Train_log(Train_log):
 	def log_model_parameters(self, model, i):
 		with self.train_summary_writer.as_default():
 			weight_matrix_figs = plot_weight_matrices(model)
-			tf.summary.image("Weight matrices",np.array(weight_matrix_figs)[:,0],step=i,max_outputs=10)
+			tf.summary.image("Weight matrices",np.array(weight_matrix_figs)[:,0],step=i,max_outputs=len(weight_matrix_figs))
 			
 			kernel_weight_figs = plot_weight_kernel_boxplot(model)
-			tf.summary.image("Input weights per channel",np.array(kernel_weight_figs)[:,0],step=i,max_outputs=10)
+			tf.summary.image("Input weights per channel",np.array(kernel_weight_figs)[:,0],step=i,max_outputs=len(kernel_weight_figs))
 				
 
 	def log_model_outputs(self, x, i):
-		#pass
-		#print(x.shape)
-		#print(len(x))
-		#print(x[0].shape)
+
 		N_SAMPLES = 4
 
 		with self.train_summary_writer.as_default():

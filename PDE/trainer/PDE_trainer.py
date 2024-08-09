@@ -139,11 +139,11 @@ class PDE_Trainer(object):
 		"""
 		x_obs = x[::self.LOSS_TIME_SAMPLING,:self.OBS_CHANNELS]
 		y_obs = y[::self.LOSS_TIME_SAMPLING,:self.OBS_CHANNELS]
-		L = loss.euclidean(x_obs,y_obs)
+		L = self._loss(x_obs,y_obs)
 		if self.GRAD_LOSS:
 			x_obs_spatial = self.spatial_loss_gradients(x_obs)
 			y_obs_spatial = self.spatial_loss_gradients(y_obs)
-			L += 0.1*loss.euclidean(x_obs_spatial,y_obs_spatial)
+			L += 0.1*self._loss(x_obs_spatial,y_obs_spatial)
 		return L
 	
 	def train(self,
@@ -153,6 +153,7 @@ class PDE_Trainer(object):
 			  WARMUP=64,
 			  LOG_EVERY=10,
 			  LOSS_TIME_SAMPLING=1,
+			  LOSS_FUNC = loss.euclidean,
 			  UPDATE_X0_PARAMS = {"iters":32,
 						 		  "update_every":10,
 								  "optimiser":optax.nadam,
@@ -181,6 +182,7 @@ class PDE_Trainer(object):
 
 
 		"""
+		self._loss = LOSS_FUNC
 		UPDATE_X0_PARAMS.update({"t":t})
 		UPDATE_X0_PARAMS.update({"loss_func":self.loss_func})
 		self.LOSS_TIME_SAMPLING = LOSS_TIME_SAMPLING

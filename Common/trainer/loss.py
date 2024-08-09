@@ -15,7 +15,7 @@ from lpips_j.lpips import LPIPS
 lpips = LPIPS()
 
 @jax.jit
-def l2(x,y,key):
+def l2(x,y,key=None):
 	"""
 		Parameters
 		----------
@@ -110,7 +110,7 @@ def random_sampled_euclidean(x,y,key,SAMPLES=16):
 
 
 @jax.jit
-def spectral(x,y,key):
+def spectral(x,y,key=None):
 	""" 
 		l2 norm in fourier space (discarding phase information)
 
@@ -133,7 +133,7 @@ def spectral(x,y,key):
 	return l2(fx,fy,key)
         
 @jax.jit
-def spectral_weighted(x,y,key):
+def spectral_weighted(x,y,key=None):
 	""" 
 		l2 norm in fourier space, keeping phase information.
 		Weighted to emphasise importance of certain frequencies

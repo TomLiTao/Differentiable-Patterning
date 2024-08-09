@@ -70,15 +70,15 @@ Y = 2*(Y-np.min(Y))/(np.max(Y)-np.min(Y)) - 1
 func = F(CHANNELS,
          PADDING=PADDING,
          dx=1.0,
-         INTERNAL_ACTIVATION=PARAMS["INTERNAL_ACTIVATIONS"],
+         INTERNAL_ACTIVATION=jax.nn.tanh,
          ADVECTION_OUTER_ACTIVATION=jax.nn.tanh,
-         INIT_SCALE={"reaction":PARAMS["REACTION_RATIO"],"advection":PARAMS["ADVECTION_RATIO"],"diffusion":1.0},
+         INIT_SCALE={"reaction":1.0,"advection":1.0,"diffusion":1.0},
          INIT_TYPE={"reaction":PARAMS["REACTION_INIT"],"advection":"orthogonal","diffusion":PARAMS["DIFFUSION_INIT"]},
          STABILITY_FACTOR=STABILITY_FACTOR,
          USE_BIAS=True,
-         ORDER = 2,
+         ORDER = PARAMS["ORDER"],
          N_LAYERS=PARAMS["N_LAYERS"],
-         ZERO_INIT={"reaction":PARAMS["REACTION_ZERO_INIT"],"advection":PARAMS["ADVECTION_ZERO_INIT"],"diffusion":PARAMS["DIFFUSION_ZERO_INIT"]},
+         ZERO_INIT={"reaction":False,"advection":True,"diffusion":False},
          key=key)
 pde = PDE_solver(func,dt=0.1)
 
@@ -95,14 +95,14 @@ opt = multi_learnrate(
     rate_ratios={"advection": PARAMS["ADVECTION_RATIO"],
                  "reaction": PARAMS["REACTION_RATIO"],
                  "diffusion": 1},
-    optimiser=optax.nadam,
-    pre_process=optax.identity(),
+    optimiser=PARAMS["OPTIMISER"],
+    pre_process=PARAMS["OPTIMISER_PRE_PROCESS"],
 )
 
 trainer = PDE_Trainer(pde,
                       Y,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_advreacdiff/"+PDE_STR+"_nadam_ord_2_layers_"+str(PARAMS["N_LAYERS"])+"_act_"+PARAMS["INTERNAL_ACTIVATIONS_TEXT"]+"_R_"+PARAMS["REACTION_RATIO_TEXT"]+"_"+PARAMS["REACTION_INIT"]+PARAMS["REACTION_ZERO_INIT_TEXT"]+"_A_"+PARAMS["ADVECTION_RATIO_TEXT"]+"_orthogonal"+PARAMS["ADVECTION_ZERO_INIT_TEXT"]+"_D_1_"+PARAMS["DIFFUSION_INIT"]+PARAMS["DIFFUSION_ZERO_INIT_TEXT"]+"_loss_sampling_"+str(PARAMS["LOSS_TIME_SAMPLING"]))
+                      model_filename="pde_hyperparameters_advreacdiff_gray_scott/ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_R_"+PARAMS["REACTION_INIT"]+PARAMS["REACTION_ZERO_INIT_TEXT"]+"_A_orthogonal"+PARAMS["ADVECTION_ZERO_INIT_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["DIFFUSION_ZERO_INIT_TEXT"]+"_opt_"+PARAMS["OPTIMISER_TEXT"])
 
 UPDATE_X0_PARAMS = {"iters":16,
                     "update_every":10000,
@@ -115,5 +115,6 @@ trainer.train(TRAJECTORY_LENGTH,
               optimiser=opt,
               LOG_EVERY=100,
               WARMUP=64,
+              
               LOSS_TIME_SAMPLING=PARAMS["LOSS_TIME_SAMPLING"],
               UPDATE_X0_PARAMS=UPDATE_X0_PARAMS)

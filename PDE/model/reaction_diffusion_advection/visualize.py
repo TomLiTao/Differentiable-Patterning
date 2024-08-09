@@ -38,87 +38,132 @@ def plot_weight_matrices(pde):
 	figs : list of images
 		a list of images
 
+
 	"""
-	w1_v = pde.func.f_v.layers[0].weight[:,:,0,0]
-	w2_v = pde.func.f_v.layers[2].weight[:,:,0,0]
+	
+	w_v = []
+	w_d = []
+	w_r_p = []
+	w_r_d = []
+	for i in range(pde.func.N_LAYERS+1):
+		w_v.append(pde.func.f_v.layers[2*i].weight[:,:,0,0])
+		w_d.append(pde.func.f_d.layers[2*i].weight[:,:,0,0])
+		w_r_p.append(pde.func.f_r.production_layers[2*i].weight[:,:,0,0])
+		w_r_d.append(pde.func.f_r.decay_layers[2*i].weight[:,:,0,0])
+
+	# w1_v = pde.func.f_v.layers[0].weight[:,:,0,0]
+	# w1_d = pde.func.f_d.layers[0].weight[:,:,0,0]
+	# w1_r_p = pde.func.f_r.production_layers[0].weight[:,:,0,0]
+	# w1_r_d = pde.func.f_r.decay_layers[0].weight[:,:,0,0]
 	
 	#w1_d = pde.func.f_d.diffusion_constants.weight[:,:,0,0]
-	w1_d = pde.func.f_d.layers[0].weight[:,:,0,0]
-	w2_d = pde.func.f_d.layers[2].weight[:,:,0,0]
 
 
-	w1_r_p = pde.func.f_r.production_layers[0].weight[:,:,0,0]
-	w2_r_p = pde.func.f_r.production_layers[2].weight[:,:,0,0]
+	# w2_v = pde.func.f_v.layers[2].weight[:,:,0,0]
+	# w2_d = pde.func.f_d.layers[2].weight[:,:,0,0]
+	# w2_r_p = pde.func.f_r.production_layers[2].weight[:,:,0,0]
+	# w2_r_d = pde.func.f_r.decay_layers[2].weight[:,:,0,0]
 
-	w1_r_d = pde.func.f_r.decay_layers[0].weight[:,:,0,0]
-	w2_r_d = pde.func.f_r.decay_layers[2].weight[:,:,0,0]
 	figs = []
 	
-	figure = plt.figure(figsize=(5,5))
-	col_range = max(np.max(w1_v),-np.min(w1_v))
-	plt.imshow(w1_v,cmap="seismic",vmax=col_range,vmin=-col_range)
-	plt.ylabel("Output")
-	plt.xlabel("Input")
-	plt.title("Advection layer 1")
-	figs.append(plot_to_image(figure))
-	
-	figure = plt.figure(figsize=(5,5))
-	col_range = max(np.max(w2_v),-np.min(w2_v))
-	plt.imshow(w2_v,cmap="seismic",vmax=col_range,vmin=-col_range)
-	plt.ylabel("Output")
-	plt.xlabel("Input")
-	plt.title("Advection layer 2")
-	figs.append(plot_to_image(figure))
-	
-	figure = plt.figure(figsize=(5,5))
-	col_range = max(np.max(w1_d),-np.min(w1_d))
-	plt.imshow(w1_d,cmap="seismic",vmax=col_range,vmin=-col_range)
-	plt.ylabel("Output")
-	plt.xlabel("Input")
-	plt.title("Nonlinear diffusion layer 1")
-	figs.append(plot_to_image(figure))
+	for i in range(pde.func.N_LAYERS+1):
+		figure = plt.figure(figsize=(5,5))
+		col_range = max(np.max(w_v[i]),-np.min(w_v[i]))
+		plt.imshow(w_v[i],cmap="seismic",vmax=col_range,vmin=-col_range)
+		plt.ylabel("Output")
+		plt.xlabel("Input")
+		plt.title(f"Advection layer {i}")
+		figs.append(plot_to_image(figure))
+	for i in range(pde.func.N_LAYERS+1):
+		figure = plt.figure(figsize=(5,5))
+		col_range = max(np.max(w_d[i]),-np.min(w_d[i]))
+		plt.imshow(w_d[i],cmap="seismic",vmax=col_range,vmin=-col_range)
+		plt.ylabel("Output")
+		plt.xlabel("Input")
+		plt.title(f"Diffusion layer {i}")
+		figs.append(plot_to_image(figure))
+	for i in range(pde.func.N_LAYERS+1):
+		figure = plt.figure(figsize=(5,5))
+		col_range = max(np.max(w_r_p[i]),-np.min(w_r_p[i]))
+		plt.imshow(w_r_p[i],cmap="seismic",vmax=col_range,vmin=-col_range)
+		plt.ylabel("Output")
+		plt.xlabel("Input")
+		plt.title(f"Reaction production layer {i}")
+		figs.append(plot_to_image(figure))
+	for i in range(pde.func.N_LAYERS+1): 
+		figure = plt.figure(figsize=(5,5))
+		col_range = max(np.max(w_r_d[i]),-np.min(w_r_d[i]))
+		plt.imshow(w_r_d[i],cmap="seismic",vmax=col_range,vmin=-col_range)
+		plt.ylabel("Output")
+		plt.xlabel("Input")
+		plt.title(f"Reaction decay layer {i}")
+		figs.append(plot_to_image(figure))
 
-	figure = plt.figure(figsize=(5,5))
-	col_range = max(np.max(w2_d),-np.min(w2_d))
-	plt.imshow(w2_d,cmap="seismic",vmax=col_range,vmin=-col_range)
-	plt.ylabel("Output")
-	plt.xlabel("Input")
-	plt.title("Nonlinear diffusion layer 2")
-	figs.append(plot_to_image(figure))
+	# figure = plt.figure(figsize=(5,5))
+	# col_range = max(np.max(w1_v),-np.min(w1_v))
+	# plt.imshow(w1_v,cmap="seismic",vmax=col_range,vmin=-col_range)
+	# plt.ylabel("Output")
+	# plt.xlabel("Input")
+	# plt.title("Advection layer 1")
+	# figs.append(plot_to_image(figure))
+	
+	# figure = plt.figure(figsize=(5,5))
+	# col_range = max(np.max(w2_v),-np.min(w2_v))
+	# plt.imshow(w2_v,cmap="seismic",vmax=col_range,vmin=-col_range)
+	# plt.ylabel("Output")
+	# plt.xlabel("Input")
+	# plt.title("Advection layer 2")
+	# figs.append(plot_to_image(figure))
+	
+	# figure = plt.figure(figsize=(5,5))
+	# col_range = max(np.max(w1_d),-np.min(w1_d))
+	# plt.imshow(w1_d,cmap="seismic",vmax=col_range,vmin=-col_range)
+	# plt.ylabel("Output")
+	# plt.xlabel("Input")
+	# plt.title("Nonlinear diffusion layer 1")
+	# figs.append(plot_to_image(figure))
+
+	# figure = plt.figure(figsize=(5,5))
+	# col_range = max(np.max(w2_d),-np.min(w2_d))
+	# plt.imshow(w2_d,cmap="seismic",vmax=col_range,vmin=-col_range)
+	# plt.ylabel("Output")
+	# plt.xlabel("Input")
+	# plt.title("Nonlinear diffusion layer 2")
+	# figs.append(plot_to_image(figure))
 
 
-	figure = plt.figure(figsize=(5,5))
-	col_range = max(np.max(w1_r_p),-np.min(w1_r_p))
-	plt.imshow(w1_r_p,cmap="seismic",vmax=col_range,vmin=-col_range)
-	plt.ylabel("Output")
-	plt.xlabel("Input")
-	plt.title("Reaction production layer 1")
-	figs.append(plot_to_image(figure))
+	# figure = plt.figure(figsize=(5,5))
+	# col_range = max(np.max(w1_r_p),-np.min(w1_r_p))
+	# plt.imshow(w1_r_p,cmap="seismic",vmax=col_range,vmin=-col_range)
+	# plt.ylabel("Output")
+	# plt.xlabel("Input")
+	# plt.title("Reaction production layer 1")
+	# figs.append(plot_to_image(figure))
 	
-	figure = plt.figure(figsize=(5,5))
-	col_range = max(np.max(w2_r_p),-np.min(w2_r_p))
-	plt.imshow(w2_r_p,cmap="seismic",vmax=col_range,vmin=-col_range)
-	plt.ylabel("Output")
-	plt.xlabel("Input")
-	plt.title("Reaction production layer 2")
-	figs.append(plot_to_image(figure))
+	# figure = plt.figure(figsize=(5,5))
+	# col_range = max(np.max(w2_r_p),-np.min(w2_r_p))
+	# plt.imshow(w2_r_p,cmap="seismic",vmax=col_range,vmin=-col_range)
+	# plt.ylabel("Output")
+	# plt.xlabel("Input")
+	# plt.title("Reaction production layer 2")
+	# figs.append(plot_to_image(figure))
 	
 
-	figure = plt.figure(figsize=(5,5))
-	col_range = max(np.max(w1_r_d),-np.min(w1_r_d))
-	plt.imshow(w1_r_d,cmap="seismic",vmax=col_range,vmin=-col_range)
-	plt.ylabel("Output")
-	plt.xlabel("Input")
-	plt.title("Reaction decay layer 1")
-	figs.append(plot_to_image(figure))
+	# figure = plt.figure(figsize=(5,5))
+	# col_range = max(np.max(w1_r_d),-np.min(w1_r_d))
+	# plt.imshow(w1_r_d,cmap="seismic",vmax=col_range,vmin=-col_range)
+	# plt.ylabel("Output")
+	# plt.xlabel("Input")
+	# plt.title("Reaction decay layer 1")
+	# figs.append(plot_to_image(figure))
 	
-	figure = plt.figure(figsize=(5,5))
-	col_range = max(np.max(w2_r_d),-np.min(w2_r_d))
-	plt.imshow(w2_r_d,cmap="seismic",vmax=col_range,vmin=-col_range)
-	plt.ylabel("Output")
-	plt.xlabel("Input")
-	plt.title("Reaction decay layer 2")
-	figs.append(plot_to_image(figure))
+	# figure = plt.figure(figsize=(5,5))
+	# col_range = max(np.max(w2_r_d),-np.min(w2_r_d))
+	# plt.imshow(w2_r_d,cmap="seismic",vmax=col_range,vmin=-col_range)
+	# plt.ylabel("Output")
+	# plt.xlabel("Input")
+	# plt.title("Reaction decay layer 2")
+	# figs.append(plot_to_image(figure))
 
 	return figs
 

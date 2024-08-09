@@ -19,6 +19,8 @@ class F(eqx.Module):
 	f_r: R
 	f_d: D
 	N_CHANNELS: int
+	N_LAYERS: int
+	ORDER: int
 	PADDING: str
 	dx: float
 	def __init__(self,
@@ -40,6 +42,8 @@ class F(eqx.Module):
 		self.N_CHANNELS = N_CHANNELS
 		self.PADDING = PADDING
 		self.dx = dx
+		self.N_LAYERS = N_LAYERS
+		self.ORDER = ORDER
 		key1,key2,key3 = jax.random.split(key,3)
 
 		self.f_r = R(N_CHANNELS=N_CHANNELS,

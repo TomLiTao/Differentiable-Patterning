@@ -58,20 +58,20 @@ class V(eqx.Module):
         
         
         
-        self.layers = [eqx.nn.Conv2d(in_channels=N_FEATURES,
-                                     out_channels=N_FEATURES,
-                                     kernel_size=1,
-                                     padding=0,
-                                     use_bias=USE_BIAS,
-                                     key=keys[0]),
-                       INTERNAL_ACTIVATION,
-                       eqx.nn.Conv2d(in_channels=N_FEATURES,
-                                     out_channels=self.DIM*self.N_CHANNELS,
-                                     kernel_size=1,
-                                     padding=0,
-                                     use_bias=USE_BIAS,
-                                     key=keys[1]),
-                        OUTER_ACTIVATION]
+        # self.layers = [eqx.nn.Conv2d(in_channels=N_FEATURES,
+        #                              out_channels=N_FEATURES,
+        #                              kernel_size=1,
+        #                              padding=0,
+        #                              use_bias=USE_BIAS,
+        #                              key=keys[0]),
+        #                INTERNAL_ACTIVATION,
+        #                eqx.nn.Conv2d(in_channels=N_FEATURES,
+        #                              out_channels=self.DIM*self.N_CHANNELS,
+        #                              kernel_size=1,
+        #                              padding=0,
+        #                              use_bias=USE_BIAS,
+        #                              key=keys[1]),
+        #                 OUTER_ACTIVATION]
         
         w_where = lambda l: l.weight
         b_where = lambda l: l.bias
