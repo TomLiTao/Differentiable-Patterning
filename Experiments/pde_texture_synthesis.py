@@ -20,18 +20,18 @@ index=int(sys.argv[1])-1
 PARAMS = index_to_pde_texture_hyperparameters(index)
 
 CHANNELS = 8
-ITERS = 1001
+ITERS = 2001
 TRAJECTORY_LENGTH = 64
 TRAJECTORY_SAMPLING = 1
 WARMUP_WINDOW = 48
 PADDING = "CIRCULAR"
 LEARN_RATE = 1e-3
-BATCHES = 4
+BATCHES = 8
 
 
 INIT_SCALE = {"reaction":1.0,"advection":1.0,"diffusion":1.0}
 INIT_TYPE = {"reaction":"orthogonal","advection":"orthogonal","diffusion":"diagonal"}
-ZERO_INIT = {"reaction":False,"advection":True,"diffusion":False}
+ZERO_INIT = {"reaction":True,"advection":True,"diffusion":False}
 key = jr.PRNGKey(int(time.time()))
 key = jr.fold_in(key,index)
 func = F(CHANNELS,
@@ -51,7 +51,7 @@ pde = PDE_solver(func,dt=0.1)
 
 
 
-data = load_textures([PARAMS["FILENAME"]],downsample=4,crop_square=True,crop_factor=2)
+data = load_textures([PARAMS["FILENAME"]],downsample=3,crop_square=True,crop_factor=2)
 data = repeat(data,"b t h w c -> b (t T) h w c",T=TRAJECTORY_LENGTH)
 data = repeat(data,"b t h w c -> (b B) t h w c",B=BATCHES)
 print(f"Data shape: {data.shape}")
@@ -66,12 +66,12 @@ opt = multi_learnrate(
                  "reaction": 1,
                  "diffusion": 1},
     optimiser=optax.nadam,
-    pre_process=optax.identity(),
+    pre_process=PARAMS["OPTIMISER_PRE_PROCESS"],
 )
 
 trainer = PDE_Trainer(pde,
                       data,
-                      model_filename="pde_textures/"+PARAMS["FILENAME_SHORT"]+"_nadam_ord_2_layers_"+str(PARAMS["N_LAYERS"])+"_act_tanh_A_"+str(PARAMS["ADVECTION_RATIO"])+"_orthogonal")
+                      model_filename="pde_textures/perlin_"+PARAMS["FILENAME_SHORT"]+"_nadam_"+PARAMS["OPTIMISER_PRE_PROCESS_TEXT"]+"_ord_2_layers_2_act_tanh_A_"+str(PARAMS["ADVECTION_RATIO"])+"_orthogonal")
 
 trainer.train(t=TRAJECTORY_LENGTH,
               iters=ITERS,

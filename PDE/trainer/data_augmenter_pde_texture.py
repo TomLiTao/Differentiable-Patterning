@@ -4,6 +4,7 @@ import jax.numpy as np
 import jax.random as jr
 from jaxtyping import Float, Int, PyTree, Scalar, Array
 from Common.trainer.abstract_data_augmenter_tree import DataAugmenterAbstract
+from Common.trainer.custom_functions import multi_channel_perlin_noise
 
 """ 
 Use noise as initial condition, learn how to generate textures via LPIPS distance to images.
@@ -26,9 +27,9 @@ class DataAugmenter(DataAugmenterAbstract):
         C = data[0].shape[1]
         W = data[0].shape[2]
         H = data[0].shape[3]
-        self.POOL_SIZE = 8*B
+        self.POOL_SIZE = 32*B
         keys = jr.split(key,self.POOL_SIZE)
-        self.INITIAL_CONDITION_POOL = [jr.uniform(key,shape=(C,W,H)) for key in keys]
+        self.INITIAL_CONDITION_POOL = [multi_channel_perlin_noise(W,C,key) for key in keys]
         #return None
 
     
@@ -84,7 +85,7 @@ class DataAugmenter(DataAugmenterAbstract):
         pool_inds_save = pool_inds[B:2*B]
         pool_inds_load = pool_inds[2*B:]
         for i in range(B):
-            self.INITIAL_CONDITION_POOL[pool_inds_reset[i]] = 0.5 + 0.1*jr.normal(keys[i],shape=(C,W,H))
+            self.INITIAL_CONDITION_POOL[pool_inds_reset[i]] = multi_channel_perlin_noise(W,C,keys[i])#jr.normal(keys[i],shape=(C,W,H))
             self.INITIAL_CONDITION_POOL[pool_inds_save[i]] = Y[i][-1]
             X[i] = self.INITIAL_CONDITION_POOL[pool_inds_load[i]]
 

@@ -312,7 +312,7 @@ def index_to_pde_gray_scott_hyperparameters(index):
 	ADVECTION_ZERO_INIT_TEXT = ["_zero_init",""][0]
 	DIFFUSION_ZERO_INIT_TEXT = ["_zero_init",""][1]
 	
-	OPTIMISER_PRE_PROCESS_TEXT = ["none","scale_by_param_block_norm","adaptive_grad_clip"][indices[3]]
+	#OPTIMISER_PRE_PROCESS_TEXT = ["none","scale_by_param_block_norm","adaptive_grad_clip"][indices[3]]
 	OPTIMISER_TEXT = ["nadam","nadamw"][indices[5]]
 	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[6]]
 	params = {
@@ -346,25 +346,27 @@ def index_to_pde_gray_scott_hyperparameters(index):
 
 
 def index_to_pde_texture_hyperparameters(index):
-	indices = np.unravel_index(index,(6,2,2))
+	indices = np.unravel_index(index,(4,2,3))
 	filename = ["honeycombed/honeycombed_0078.jpg",
 			    "banded/banded_0109.jpg",
-				"smeared/smeared_0131.jpg",
-				"cracked/cracked_0077.jpg",
 				"dotted/dotted_0116.jpg",
 				"interlaced/interlaced_0172.jpg"][indices[0]]
 	filename_short = ["honeycombed",
 			    	  "banded",
-					  "smeared",
-					  "cracked",
 					  "dotted",
 					  "interlaced"][indices[0]]
 	advection_ratio = [1,0][indices[1]]
-	n_layers = [1,2][indices[2]]
+	#n_layers = [1,2][indices[2]]
+	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[2]]
+	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[2]]
+	n_layers = 2
+
 	return {"FILENAME":filename,
 		 	"FILENAME_SHORT":filename_short,
 			"ADVECTION_RATIO":advection_ratio,
-			"N_LAYERS":n_layers}
+			"N_LAYERS":n_layers,
+			"OPTIMISER_PRE_PROCESS":OPTIMISER_PRE_PROCESS,
+			"OPTIMISER_PRE_PROCESS_TEXT":OPTIMISER_PRE_PROCESS_TEXT}
 def index_to_kaNCA_pde_parameters(index):
 	indices = np.unravel_index(index,(4,4))
 	EQUATION_INDEX = indices[0]
