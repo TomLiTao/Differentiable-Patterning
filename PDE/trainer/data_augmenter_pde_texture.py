@@ -29,7 +29,7 @@ class DataAugmenter(DataAugmenterAbstract):
         H = data[0].shape[3]
         self.POOL_SIZE = 32*B
         keys = jr.split(key,self.POOL_SIZE)
-        self.INITIAL_CONDITION_POOL = [multi_channel_perlin_noise(W,C,key) for key in keys]
+        self.INITIAL_CONDITION_POOL = [multi_channel_perlin_noise(W,C,4,key) for key in keys]
         #return None
 
     
@@ -85,7 +85,7 @@ class DataAugmenter(DataAugmenterAbstract):
         pool_inds_save = pool_inds[B:2*B]
         pool_inds_load = pool_inds[2*B:]
         for i in range(B):
-            self.INITIAL_CONDITION_POOL[pool_inds_reset[i]] = multi_channel_perlin_noise(W,C,keys[i])#jr.normal(keys[i],shape=(C,W,H))
+            self.INITIAL_CONDITION_POOL[pool_inds_reset[i]] = multi_channel_perlin_noise(W,C,4,keys[i])#jr.normal(keys[i],shape=(C,W,H))
             self.INITIAL_CONDITION_POOL[pool_inds_save[i]] = Y[i][-1]
             X[i] = self.INITIAL_CONDITION_POOL[pool_inds_load[i]]
 
