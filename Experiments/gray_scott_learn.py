@@ -31,11 +31,11 @@ STABILITY_FACTOR = 0.01
 key = jax.random.PRNGKey(int(time.time()))
 key = jax.random.fold_in(key,index)
 
-CHANNELS = 8
-ITERS = 1000
+CHANNELS = 6
+ITERS = 1001
 SIZE = 64
 BATCHES = 4
-PADDING = "REPLICATE"
+PADDING = "CIRCULAR"
 TRAJECTORY_LENGTH = PARAMS["TRAJECTORY_LENGTH"]
 
 

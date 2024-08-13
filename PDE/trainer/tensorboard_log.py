@@ -52,21 +52,18 @@ class PDE_Train_log(Train_log):
 
 	def log_model_outputs(self, x, i):
 
-		N_SAMPLES = 4
 
 		with self.train_summary_writer.as_default():
 			BATCHES = len(x)
-			for b in range(BATCHES):
-#				if self.RGB_mode=="RGB":
-		# 			#tf.summary.image('Trajectory batch '+str(b),np.einsum("ncxy->nxyc",x[b,:,:3,...]),step=i,max_outputs=x.shape[0])
-				tf.summary.image('Trajectory batch '+str(b),rearrange(x[b][::x[b].shape[0]//N_SAMPLES,:3,...],"n c x y -> n x y c"),step=i,max_outputs=N_SAMPLES)
-				if x[0].shape[1] > 4:
-					hidden_channels = x[b][::x[b].shape[0]//N_SAMPLES,3:]
-					extra_zeros = (-hidden_channels.shape[1])%3
-					hidden_channels = np.pad(hidden_channels,((0,0),(0,extra_zeros),(0,0),(0,0)))
-		
-					tf.summary.image('Trajectory batch '+str(b)+', hidden channels',rearrange(hidden_channels, "N (Z C) X Y -> N (Z X) Y C",C=3),step=i,max_outputs=N_SAMPLES)
-
+			tf.summary.image('Training outputs ',rearrange(x,"b n c x y ->b n x y c")[:,-1,:,:,:3],step=i,max_outputs=BATCHES)
+			
+			if x[0].shape[1] > 4:
+				hidden_channels = []
+				for b in range(BATCHES):
+					h = x[b][-1,3:]
+					extra_zeros = (-h.shape[0])%3
+					hidden_channels.append(np.pad(h,((0,extra_zeros),(0,0),(0,0))))
+				tf.summary.image('Training outputs hidden channels',rearrange(hidden_channels, "B (Z C) X Y ->B (Z X) Y C",C=3),step=i,max_outputs=BATCHES)
 
 	
 	def tb_training_end_log(self,pde,x,t,boundary_callback,write_images=True):
@@ -81,25 +78,28 @@ class PDE_Train_log(Train_log):
 		with self.train_summary_writer.as_default():
 			trs = []
 			trs_h = []
-			
+			CHANNELS = x[0].shape[1]
 			for b in range(len(x)):
 				
 				_,Y =pde(np.linspace(0,t,t+1),x[b][0])
+				trs.append(Y)
 				Y_h = []
 				
-				for i in range(t):
-					y_h = Y[i][4:]
-					extra_zeros = (-y_h.shape[0])%3
-					y_h = np.pad(y_h,((0,extra_zeros),(0,0),(0,0)))
-					y_h = np.reshape(y_h,(3,-1,y_h.shape[-1]))
-					Y_h.append(y_h)
+				if CHANNELS>4:
+					for i in range(t):
+						y_h = Y[i][4:]
+						extra_zeros = (-y_h.shape[0])%3
+						y_h = np.pad(y_h,((0,extra_zeros),(0,0),(0,0)))
+						y_h = np.reshape(y_h,(3,-1,y_h.shape[-1]))
+						Y_h.append(y_h)
 					#print(t_h.shape)
-				trs.append(Y)
-				trs_h.append(Y_h)
+					trs_h.append(Y_h)
+			trs = np.array(trs)
+			if CHANNELS > 4:
+				trs_h = np.array(trs_h)
 			for i in range(t):
-				for b in range(len(x)):
-					
-					tf.summary.image("Final PDE trajectory, batch "+str(b),np.einsum("ncxy->nxyc",trs[b][i][np.newaxis,:3,...]),step=i)
-					tf.summary.image("Final PDE trajectory hidden channels, batch "+str(b),np.einsum("ncxy->nxyc",trs_h[b][i][np.newaxis,...]),step=i)
+				tf.summary.image("Final PDE trajectory",rearrange(trs,"B N C X Y->B N X Y C")[:,i,:,:,:3],step=i)
+				if CHANNELS > 4:
+					tf.summary.image("Final PDE trajectory hidden channels",rearrange(trs_h,"B N C X Y->B N X Y C")[:,i],step=i)
 					
 				
