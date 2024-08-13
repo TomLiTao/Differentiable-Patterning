@@ -346,7 +346,7 @@ def index_to_pde_gray_scott_hyperparameters(index):
 
 
 def index_to_pde_texture_hyperparameters(index):
-	indices = np.unravel_index(index,(4,3,3,2,2,2))
+	indices = np.unravel_index(index,(4,3,2,2,2,2))
 	filename = ["honeycombed/honeycombed_0078.jpg",
 			    "banded/banded_0109.jpg",
 				"dotted/dotted_0116.jpg",
