@@ -365,7 +365,7 @@ def index_to_pde_texture_hyperparameters(index):
 	REACTION_INIT = ["orthogonal","permuted"][indices[2]]
 	DIFFUSION_INIT = ["orthogonal","diagonal"][indices[3]]
 	ADVECTION_INIT = ["orthogonal","permuted"][indices[4]]
-	n_layers = [2,3][indices[4]]
+	n_layers = [2,3][indices[5]]
 
 	return {"FILENAME":filename,
 		 	"FILENAME_SHORT":filename_short,

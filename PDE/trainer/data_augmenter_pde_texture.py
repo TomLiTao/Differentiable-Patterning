@@ -27,9 +27,12 @@ class DataAugmenter(DataAugmenterAbstract):
         C = data[0].shape[1]
         W = data[0].shape[2]
         H = data[0].shape[3]
-        self.POOL_SIZE = 32*B
+        self.POOL_SIZE = 16*B 
         keys = jr.split(key,self.POOL_SIZE)
         self.INITIAL_CONDITION_POOL = [multi_channel_perlin_noise(W,C,4,key) for key in keys]
+        scale_to_m1p1 = lambda x: 2*x-1
+        for i in range(self.POOL_SIZE//4):
+            self.INITIAL_CONDITION_POOL[i] = self.INITIAL_CONDITION_POOL[i].at[:3].set(0.8*scale_to_m1p1(data[i%B][0,:3]) +0.2*self.INITIAL_CONDITION_POOL[i][:3])
         #return None
 
     
@@ -79,15 +82,21 @@ class DataAugmenter(DataAugmenterAbstract):
         C = data[0].shape[1]
         W = data[0].shape[2]
         H = data[0].shape[3]
+        key = jr.fold_in(key,i)
         keys = jr.split(key,B)
         pool_inds = jr.randint(key,shape=(3*B,),minval=0,maxval=self.POOL_SIZE)
         pool_inds_reset = pool_inds[:B]
         pool_inds_save = pool_inds[B:2*B]
         pool_inds_load = pool_inds[2*B:]
+        scale_to_m1p1 = lambda x: 2*x-1
         for i in range(B):
-            self.INITIAL_CONDITION_POOL[pool_inds_reset[i]] = multi_channel_perlin_noise(W,C,4,keys[i])#jr.normal(keys[i],shape=(C,W,H))
+            #self.INITIAL_CONDITION_POOL[pool_inds_reset[i]] = multi_channel_perlin_noise(W,C,4,keys[i])#jr.normal(keys[i],shape=(C,W,H))
+            self.INITIAL_CONDITION_POOL[pool_inds_reset[i]] = self.INITIAL_CONDITION_POOL[pool_inds_reset[i]].at[:3].set(0.8*scale_to_m1p1(data[i%B][0,:3])+0.2*multi_channel_perlin_noise(W,3,4,keys[i]))
             self.INITIAL_CONDITION_POOL[pool_inds_save[i]] = Y[i][-1]
-            X[i] = self.INITIAL_CONDITION_POOL[pool_inds_load[i]]
+            if i<B//2:
+                X[i] = self.INITIAL_CONDITION_POOL[pool_inds_load[i]]
+            else:
+                X[i] = multi_channel_perlin_noise(W,C,4,keys[i])
 
         #self.INITIAL_CONDITION_POOL = [0.5 + 0.1*jr.normal(key,shape=(C,W,H)) for key in keys]
         #self.INITIAL_CONDITION_POOL.append([y[-1] for y in Y])
