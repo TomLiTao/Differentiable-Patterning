@@ -368,7 +368,7 @@ def index_to_pde_texture_hyperparameters(index):
 		 	"FILENAME_SHORT":filename_short,
 			"N_LAYERS":n_layers,
 			"REACTION_INIT":REACTION_INIT,
-			"DISTANCE_INIT":DIFFUSION_INIT,
+			"DIFFUSION_INIT":DIFFUSION_INIT,
 			"OPTIMISER_PRE_PROCESS":OPTIMISER_PRE_PROCESS,
 			"OPTIMISER_PRE_PROCESS_TEXT":OPTIMISER_PRE_PROCESS_TEXT}
 def index_to_kaNCA_pde_parameters(index):
