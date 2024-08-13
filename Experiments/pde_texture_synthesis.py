@@ -30,7 +30,7 @@ BATCHES = 8
 
 
 INIT_SCALE = {"reaction":0.1,"advection":0.1,"diffusion":1.0}
-INIT_TYPE = {"reaction":PARAMS["REACTION_INIT"],"advection":"orthogonal","diffusion":PARAMS["DIFFUSION_INIT"]}
+INIT_TYPE = {"reaction":PARAMS["REACTION_INIT"],"advection":PARAMS["ADVECTION_INIT"],"diffusion":PARAMS["DIFFUSION_INIT"]}
 ZERO_INIT = {"reaction":False,"advection":False,"diffusion":False}
 key = jr.PRNGKey(int(time.time()))
 key = jr.fold_in(key,index)
@@ -71,7 +71,7 @@ opt = multi_learnrate(
 
 trainer = PDE_Trainer(pde,
                       data,
-                      model_filename="pde_textures/perlin_"+PARAMS["FILENAME_SHORT"]+"_nadam"+PARAMS["OPTIMISER_PRE_PROCESS_TEXT"]+"_ord_2_layers_"+str(PARAMS["N_LAYERS"])+"_A_orthogonal_R_"+PARAMS["REACTION_INIT"]+"_D_"+PARAMS["DIFFUSION_INIT"])
+                      model_filename="pde_textures/perlin_"+PARAMS["FILENAME_SHORT"]+"_nadam"+PARAMS["OPTIMISER_PRE_PROCESS_TEXT"]+"_ord_2_layers_"+str(PARAMS["N_LAYERS"])+"_A_"+PARAMS["ADVECTION_INIT"]+"_R_"+PARAMS["REACTION_INIT"]+"_D_"+PARAMS["DIFFUSION_INIT"])
 
 trainer.train(t=TRAJECTORY_LENGTH,
               iters=ITERS,
