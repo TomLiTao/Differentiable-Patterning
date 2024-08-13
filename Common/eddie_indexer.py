@@ -286,35 +286,36 @@ def index_to_pde_advection_hyperparameters(index):
 
 
 def index_to_pde_gray_scott_hyperparameters(index):
-	indices = np.unravel_index(index,(2,3,2,3,3,2,3))
-	INTERNAL_ACTIVATIONS = [jax.nn.relu6,jax.nn.tanh][1]
-	LOSS_FUNCTION = [euclidean,spectral_weighted][indices[0]]
+	indices = np.unravel_index(index,(2,2,2,12,2,3))
+	INTERNAL_ACTIVATIONS = [lambda x:x,jax.nn.tanh][indices[0]]
+	LOSS_FUNCTION = [euclidean,spectral_weighted][1]
 
 	REACTION_RATIO = [1,0.1,0.01][0]
 	ADVECTION_RATIO = [1,0.1,0][0]
 	REACTION_ZERO_INIT = [True,False][1]
-	ADVECTION_ZERO_INIT = [True,False][0]
+	ADVECTION_ZERO_INIT = [True,False][1]
 	DIFFUSION_ZERO_INIT = [True,False][1]
-	REACTION_INIT = ["orthogonal","permuted","normal"][indices[1]]
+	REACTION_INIT = ["orthogonal","permuted"][indices[1]]
 	DIFFUSION_INIT = ["orthogonal","diagonal"][indices[2]]
-	LOSS_TIME_SAMPLING = [1,8][0]
-	N_LAYERS = [1,2,3][indices[3]]
-	ORDER = [1,2,3][indices[4]]
-	OPTIMISER = [optax.nadam,optax.nadamw][indices[5]]
-	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[6]]
+	TRAJECTORY_LENGTH =  [4,4,16,16,16,32,32,32,64,64,64,64][indices[3]]
+	LOSS_TIME_SAMPLING = [1,2,1, 4, 8, 1, 4, 8, 1 ,8, 16,32][indices[3]]
+	N_LAYERS = 3
+	ORDER = 2
+	OPTIMISER = [optax.nadam,optax.nadamw][indices[4]]
+	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[5]]
 	
 
-	INTERNAL_ACTIVATIONS_TEXT = ["relu6","tanh"][1]
-	LOSS_FUNCTION_TEXT = ["euclidean_","spectral_weighted_"][indices[0]]
+	INTERNAL_ACTIVATIONS_TEXT = ["none","tanh"][indices[0]]
+	LOSS_FUNCTION_TEXT = ["euclidean_","spectral_weighted_"][1]
 	REACTION_RATIO_TEXT = ["1","1e-1","1e-2"][0]
 	ADVECTION_RATIO_TEXT = ["1","1e-1","0"][0]
 	REACTION_ZERO_INIT_TEXT = ["_zero_init",""][1]
-	ADVECTION_ZERO_INIT_TEXT = ["_zero_init",""][0]
+	ADVECTION_ZERO_INIT_TEXT = ["_zero_init",""][1]
 	DIFFUSION_ZERO_INIT_TEXT = ["_zero_init",""][1]
 	
 	#OPTIMISER_PRE_PROCESS_TEXT = ["none","scale_by_param_block_norm","adaptive_grad_clip"][indices[3]]
-	OPTIMISER_TEXT = ["nadam","nadamw"][indices[5]]
-	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[6]]
+	OPTIMISER_TEXT = ["nadam","nadamw"][indices[4]]
+	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[5]]
 	params = {
 		"LOSS_FUNCTION":LOSS_FUNCTION,
 		"ORDER":ORDER,
@@ -336,7 +337,8 @@ def index_to_pde_gray_scott_hyperparameters(index):
 		"REACTION_ZERO_INIT_TEXT":REACTION_ZERO_INIT_TEXT,
 		"ADVECTION_ZERO_INIT_TEXT":ADVECTION_ZERO_INIT_TEXT,
 		"DIFFUSION_ZERO_INIT_TEXT":DIFFUSION_ZERO_INIT_TEXT,
-		"N_LAYERS":N_LAYERS
+		"N_LAYERS":N_LAYERS,
+		"TRAJECTORY_LENGTH":TRAJECTORY_LENGTH,
 		}
 	return params
 

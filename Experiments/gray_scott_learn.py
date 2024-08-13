@@ -36,7 +36,7 @@ ITERS = 1000
 SIZE = 64
 BATCHES = 4
 PADDING = "REPLICATE"
-TRAJECTORY_LENGTH = 16
+TRAJECTORY_LENGTH = PARAMS["TRAJECTORY_LENGTH"]
 
 
 PDE_STR = "gray_scott"
@@ -70,9 +70,9 @@ Y = 2*(Y-np.min(Y))/(np.max(Y)-np.min(Y)) - 1
 func = F(CHANNELS,
          PADDING=PADDING,
          dx=1.0,
-         INTERNAL_ACTIVATION=jax.nn.tanh,
+         INTERNAL_ACTIVATION=PARAMS["INTERNAL_ACTIVATIONS"],
          ADVECTION_OUTER_ACTIVATION=jax.nn.tanh,
-         INIT_SCALE={"reaction":1.0,"advection":1.0,"diffusion":1.0},
+         INIT_SCALE={"reaction":0.1,"advection":0.1,"diffusion":1.0},
          INIT_TYPE={"reaction":PARAMS["REACTION_INIT"],"advection":"orthogonal","diffusion":PARAMS["DIFFUSION_INIT"]},
          STABILITY_FACTOR=STABILITY_FACTOR,
          USE_BIAS=True,
@@ -102,7 +102,7 @@ opt = multi_learnrate(
 trainer = PDE_Trainer(pde,
                       Y,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_advreacdiff_gray_scott/ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_R_"+PARAMS["REACTION_INIT"]+PARAMS["REACTION_ZERO_INIT_TEXT"]+"_A_orthogonal"+PARAMS["ADVECTION_ZERO_INIT_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["DIFFUSION_ZERO_INIT_TEXT"]+"_opt_"+PARAMS["OPTIMISER_TEXT"])
+                      model_filename="pde_hyperparameters_advreacdiff_gray_scott/tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_sampling_"+str(PARAMS["LOSS_TIME_SAMPLING"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_act_"+PARAMS["INTERNAL_ACTIVATIONS_TEXT"]+"_R_"+PARAMS["REACTION_INIT"]+PARAMS["REACTION_ZERO_INIT_TEXT"]+"_A_orthogonal"+PARAMS["ADVECTION_ZERO_INIT_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["DIFFUSION_ZERO_INIT_TEXT"]+"_opt_"+PARAMS["OPTIMISER_TEXT"])
 
 UPDATE_X0_PARAMS = {"iters":16,
                     "update_every":10000,
@@ -115,6 +115,5 @@ trainer.train(TRAJECTORY_LENGTH,
               optimiser=opt,
               LOG_EVERY=100,
               WARMUP=64,
-              
               LOSS_TIME_SAMPLING=PARAMS["LOSS_TIME_SAMPLING"],
               UPDATE_X0_PARAMS=UPDATE_X0_PARAMS)
