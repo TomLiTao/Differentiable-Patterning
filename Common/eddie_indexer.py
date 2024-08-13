@@ -346,7 +346,7 @@ def index_to_pde_gray_scott_hyperparameters(index):
 
 
 def index_to_pde_texture_hyperparameters(index):
-	indices = np.unravel_index(index,(4,2,3))
+	indices = np.unravel_index(index,(4,3,3,2,2))
 	filename = ["honeycombed/honeycombed_0078.jpg",
 			    "banded/banded_0109.jpg",
 				"dotted/dotted_0116.jpg",
@@ -355,16 +355,20 @@ def index_to_pde_texture_hyperparameters(index):
 			    	  "banded",
 					  "dotted",
 					  "interlaced"][indices[0]]
-	advection_ratio = [1,0][indices[1]]
+	
+
 	#n_layers = [1,2][indices[2]]
-	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[2]]
-	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[2]]
-	n_layers = 2
+	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[1]]
+	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[1]]
+	REACTION_INIT = ["orthogonal","permuted","normal"][indices[2]]
+	DIFFUSION_INIT = ["orthogonal","diagonal"][indices[3]]
+	n_layers = [2,3][indices[4]]
 
 	return {"FILENAME":filename,
 		 	"FILENAME_SHORT":filename_short,
-			"ADVECTION_RATIO":advection_ratio,
 			"N_LAYERS":n_layers,
+			"REACTION_INIT":REACTION_INIT,
+			"DISTANCE_INIT":DIFFUSION_INIT,
 			"OPTIMISER_PRE_PROCESS":OPTIMISER_PRE_PROCESS,
 			"OPTIMISER_PRE_PROCESS_TEXT":OPTIMISER_PRE_PROCESS_TEXT}
 def index_to_kaNCA_pde_parameters(index):

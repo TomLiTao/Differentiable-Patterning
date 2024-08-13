@@ -20,18 +20,18 @@ index=int(sys.argv[1])-1
 PARAMS = index_to_pde_texture_hyperparameters(index)
 
 CHANNELS = 8
-ITERS = 2001
+ITERS = 1001
 TRAJECTORY_LENGTH = 64
 TRAJECTORY_SAMPLING = 1
 WARMUP_WINDOW = 48
 PADDING = "CIRCULAR"
-LEARN_RATE = 1e-3
+LEARN_RATE = 5e-4
 BATCHES = 8
 
 
-INIT_SCALE = {"reaction":1.0,"advection":1.0,"diffusion":1.0}
-INIT_TYPE = {"reaction":"orthogonal","advection":"orthogonal","diffusion":"diagonal"}
-ZERO_INIT = {"reaction":True,"advection":True,"diffusion":False}
+INIT_SCALE = {"reaction":0.1,"advection":0.1,"diffusion":1.0}
+INIT_TYPE = {"reaction":PARAMS["REACTION_INIT"],"advection":"orthogonal","diffusion":PARAMS["DIFFUSION_INIT"]}
+ZERO_INIT = {"reaction":False,"advection":False,"diffusion":False}
 key = jr.PRNGKey(int(time.time()))
 key = jr.fold_in(key,index)
 func = F(CHANNELS,
@@ -62,7 +62,7 @@ schedule = optax.exponential_decay(LEARN_RATE, transition_steps=ITERS, decay_rat
 
 opt = multi_learnrate(
     schedule,
-    rate_ratios={"advection": PARAMS["ADVECTION_RATIO"],
+    rate_ratios={"advection": 1,
                  "reaction": 1,
                  "diffusion": 1},
     optimiser=optax.nadam,
@@ -71,7 +71,7 @@ opt = multi_learnrate(
 
 trainer = PDE_Trainer(pde,
                       data,
-                      model_filename="pde_textures/perlin_"+PARAMS["FILENAME_SHORT"]+"_nadam_"+PARAMS["OPTIMISER_PRE_PROCESS_TEXT"]+"_ord_2_layers_2_act_tanh_A_"+str(PARAMS["ADVECTION_RATIO"])+"_orthogonal")
+                      model_filename="pde_textures/perlin_"+PARAMS["FILENAME_SHORT"]+"_nadam"+PARAMS["OPTIMISER_PRE_PROCESS_TEXT"]+"_ord_2_layers_"+str(PARAMS["N_LAYERS"])+"_A_orthogonal_R_"+PARAMS["REACTION_INIT"]+"_D_"+PARAMS["DIFFUSION_INIT"])
 
 trainer.train(t=TRAJECTORY_LENGTH,
               iters=ITERS,
