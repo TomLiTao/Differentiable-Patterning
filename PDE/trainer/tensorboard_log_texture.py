@@ -32,7 +32,7 @@ class PDE_Train_log(Train_log):
             #for i in range(len(data[0])):
             #    outputs = [im[i,:1] for im in data]
             data = np.array(data)
-            tf.summary.image('True sequence RGB',rearrange(data[:,0],"B N C X Y -> B X Y C"),step=0,max_outputs=len(data))
+            tf.summary.image('True sequence RGB',rearrange(data[:,0],"B C X Y -> B X Y C"),step=0,max_outputs=len(data))
                 #for b in range(len(data)):
                 #    if self.RGB_mode=="RGB":
                         #tf.summary.image('True sequence RGB',np.einsum("ncxy->nxyc",data[0,:,:3,...]),step=0,max_outputs=data.shape[0])
