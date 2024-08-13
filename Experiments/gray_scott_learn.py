@@ -32,9 +32,9 @@ key = jax.random.PRNGKey(int(time.time()))
 key = jax.random.fold_in(key,index)
 
 CHANNELS = 6
-ITERS = 1001
+ITERS = 2001
 SIZE = 64
-BATCHES = 4
+BATCHES = 8
 PADDING = "CIRCULAR"
 TRAJECTORY_LENGTH = PARAMS["TRAJECTORY_LENGTH"]
 
@@ -89,7 +89,7 @@ pde = PDE_solver(func,dt=0.1)
 #opt = non_negative_diffusion(schedule,optimiser=OPTIMISER)
 #opt = optax.chain(optax.scale_by_param_block_norm(),
 			#PARAMS["OPTIMISER"](schedule))
-schedule = optax.exponential_decay(1e-3, transition_steps=ITERS, decay_rate=0.99)
+schedule = optax.exponential_decay(5e-4, transition_steps=ITERS, decay_rate=0.99)
 opt = multi_learnrate(
     schedule,
     rate_ratios={"advection": PARAMS["ADVECTION_RATIO"],
