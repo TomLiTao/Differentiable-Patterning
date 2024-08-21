@@ -4,15 +4,19 @@ import jax.numpy as np
 import jax.random as jr
 from jaxtyping import Float, Int, PyTree, Scalar, Array
 from Common.trainer.abstract_data_augmenter_tree import DataAugmenterAbstract
-
+from einops import repeat
 
 class DataAugmenter(DataAugmenterAbstract):
 	"""
 		Inherits the methods of DataAugmenter, but overwrites the batch cloning in the init
 	"""
-	def __init__(self,*args,**kwargs):
+	def __init__(self,Ts,*args,**kwargs):
 		super().__init__(*args,**kwargs)
 		self.OVERWRITE_OBS_CHANNELS = False
+		B = len(self.data_saved)
+		Ts = repeat(Ts,"T -> B T",B=B)
+		self.Ts = list(Ts)
+
 	def data_init(self,SHARDING=None):
 		return None
 	
@@ -46,7 +50,8 @@ class DataAugmenter(DataAugmenterAbstract):
 		
 	def data_callback(self,
 				   	  x: PyTree[Float[Array, "1 C W H"]], 
-					  y: PyTree[Float[Array, "{L} C W H"]], 
+					  y: PyTree[Float[Array, "{L} C W H"]],
+					  ts: Float[Array, "Batches {L}"],
 					  i: Int[Scalar, ""],
 					  L: Int[Scalar, ""],
 					  key):
@@ -61,6 +66,7 @@ class DataAugmenter(DataAugmenterAbstract):
 		"""
 		keys = jr.split(key,2)
 		data = self.return_saved_data()
+		ts = self.Ts
 		B = len(data)
 		N = data[0].shape[0]
 		C = self.OBS_CHANNELS
@@ -78,8 +84,11 @@ class DataAugmenter(DataAugmenterAbstract):
 			self.save_data(data)
 
 		# Update position counters
-		# with probability p, increment each counter by 1, with probability 1-p, reset each counter to a random value
-		#  	If a counter reaches the end of the data, reset it to a random value
+		# with 
+		#    probability p=0.25, increment each counter by 1, 
+		#	 probability 1-p keep each counter the same,
+		#    probability q=0.01, reset each counter to zero
+		# If a counter reaches the end of the data, reset it to zero
 			
 		reset_counters = jr.bernoulli(keys[0],p=0.01,shape=(B,))
 		increment_counters = jr.bernoulli(keys[1],p=0.25,shape=(B,))
@@ -91,12 +100,14 @@ class DataAugmenter(DataAugmenterAbstract):
 		pos = np.where(reset_counters,_pos_reset,_pos_incremented)
 		pos = list(pos)
 
-		# Sample new pairs of x and y
+		# Sample new x,y and ts
 		x = jax.tree_util.tree_map(lambda data,p:data[p],self.data_saved,pos)
 		y = jax.tree_util.tree_map(lambda data,p:data[p+1:p+1+L],self.data_saved,pos)
+		ts = jax.tree_util.tree_map(lambda data,p:data[p:p+1+L],ts,pos)
+		#ts = self.Ts[:,pos:pos+L]
+		
 		self.SUBTRAJECTORY_LOCATION = pos
-
-		return x,y
+		return x,y,ts
 
 		
 	def data_load(self,L,key):
@@ -104,8 +115,10 @@ class DataAugmenter(DataAugmenterAbstract):
 		pos = list(jax.random.randint(key,shape=(len(data),),minval=0,maxval=data[0].shape[0]-L-1))
 		x0 = jax.tree_util.tree_map(lambda d,p:d[p],data,pos)
 		y0 = jax.tree_util.tree_map(lambda d,p:d[p+1:p+1+L],data,pos)
+		ts = jax.tree_util.tree_map(lambda data,p:data[p:p+1+L],self.Ts,pos)
+		#ts = self.Ts[:,pos:pos+L]
 		self.SUBTRAJECTORY_LOCATION = pos
-		return x0,y0
+		return x0,y0,ts
 
 		
 	def initial_condition_loss(self, model, x0, args):

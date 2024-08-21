@@ -24,6 +24,7 @@ class PDE_Trainer(object):
 	def __init__(self,
 			     PDE_solver,
 				 data: Float[Array, "Batches T C W H"],
+				 Ts: Float[Array, "Batches T"],
 				 model_filename=None,
 				 DATA_AUGMENTER = DataAugmenter,
 				 BOUNDARY_MASK = None,
@@ -74,10 +75,13 @@ class PDE_Trainer(object):
 		self.OBS_CHANNELS = data[0].shape[1]
 		self.CHANNELS = self.PDE_solver.func.N_CHANNELS
 		self.GRAD_LOSS = GRAD_LOSS
-		self._op = Ops(PADDING=PDE_solver.func.PADDING,dx=PDE_solver.func.dx)
+		self._op = Ops(PADDING=PDE_solver.func.PADDING,
+				       dx=PDE_solver.func.dx)
 		
 		# Set up data and data augmenter class
-		self.DATA_AUGMENTER = DATA_AUGMENTER(data,hidden_channels=self.CHANNELS-self.OBS_CHANNELS)
+		self.DATA_AUGMENTER = DATA_AUGMENTER(data_true=data,
+									    	 Ts=Ts,
+									         hidden_channels=self.CHANNELS-self.OBS_CHANNELS)
 		self.DATA_AUGMENTER.data_init()
 		self.BATCHES = len(data)
 		self.TRAJECTORY_LENGTH = data.shape[1]
@@ -147,9 +151,9 @@ class PDE_Trainer(object):
 		return L
 	
 	def train(self,
-		      t,
-			  iters,
-			  optimiser=None,  
+		      SUBTRAJECTORY_LENGTH: Int[Scalar, ""],
+			  TRAINING_ITERATIONS: Int[Scalar, ""],
+			  OPTIMISER=None,  
 			  WARMUP=64,
 			  LOG_EVERY=10,
 			  LOSS_TIME_SAMPLING=1,
@@ -183,8 +187,8 @@ class PDE_Trainer(object):
 
 		"""
 		self._loss = LOSS_FUNC
-		UPDATE_X0_PARAMS.update({"t":t})
-		UPDATE_X0_PARAMS.update({"loss_func":self.loss_func})
+		#UPDATE_X0_PARAMS.update({"t":t})
+		#UPDATE_X0_PARAMS.update({"loss_func":self.loss_func})
 		self.LOSS_TIME_SAMPLING = LOSS_TIME_SAMPLING
 
 		#@partial(eqx.filter_jit,donate="all-except-first")
@@ -192,7 +196,8 @@ class PDE_Trainer(object):
 		def make_step(pde,
 					  x: Float[Array,"Batches T C W H"],
 					  y: Float[Array,"Batches T C W H"],
-					  t: Int[Scalar,""],
+					  #t: Int[Scalar,""],
+					  ts: Float[Array,"Batches T"],
 					  opt_state,
 					  key: Key):	
 			"""
@@ -225,41 +230,45 @@ class PDE_Trainer(object):
 
 			"""
 			@eqx.filter_value_and_grad(has_aux=True)
-			def compute_loss(pde_diff,pde_static,x,y,t,key):
+			def compute_loss(pde_diff,pde_static,x,y,ts,key):
 				_pde = eqx.combine(pde_diff,pde_static)
 				#v_pde = jax.vmap(lambda x:_pde(jnp.linspace([0,t,t+1]),x)[1][1:],in_axes=0,out_axes=0,axis_name="N")
-				v_pde = lambda x:_pde(jnp.linspace(0,t,t+1),x)[1][1:] # Don't need to vmap over N
-				vv_pde= lambda x: jax.tree_util.tree_map(v_pde,x) # different data batches can have different sizes
+				#v_pde = lambda x:_pde(jnp.linspace(0,t,t+1),x)[1][1:] # Don't need to vmap over N
+				#vv_pde= lambda x: jax.tree_util.tree_map(v_pde,x) # different data batches can have different sizes
+				
+				v_pde = lambda x0,ts: _pde(ts,x0)[1][1:]
+				vv_pde= lambda x0,ts: jax.tree_util.tree_map(v_pde,x0,ts) # different data batches can have different sizes
 				v_loss_func = lambda x,y: jnp.array(jax.tree_util.tree_map(self.loss_func,x,y))
-				y_pred=vv_pde(x)
+				y_pred = vv_pde(x,ts)
 				losses = v_loss_func(y_pred,y)
 				mean_loss = jnp.mean(losses)
 				return mean_loss,(y_pred,losses)
 			#jax.debug.print("Outer loop batch number: {}",len(x))
 			#jax.debug.print("Outer loop X shape: {}",x[0].shape)
 			pde_diff,pde_static=pde.partition()
-			loss_y,grads = compute_loss(pde_diff, pde_static, x, y, t, key)
+			loss_y,grads = compute_loss(pde_diff, pde_static, x, y, ts, key)
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, pde_diff)
 			pde = eqx.apply_updates(pde,updates)
 			(mean_loss,(y,losses)) = loss_y
-			return pde,x,y,t,opt_state,mean_loss,losses,key
+			return pde,x,y,ts,opt_state,mean_loss,losses,key
 		
 		
-		# Initialise training
+		###--- Initialise optimiser
 		pde = self.PDE_solver
 		pde_diff,pde_static = pde.partition()
-		if optimiser is None:
-			schedule = optax.exponential_decay(1e-4, transition_steps=iters, decay_rate=0.99)
-			#self.OPTIMISER = optax.adam(schedule)
+		if OPTIMISER is None:
+			schedule = optax.exponential_decay(1e-4, transition_steps=TRAINING_ITERATIONS, decay_rate=0.99)
 			self.OPTIMISER = non_negative_diffusion_chemotaxis(schedule)
 		else:
-			self.OPTIMISER = optimiser
+			self.OPTIMISER = OPTIMISER
 		opt_state = self.OPTIMISER.init(pde_diff)
 		
-		#x_full,y_full = self.DATA_AUGMENTER.split_x_y(1)
-		#x,y=self.DATA_AUGMENTER.random_N_select(x_full,y_full,SAMPLING)
+		
 		data_steps = self.DATA_AUGMENTER.data_saved[0].shape[0]
-		x,y = self.DATA_AUGMENTER.data_load(L=t,key=key)
+		x,y,ts = self.DATA_AUGMENTER.data_load(L=SUBTRAJECTORY_LENGTH,key=key)
+		# x: Float[Array, "Batches 1 C W H"]
+		# y: Float[Array, "Batches SUBTRAJECTORY_LENGTH C W H"]
+		# ts: Float[Array, "Batches SUBTRAJECTORY_LENGTH"]
 
 
 		best_loss = 100000000
@@ -269,7 +278,7 @@ class PDE_Trainer(object):
 		error_at = 0
 		#x0 = self.DATA_AUGMENTER.data_saved[0][0]
 		
-		for i in tqdm(range(iters)):
+		for i in tqdm(range(TRAINING_ITERATIONS)):
 			key = jax.random.fold_in(key,i)
 			#print(self.DATA_AUGMENTER.data_saved[0].shape)
 			"""
@@ -281,7 +290,7 @@ class PDE_Trainer(object):
 			# 	losses output is loss for each batch
 			# 	key output is UNCHANGED random key, passe through for argument donation
 			"""
-			pde,x,y,t,opt_state,mean_loss,losses,key = make_step(pde, x, y, t, opt_state,key)
+			pde,x,y,ts,opt_state,mean_loss,losses,key = make_step(pde, x, y, ts, opt_state,key)
 
 			if self.IS_LOGGING:
 				self.LOGGER.tb_training_loop_log_sequence(losses, y, i, pde,LOG_EVERY=LOG_EVERY)
@@ -291,11 +300,16 @@ class PDE_Trainer(object):
 			error = check_training_diverged(mean_loss,x,i)
 			if error==0:
 				# Do data augmentation update
-				x,y = self.DATA_AUGMENTER.data_callback(x, y, i, L=t, key=key)
+				x,y,ts = self.DATA_AUGMENTER.data_callback(x=x, 
+														   y=y,
+														   ts=ts,
+														   i=i, 
+														   L=SUBTRAJECTORY_LENGTH, 
+														   key=key)
 				
 				# Update x0 parameters
-				if i%UPDATE_X0_PARAMS["update_every"]==0 and i>WARMUP:
-					self.DATA_AUGMENTER.update_initial_condition_hidden_channels(pde,i,UPDATE_X0_PARAMS)
+				#if i%UPDATE_X0_PARAMS["update_every"]==0 and i>WARMUP:
+				#	self.DATA_AUGMENTER.update_initial_condition_hidden_channels(pde,i,UPDATE_X0_PARAMS)
 									
 				# Save model whenever mean_loss beats the previous best loss
 				if i>WARMUP:
