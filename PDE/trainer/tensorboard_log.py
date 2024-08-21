@@ -1,7 +1,7 @@
 import tensorflow as tf
 tf.config.experimental.set_visible_devices([], "GPU") # Force tensorflow not to use GPU, as it's only logging data
 import numpy as np
-from PDE.model.reaction_diffusion_advection.visualize import plot_weight_kernel_boxplot,plot_weight_matrices
+from PDE.model.reaction_diffusion.visualize import plot_weight_kernel_boxplot,plot_weight_matrices
 from Common.trainer.abstract_tensorboard_log import Train_log
 from einops import rearrange
 
