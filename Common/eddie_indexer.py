@@ -286,8 +286,8 @@ def index_to_pde_advection_hyperparameters(index):
 
 
 def index_to_pde_gray_scott_hyperparameters(index):
-	indices = np.unravel_index(index,(2,2,2,12,2,3))
-	INTERNAL_ACTIVATIONS = [lambda x:x,jax.nn.tanh][indices[0]]
+	indices = np.unravel_index(index,(2,2,2,3,3))
+	INTERNAL_ACTIVATIONS = [lambda x:x,jax.nn.tanh][1]
 	LOSS_FUNCTION = [euclidean,spectral_weighted][1]
 
 	REACTION_RATIO = [1,0.1,0.01][0]
@@ -295,17 +295,19 @@ def index_to_pde_gray_scott_hyperparameters(index):
 	REACTION_ZERO_INIT = [True,False][1]
 	ADVECTION_ZERO_INIT = [True,False][1]
 	DIFFUSION_ZERO_INIT = [True,False][1]
-	REACTION_INIT = ["orthogonal","permuted"][indices[1]]
-	DIFFUSION_INIT = ["orthogonal","diagonal"][indices[2]]
-	TRAJECTORY_LENGTH =  [4,4,16,16,16,32,32,32,64,64,64,64][indices[3]]
-	LOSS_TIME_SAMPLING = [1,2,1, 4, 8, 1, 4, 8, 1 ,8, 16,32][indices[3]]
+	REACTION_INIT = ["orthogonal","permuted"][indices[0]]
+	DIFFUSION_INIT = ["orthogonal","diagonal"][indices[1]]
+	#TRAJECTORY_LENGTH =  [4,4,16,16,16,32,32,32,64,64,64,64][indices[3]]
+	#LOSS_TIME_SAMPLING = [1,2,1, 4, 8, 1, 4, 8, 1 ,8, 16,32][indices[3]]
+	TRAJECTORY_LENGTH = 16
+	LOSS_TIME_SAMPLING = 1
 	N_LAYERS = 3
 	ORDER = 2
-	OPTIMISER = [optax.nadam,optax.nadamw][indices[4]]
-	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[5]]
-	
+	OPTIMISER = [optax.nadam,optax.nadamw][indices[2]]
+	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[3]]
+	TIME_RESOLUTION = [101,201,401][indices[4]]
 
-	INTERNAL_ACTIVATIONS_TEXT = ["none","tanh"][indices[0]]
+	INTERNAL_ACTIVATIONS_TEXT = ["none","tanh"][1]
 	LOSS_FUNCTION_TEXT = ["euclidean_","spectral_weighted_"][1]
 	REACTION_RATIO_TEXT = ["1","1e-1","1e-2"][0]
 	ADVECTION_RATIO_TEXT = ["1","1e-1","0"][0]
@@ -314,12 +316,13 @@ def index_to_pde_gray_scott_hyperparameters(index):
 	DIFFUSION_ZERO_INIT_TEXT = ["_zero_init",""][1]
 	
 	#OPTIMISER_PRE_PROCESS_TEXT = ["none","scale_by_param_block_norm","adaptive_grad_clip"][indices[3]]
-	OPTIMISER_TEXT = ["nadam","nadamw"][indices[4]]
-	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[5]]
+	OPTIMISER_TEXT = ["nadam","nadamw"][indices[2]]
+	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[3]]
 	params = {
 		"LOSS_FUNCTION":LOSS_FUNCTION,
 		"ORDER":ORDER,
 		"OPTIMISER":OPTIMISER,
+		"TIME_RESOLUTION":TIME_RESOLUTION,
 		"OPTIMISER_PRE_PROCESS":OPTIMISER_PRE_PROCESS,
 		"OPTIMISER_TEXT":LOSS_FUNCTION_TEXT+OPTIMISER_TEXT+OPTIMISER_PRE_PROCESS_TEXT,
 		"LOSS_TIME_SAMPLING":LOSS_TIME_SAMPLING,
