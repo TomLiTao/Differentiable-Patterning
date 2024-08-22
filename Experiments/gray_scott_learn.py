@@ -79,7 +79,7 @@ func = F(CHANNELS,
          USE_BIAS=True,
          ORDER = PARAMS["ORDER"],
          N_LAYERS=PARAMS["N_LAYERS"],
-         ZERO_INIT={"reaction":True,"diffusion":False},
+         ZERO_INIT={"reaction":False,"diffusion":False},
          key=key)
 pde = PDE_solver(func,dt=0.1)
 
