@@ -4,10 +4,12 @@ import jax.tree_util as jtu
 import jax
 import time
 import equinox as eqx
+import optax
 from jax.experimental import mesh_utils
 from Common.utils import key_pytree_gen
 from jaxtyping import Array, Float, PyTree, Scalar, Int, Key
 import itertools
+from einops import rearrange
 class DataAugmenterAbstract(object):
 	
 	def __init__(self,
@@ -39,7 +41,7 @@ class DataAugmenterAbstract(object):
 		except:
 			data_tree = data_true
 		data_true = jtu.tree_map(lambda x: jnp.pad(x,((0,0),(0,hidden_channels),(0,0),(0,0))),data_tree) # Pad zeros onto hidden channels
-
+		self.hidden_channels = hidden_channels
 
 		self.data_true = data_true
 		self.data_saved = data_true
@@ -54,15 +56,16 @@ class DataAugmenterAbstract(object):
 		self.save_data(data)
 		return None
 	
-	def data_load(self):	
+	def data_load(self,key):	
 		x0,y0 = self.split_x_y(1)
-		x0,y0 = self.data_callback(x0,y0,0)
+		x0,y0 = self.data_callback(x0,y0,0,key)
 		return x0,y0
 	
 	def data_callback(self,
 				   	  x:PyTree[Float[Array, "N C W H"]],
 					  y:PyTree[Float[Array, "N C W H"]],
-					  i:Int[Scalar, ""]):
+					  i:Int[Scalar, ""],
+					  key):
 		"""
 		Called after every training iteration to perform data augmentation and processing		
 
@@ -339,12 +342,78 @@ class DataAugmenterAbstract(object):
 		return self.data_true
 		
 		
+	def update_initial_condition_hidden_channels(self,model,i,args):
+		""" Update the hidden channels of the initial conditions to minimise error of trained model on the rest of the data
+
+		Args:
+			model (callable PyTree[Float[Array, "1 C W H"]] -> PyTree[Float[Array, "N C W H"]] ): model that generates trajectories from initial snapshots
+			args (dict): dictionary of arguments
+				{"iters":int,"optimiser":optax.GradientTransformation,"learn_rate":float,"t":int,"loss_func":callable PyTree[Float[Array, "N C W H"],PyTree[Float[Array, "N C W H"]] -> float]}
+			
+		"""
+
+		def split_x0(data):
+			x0 = [x[:self.OBS_CHANNELS] for x in data]
+			x0_hidden = [x[self.OBS_CHANNELS:] for x in data]
+			return x0,x0_hidden
+
+		def build_x0(obs,hidden):
+			return [jnp.concatenate([obs[j],hidden[j]],axis=0) for j in range(len(hidden))]
 		
+		@eqx.filter_jit
+		def makestep(x0:PyTree[Float[Array, "C W H"]],opt_state):
+			@eqx.filter_value_and_grad()
+			def compute_loss(x0_hidden:PyTree[Float[Array, "{self.hidden_channels} W H"]],
+							 x0:PyTree[Float[Array, "{self.OBS_CHANNELS} W H"]]):
+				x0 = build_x0(x0,x0_hidden)
+				loss = self.initial_condition_loss(model,x0,args)
+				return loss
+			
+			x0_obs,x0_hidden = split_x0(x0)
+			loss,grad = compute_loss(x0_hidden,x0_obs)
+			updates,opt_state = opt.update(grad,opt_state,x0_hidden)
+			x0_hidden = eqx.apply_updates(x0_hidden,updates)
+			x0 = build_x0(x0_obs,x0_hidden)
+			return x0,opt_state,loss
+
+		iters = args["iters"]
+		learn_rate = args["learn_rate"]
+		optimiser = args["optimiser"]
+		#x0,_ = self.split_x_y(1)
+		x0 = [x[0] for x in self.return_saved_data()]
+		_,x0_hidden = split_x0(x0)
+		schedule = optax.exponential_decay(learn_rate,transition_steps=iters,decay_rate=0.99)
+		opt = optimiser(schedule)
+		opt_state = opt.init(x0_hidden)
 		
-		
-		
-		
-		
+		for j in range(iters):
+			x0,opt_state,loss = makestep(x0,opt_state)
+		if args["verbose"]:
+			_,new_hidden_x0 = split_x0(x0)
+			v_loss_func = lambda x,y: jnp.array(jax.tree_util.tree_map(lambda x,y:jnp.sqrt(jnp.mean(((x-y)**2),axis=[-1,-2,-3])),x,y))
+			print(f"Model loss after {iters} inner iterations of initial condition tuning at step {i}: {loss}")
+			print(f"Change to initial condition hidden channels: {v_loss_func(x0_hidden,new_hidden_x0)}")
+
+		data = self.return_saved_data()
+		data = jtu.tree_map(lambda x0,x:x.at[0,self.OBS_CHANNELS:].set(x0),x0_hidden,data)
+		self.save_data(data)
+
+
+	def initial_condition_loss(self,
+							   model,
+							   x0:PyTree[Float[Array, "C W H"]],
+							   args):
+		"""Takes a trained model and initial conditions, and returns the 
+		loss of the model starting at those initial conditions, compared to self.data_true
+
+		Args:
+			model (callable PyTree[Float[Array, "C W H"]] -> PyTree[Float[Array, "N C W H"]] ): model that generates trajectories from initial snapshots
+			x0 (Pytree[Float[Array,"C W H"]]): initial condition 
+
+		Raises:
+			NotImplementedError: _description_
+		"""
+		raise NotImplementedError("Subclass must implement abstract method")
 		
 		
 		

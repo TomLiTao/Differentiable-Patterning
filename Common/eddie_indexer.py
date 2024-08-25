@@ -1,5 +1,5 @@
 import numpy as np
-from Common.trainer.loss import l2,euclidean,vgg,spectral,random_sampled_euclidean
+from Common.trainer.loss import l2,euclidean,vgg,spectral,random_sampled_euclidean,spectral_weighted
 import jax
 import optax
 
@@ -284,6 +284,100 @@ def index_to_pde_advection_hyperparameters(index):
 	return params
 
 
+
+def index_to_pde_gray_scott_hyperparameters(index):
+	indices = np.unravel_index(index,(2,2,2,3,4))
+	INTERNAL_ACTIVATIONS = [lambda x:x,jax.nn.tanh][1]
+	LOSS_FUNCTION = [euclidean,spectral_weighted][1]
+
+	REACTION_RATIO = [1,0.1,0.01][0]
+	ADVECTION_RATIO = [1,0.1,0][0]
+	REACTION_ZERO_INIT = [True,False][1]
+	ADVECTION_ZERO_INIT = [True,False][1]
+	DIFFUSION_ZERO_INIT = [True,False][1]
+	REACTION_INIT = ["orthogonal","permuted"][indices[0]]
+	DIFFUSION_INIT = ["orthogonal","diagonal"][indices[1]]
+	#TRAJECTORY_LENGTH =  [4,4,16,16,16,32,32,32,64,64,64,64][indices[3]]
+	#LOSS_TIME_SAMPLING = [1,2,1, 4, 8, 1, 4, 8, 1 ,8, 16,32][indices[3]]
+	TRAJECTORY_LENGTH = 16
+	LOSS_TIME_SAMPLING = 1
+	N_LAYERS = 3
+	ORDER = 2
+	OPTIMISER = [optax.nadam,optax.nadamw][indices[2]]
+	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[3]]
+	TIME_RESOLUTION = [51,101,201,401][indices[4]]
+
+	INTERNAL_ACTIVATIONS_TEXT = ["none","tanh"][1]
+	LOSS_FUNCTION_TEXT = ["euclidean_","spectral_weighted_"][1]
+	REACTION_RATIO_TEXT = ["1","1e-1","1e-2"][0]
+	ADVECTION_RATIO_TEXT = ["1","1e-1","0"][0]
+	REACTION_ZERO_INIT_TEXT = ["_zero_init",""][1]
+	ADVECTION_ZERO_INIT_TEXT = ["_zero_init",""][1]
+	DIFFUSION_ZERO_INIT_TEXT = ["_zero_init",""][1]
+	
+	#OPTIMISER_PRE_PROCESS_TEXT = ["none","scale_by_param_block_norm","adaptive_grad_clip"][indices[3]]
+	OPTIMISER_TEXT = ["nadam","nadamw"][indices[2]]
+	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[3]]
+	params = {
+		"LOSS_FUNCTION":LOSS_FUNCTION,
+		"ORDER":ORDER,
+		"OPTIMISER":OPTIMISER,
+		"TIME_RESOLUTION":TIME_RESOLUTION,
+		"OPTIMISER_PRE_PROCESS":OPTIMISER_PRE_PROCESS,
+		"OPTIMISER_TEXT":LOSS_FUNCTION_TEXT+OPTIMISER_TEXT+OPTIMISER_PRE_PROCESS_TEXT,
+		"LOSS_TIME_SAMPLING":LOSS_TIME_SAMPLING,
+		"INTERNAL_ACTIVATIONS":INTERNAL_ACTIVATIONS,
+		"REACTION_RATIO":REACTION_RATIO,
+		"ADVECTION_RATIO":ADVECTION_RATIO,
+		"REACTION_INIT":REACTION_INIT,
+		"DIFFUSION_INIT":DIFFUSION_INIT,
+		"INTERNAL_ACTIVATIONS_TEXT":INTERNAL_ACTIVATIONS_TEXT,
+		"REACTION_RATIO_TEXT":REACTION_RATIO_TEXT,
+		"ADVECTION_RATIO_TEXT":ADVECTION_RATIO_TEXT,
+		"REACTION_ZERO_INIT":REACTION_ZERO_INIT,
+		"ADVECTION_ZERO_INIT":ADVECTION_ZERO_INIT,
+		"DIFFUSION_ZERO_INIT":DIFFUSION_ZERO_INIT,
+		"REACTION_ZERO_INIT_TEXT":REACTION_ZERO_INIT_TEXT,
+		"ADVECTION_ZERO_INIT_TEXT":ADVECTION_ZERO_INIT_TEXT,
+		"DIFFUSION_ZERO_INIT_TEXT":DIFFUSION_ZERO_INIT_TEXT,
+		"N_LAYERS":N_LAYERS,
+		"TRAJECTORY_LENGTH":TRAJECTORY_LENGTH,
+		}
+	return params
+
+
+
+
+
+
+def index_to_pde_texture_hyperparameters(index):
+	indices = np.unravel_index(index,(4,3,2,2,2,2))
+	filename = ["honeycombed/honeycombed_0078.jpg",
+			    "banded/banded_0109.jpg",
+				"dotted/dotted_0116.jpg",
+				"interlaced/interlaced_0172.jpg"][indices[0]]
+	filename_short = ["honeycombed",
+			    	  "banded",
+					  "dotted",
+					  "interlaced"][indices[0]]
+	
+
+	#n_layers = [1,2][indices[2]]
+	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[1]]
+	OPTIMISER_PRE_PROCESS_TEXT = ["","_scale_by_param_block_norm","_adaptive_grad_clip"][indices[1]]
+	REACTION_INIT = ["orthogonal","permuted"][indices[2]]
+	DIFFUSION_INIT = ["orthogonal","diagonal"][indices[3]]
+	ADVECTION_INIT = ["orthogonal","permuted"][indices[4]]
+	n_layers = [2,3][indices[5]]
+
+	return {"FILENAME":filename,
+		 	"FILENAME_SHORT":filename_short,
+			"N_LAYERS":n_layers,
+			"REACTION_INIT":REACTION_INIT,
+			"DIFFUSION_INIT":DIFFUSION_INIT,
+			"ADVECTION_INIT":ADVECTION_INIT,
+			"OPTIMISER_PRE_PROCESS":OPTIMISER_PRE_PROCESS,
+			"OPTIMISER_PRE_PROCESS_TEXT":OPTIMISER_PRE_PROCESS_TEXT}
 def index_to_kaNCA_pde_parameters(index):
 	indices = np.unravel_index(index,(4,4))
 	EQUATION_INDEX = indices[0]

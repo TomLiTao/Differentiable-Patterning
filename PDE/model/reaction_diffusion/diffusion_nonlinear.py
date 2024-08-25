@@ -56,7 +56,7 @@ class D(eqx.Module):
         #                              key=keys[1]),
         #                 OUTER_ACTIVATION ]
         
-
+        
         self.ops = Ops(PADDING=PADDING,dx=dx)
         w_where = lambda l: l.weight
         b_where = lambda l: l.bias

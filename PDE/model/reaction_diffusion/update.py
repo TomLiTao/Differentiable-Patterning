@@ -9,13 +9,12 @@ import jax
 import equinox as eqx
 import jax.numpy as jnp
 import time
-from PDE.model.reaction_diffusion_advection.advection import V
-from PDE.model.reaction_diffusion_advection.reaction import R
-from PDE.model.reaction_diffusion_advection.diffusion_nonlinear import D
+
+from PDE.model.reaction_diffusion.reaction import R
+from PDE.model.reaction_diffusion.diffusion_nonlinear import D
 from jaxtyping import Array, Float, PyTree, Scalar
 
 class F(eqx.Module):
-	f_v: V
 	f_r: R
 	f_d: D
 	N_CHANNELS: int
@@ -28,14 +27,13 @@ class F(eqx.Module):
 				 PADDING,
 				 dx,
 				 INTERNAL_ACTIVATION=jax.nn.relu,
-				 ADVECTION_OUTER_ACTIVATION=jax.nn.tanh,
-				 INIT_SCALE={"reaction":0.5,"advection":0.5,"diffusion":0.5},
-				 INIT_TYPE={"reaction":"normal","advection":"normal","diffusion":"normal"},
+				 INIT_SCALE={"reaction":0.5,"diffusion":0.5},
+				 INIT_TYPE={"reaction":"normal","diffusion":"normal"},
 				 USE_BIAS=True,
 				 STABILITY_FACTOR=0.01,
 				 ORDER=1,
 				 N_LAYERS=1,
-				 ZERO_INIT={"reaction":True,"advection":True,"diffusion":False},
+				 ZERO_INIT={"reaction":True,"diffusion":False},
 				 key=jax.random.PRNGKey(int(time.time()))):
 		
 		
@@ -44,7 +42,7 @@ class F(eqx.Module):
 		self.dx = dx
 		self.N_LAYERS = N_LAYERS
 		self.ORDER = ORDER
-		key1,key2,key3 = jax.random.split(key,3)
+		keys = jax.random.split(key,2)
 
 		self.f_r = R(N_CHANNELS=N_CHANNELS,
 			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
@@ -56,20 +54,8 @@ class F(eqx.Module):
 					 ORDER=ORDER,
 					 N_LAYERS=N_LAYERS,
 					 ZERO_INIT=ZERO_INIT["reaction"],
-					 key=key1)
-		self.f_v = V(N_CHANNELS=N_CHANNELS,
-			   		 PADDING=PADDING,
-					 dx=dx,
-			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
-			   		 OUTER_ACTIVATION=ADVECTION_OUTER_ACTIVATION, # Can be any activation function
-					 INIT_SCALE=INIT_SCALE["advection"],
-					 INIT_TYPE=INIT_TYPE["advection"],
-					 USE_BIAS=USE_BIAS,
-					 ORDER=ORDER,
-					 N_LAYERS=N_LAYERS,
-					 ZERO_INIT=ZERO_INIT["advection"],
-					 DIM = 2,																
-			   		 key=key2)
+					 key=keys[0])
+
 		self.f_d = D(N_CHANNELS=N_CHANNELS,
 			   		 PADDING=PADDING,
 					 dx=dx,
@@ -81,7 +67,7 @@ class F(eqx.Module):
 					 ORDER=ORDER,
 					 N_LAYERS=N_LAYERS,
 					 ZERO_INIT=ZERO_INIT["diffusion"],
-					 key=key3)
+					 key=keys[1])
 
 	@eqx.filter_jit
 	def __call__(self,
@@ -107,25 +93,21 @@ class F(eqx.Module):
 			update to PDE lattice state state.
 
 		"""
-		return self.f_d(X) - self.f_v(X) + self.f_r(X)
+		return self.f_d(X) + self.f_r(X)
 	
 	def partition(self):
 		r_diff,r_static = self.f_r.partition()
-		v_diff,v_static = self.f_v.partition()
 		d_diff,d_static = self.f_d.partition()
 		total_diff,total_static = eqx.partition(self,eqx.is_array)
 		#print(total_diff)
 		#print(total_static)
 		where_r = lambda m:m.f_r
-		where_v = lambda m:m.f_v
 		where_d = lambda m:m.f_d
 		
 		total_diff = eqx.tree_at(where_r,total_diff,r_diff)
-		total_diff = eqx.tree_at(where_v,total_diff,v_diff)
 		total_diff = eqx.tree_at(where_d,total_diff,d_diff)
 		
 		total_static = eqx.tree_at(where_r,total_static,r_static)
-		total_static = eqx.tree_at(where_v,total_static,v_static)
 		total_static = eqx.tree_at(where_d,total_static,d_static)
 		return total_diff,total_static
 	
