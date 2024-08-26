@@ -54,13 +54,13 @@ class AbstractModel(eqx.Module):
 		diff_self,_ = self.partition()
 		ws,tree_def = jax.tree_util.tree_flatten(diff_self)
 		#return #list(map(jnp.squeeze,ws))
-		return ws
+		return ws,tree_def
 	
 	
-	def set_weights(self,weights):
+	def set_weights(self,tree_def,weights):
 
-		raise NotImplementedError
-
+		#raise NotImplementedError
+		return jax.tree_util.tree_unflatten(tree_def,weights)
 	
 	def save(self, path: Union[str, Path], overwrite: bool = False):
 		"""
