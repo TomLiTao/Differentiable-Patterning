@@ -113,3 +113,9 @@ class F(eqx.Module):
 	
 	def combine(self,diff,static):
 		self = eqx.combine(diff,static)
+
+
+	# def set_weights(self,weights):
+	# 	w_r,w_d = weights
+	# 	self.f_r.set_weights(w_r)
+	# 	self.f_d.set_weights(w_d)

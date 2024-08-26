@@ -5,6 +5,7 @@ import optax
 import equinox as eqx
 import datetime
 import time
+import jaxpruner
 from PDE.trainer.data_augmenter_pde import DataAugmenter
 import Common.trainer.loss as loss
 from Common.model.boundary import model_boundary
@@ -158,6 +159,8 @@ class PDE_Trainer(object):
 			  LOG_EVERY=10,
 			  LOSS_TIME_SAMPLING=1,
 			  LOSS_FUNC = loss.euclidean,
+			  PRUNING = {"PRUNE":False,
+						 "TARGET_SPARSITY":0.9},
 			  UPDATE_X0_PARAMS = {"iters":32,
 						 		  "update_every":10,
 								  "optimiser":optax.nadam,
@@ -276,6 +279,8 @@ class PDE_Trainer(object):
 		model_saved = False
 		error = 0
 		error_at = 0
+		if PRUNING["PRUNE"]:
+			SPARSITY_SCHEDULE = jnp.concat((jnp.zeros(WARMUP),jnp.linspace(0,PRUNING["TARGET_SPARSITY"],TRAINING_ITERATIONS-WARMUP)))
 		#x0 = self.DATA_AUGMENTER.data_saved[0][0]
 		
 		for i in tqdm(range(TRAINING_ITERATIONS)):
@@ -292,6 +297,15 @@ class PDE_Trainer(object):
 			"""
 			pde,x,y,ts,opt_state,mean_loss,losses,key = make_step(pde, x, y, ts, opt_state,key)
 
+			if PRUNING["PRUNE"]:
+				ws,tree_def = pde.get_weights()
+				sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=SPARSITY[i])
+				pruner = jaxpruner.MagnitudePruning(
+					sparsity_distribution_fn=sparsity_distribution,
+					skip_gradients=True)
+				ws = pruner.instant_sparsify(ws)[0]
+				pde = pde.set_weights(tree_def,ws)
+			
 			if self.IS_LOGGING:
 				self.LOGGER.tb_training_loop_log_sequence(losses, y, i, pde,LOG_EVERY=LOG_EVERY)
 			

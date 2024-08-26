@@ -36,3 +36,5 @@ class PDE_solver(AbstractModel):
 		total_static=eqx.tree_at(where,total_static,func_static)
 		return total_diff,total_static
 		
+	#def set_weights(self,weights):
+	#	self.func.set_weights(weights)
