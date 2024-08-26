@@ -83,7 +83,6 @@ func = F(CHANNELS,
          key=key)
 pde = PDE_solver(func,dt=0.1)
 
-
 # Define optimiser and lr schedule
 #iters = 2000
 #schedule = optax.exponential_decay(PARAMS["LEARN_RATE"], transition_steps=iters, decay_rate=0.99)
@@ -104,7 +103,7 @@ trainer = PDE_Trainer(PDE_solver=pde,
                       data=Y,
                       Ts=T,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_reacdiff_gray_scott/tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_act_"+PARAMS["INTERNAL_ACTIVATIONS_TEXT"]+"_R_"+PARAMS["REACTION_INIT"]+PARAMS["REACTION_ZERO_INIT_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["DIFFUSION_ZERO_INIT_TEXT"]+"_opt_"+PARAMS["OPTIMISER_TEXT"])
+                      model_filename="pde_hyperparameters_reacdiff_gray_scott/tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_act_"+PARAMS["INTERNAL_ACTIVATIONS_TEXT"]+"_R_"+PARAMS["REACTION_INIT"]+PARAMS["REACTION_ZERO_INIT_TEXT"]+"_lrr_"+PARAMS["REACTION_RATIO_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["DIFFUSION_ZERO_INIT_TEXT"]+"_opt_"+PARAMS["OPTIMISER_TEXT"])
 
 UPDATE_X0_PARAMS = {"iters":16,
                     "update_every":10000,
