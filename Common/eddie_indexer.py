@@ -288,7 +288,7 @@ def index_to_pde_advection_hyperparameters(index):
 def index_to_pde_gray_scott_hyperparameters(index):
 	indices = np.unravel_index(index,(2,2,2,2,3,2))
 	INTERNAL_ACTIVATIONS = [lambda x:x,jax.nn.tanh][1]
-	LOSS_FUNCTION = [euclidean,spectral_weighted][indices[5]]
+	LOSS_FUNCTION = [euclidean,spectral_weighted][1]
 
 	REACTION_RATIO = [1,0.1,0.01][1]
 	ADVECTION_RATIO = [1,0.1,0][0]
@@ -308,7 +308,7 @@ def index_to_pde_gray_scott_hyperparameters(index):
 	TIME_RESOLUTION = [51,101,201][indices[4]]
 
 	INTERNAL_ACTIVATIONS_TEXT = ["none","tanh"][1]
-	LOSS_FUNCTION_TEXT = ["euclidean_","spectral_weighted_"][indices[5]]
+	LOSS_FUNCTION_TEXT = ["euclidean_","spectral_weighted_"][1]
 	REACTION_RATIO_TEXT = ["1","1e-1","1e-2"][1]
 	ADVECTION_RATIO_TEXT = ["1","1e-1","0"][0]
 	REACTION_ZERO_INIT_TEXT = ["_zero_init",""][1]
