@@ -31,10 +31,10 @@ STABILITY_FACTOR = 0.01
 key = jax.random.PRNGKey(int(time.time()))
 key = jax.random.fold_in(key,index)
 
-CHANNELS = 10
+CHANNELS = 16
 ITERS = 1001
 SIZE = 64
-BATCHES = 4
+BATCHES = 8
 PADDING = "CIRCULAR"
 TRAJECTORY_LENGTH = PARAMS["TRAJECTORY_LENGTH"]
 
@@ -103,7 +103,7 @@ trainer = PDE_Trainer(PDE_solver=pde,
                       data=Y,
                       Ts=T,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_reacdiff_gray_scott/ch_10_tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_act_"+PARAMS["INTERNAL_ACTIVATIONS_TEXT"]+"_R_"+PARAMS["REACTION_INIT"]+PARAMS["REACTION_ZERO_INIT_TEXT"]+"_lrr_"+PARAMS["REACTION_RATIO_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["DIFFUSION_ZERO_INIT_TEXT"]+"_opt_"+PARAMS["OPTIMISER_TEXT"])
+                      model_filename="pde_hyperparameters_reacdiff_gray_scott/ch_"+str(CHANNELS)+"_tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_act_"+PARAMS["INTERNAL_ACTIVATIONS_TEXT"]+"_R_"+PARAMS["REACTION_INIT"]+PARAMS["REACTION_ZERO_INIT_TEXT"]+"_lrr_"+PARAMS["REACTION_RATIO_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["DIFFUSION_ZERO_INIT_TEXT"]+"_opt_"+PARAMS["OPTIMISER_TEXT"])
 
 UPDATE_X0_PARAMS = {"iters":16,
                     "update_every":10000,
