@@ -301,8 +301,8 @@ def index_to_pde_gray_scott_hyperparameters(index):
 	#LOSS_TIME_SAMPLING = [1,2,1, 4, 8, 1, 4, 8, 1 ,8, 16,32][indices[3]]
 	TRAJECTORY_LENGTH = 16
 	LOSS_TIME_SAMPLING = 1
-	N_LAYERS = 3
-	ORDER = 2
+	N_LAYERS = 3	
+	ORDER = 1
 	OPTIMISER = [optax.nadam,optax.nadamw][indices[2]]
 	OPTIMISER_PRE_PROCESS = [optax.identity(),optax.scale_by_param_block_norm(),optax.adaptive_grad_clip(1.0)][indices[3]]
 	TIME_RESOLUTION = [51,101,201][indices[4]]
