@@ -10,7 +10,7 @@ import time
 from Common.model.spatial_operators import Ops
 from einops import rearrange,repeat
 from jaxtyping import Array, Float
-from Common.model.custom_functions import construct_polynomials
+from Common.model.custom_functions import construct_polynomials,set_layer_weights
 from jaxtyping import Array, Float
 class V(eqx.Module):
     layers: list
@@ -76,26 +76,6 @@ class V(eqx.Module):
         w_where = lambda l: l.weight
         b_where = lambda l: l.bias
 
-        def set_layer_weights(shape,key):
-            if INIT_TYPE=="orthogonal":
-                r = jr.orthogonal(key,n=max(shape[0],shape[1]))
-                r = r[:shape[0],:shape[1]]
-                r = repeat(r,"i j -> i j () ()")
-                return INIT_SCALE*r
-            if INIT_TYPE=="normal":
-                return INIT_SCALE*jr.normal(key,shape)
-            if INIT_TYPE=="diagonal":
-                a = 0.9
-                i = jnp.eye(shape[0],shape[1])
-                i = repeat(i,"i j -> i j () ()")
-                r = jr.normal(key,shape)
-                return INIT_SCALE*(a*i+(1-a)*r)
-            if INIT_TYPE=="permuted":
-                a = 0.9
-                i = jr.permutation(key,jnp.eye(shape[0],shape[1]))
-                i = repeat(i,"i j -> i j () ()")
-                r = jr.normal(key,shape)
-                return INIT_SCALE*(a*i+(1-a)*r)
         
         
 
@@ -103,7 +83,7 @@ class V(eqx.Module):
         for i in range(0,len(self.layers)//2):
             self.layers[2*i] = eqx.tree_at(w_where,
                                            self.layers[2*i],
-                                           set_layer_weights(self.layers[2*i].weight.shape,keys[i]))
+                                           set_layer_weights(self.layers[2*i].weight.shape,keys[i],INIT_TYPE,INIT_SCALE))
             if USE_BIAS:
                 self.layers[2*i] = eqx.tree_at(b_where,
                                                self.layers[2*i],

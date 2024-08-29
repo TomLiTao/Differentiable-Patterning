@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import time
 from jaxtyping import Array, Float
-from Common.model.custom_functions import construct_polynomials
+from Common.model.custom_functions import construct_polynomials,set_layer_weights
 from einops import rearrange,repeat
 
 class R(eqx.Module):
@@ -53,34 +53,15 @@ class R(eqx.Module):
 
         where = lambda l:l.weight
         where_b = lambda l:l.bias
-        def set_layer_weights(shape,key):
-            if INIT_TYPE=="orthogonal":
-                r = jr.orthogonal(key,n=max(shape[0],shape[1]))
-                r = r[:shape[0],:shape[1]]
-                r = repeat(r,"i j -> i j () ()")
-                return INIT_SCALE*r
-            if INIT_TYPE=="normal":
-                return INIT_SCALE*jr.normal(key,shape)
-            if INIT_TYPE=="diagonal":
-                a = 0.9
-                i = jnp.eye(shape[0],shape[1])
-                i = repeat(i,"i j -> i j () ()")
-                r = jr.normal(key,shape)
-                return INIT_SCALE*(a*i+(1-a)*r)
-            if INIT_TYPE=="permuted":
-                a = 0.9
-                i = jr.permutation(key,jnp.eye(shape[0],shape[1]))
-                i = repeat(i,"i j -> i j () ()")
-                r = jr.normal(key,shape)
-                return INIT_SCALE*(a*i+(1-a)*r)
+
 
         for i in range(0,len(self.production_layers)//2):
             self.production_layers[2*i] = eqx.tree_at(where,
                                                     self.production_layers[2*i],
-                                                    set_layer_weights(self.production_layers[2*i].weight.shape,keys[i]))
+                                                    set_layer_weights(self.production_layers[2*i].weight.shape,keys[i],INIT_TYPE,INIT_SCALE))
             self.decay_layers[2*i] = eqx.tree_at(where,
                                                self.decay_layers[2*i],
-                                               set_layer_weights(self.decay_layers[2*i].weight.shape,keys[i+len(self.production_layers)//2]))
+                                               set_layer_weights(self.decay_layers[2*i].weight.shape,keys[i+len(self.production_layers)//2],INIT_TYPE,INIT_SCALE))
             if USE_BIAS:
                 self.production_layers[2*i] = eqx.tree_at(where_b,
                                                         self.production_layers[2*i],
