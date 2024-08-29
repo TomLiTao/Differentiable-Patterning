@@ -286,7 +286,7 @@ def index_to_pde_advection_hyperparameters(index):
 
 
 def index_to_pde_gray_scott_hyperparameters(index):
-	indices = np.unravel_index(index,(2,2,2,2,3,2))
+	indices = np.unravel_index(index,(2,2,2,2,3))
 	INTERNAL_ACTIVATIONS = [lambda x:x,jax.nn.tanh][1]
 	LOSS_FUNCTION = [euclidean,spectral_weighted][1]
 
