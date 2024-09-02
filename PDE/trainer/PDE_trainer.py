@@ -1,5 +1,6 @@
 import jax
-jax.config.update("jax_enable_x64", True)
+import json
+#jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import optax
 import equinox as eqx
@@ -12,7 +13,7 @@ from Common.model.boundary import model_boundary
 from Common.trainer.custom_functions import check_training_diverged
 from PDE.trainer.tensorboard_log import PDE_Train_log
 from PDE.trainer.optimiser import non_negative_diffusion_chemotaxis
-from PDE.model.solver.semidiscrete_solver import PDE_solver
+from PDE.model.solver.semidiscrete_solver import PDE_solver,save,load
 from functools import partial
 from Common.model.spatial_operators import Ops
 from jaxtyping import Float, Array, Int, Scalar, Key
@@ -24,6 +25,7 @@ class PDE_Trainer(object):
 	
 	def __init__(self,
 			     PDE_solver,
+				 PDE_HYPERPARAMETERS,
 				 data: Float[Array, "Batches T C W H"],
 				 Ts: Float[Array, "Batches T"],
 				 model_filename=None,
@@ -70,7 +72,7 @@ class PDE_Trainer(object):
 		"""
 		#self.NCA_model = NCA_model
 		self.PDE_solver = PDE_solver
-		
+		self.PDE_HYPERPARAMETERS = PDE_HYPERPARAMETERS
 		# Set up variables 
 
 		self.OBS_CHANNELS = data[0].shape[1]
@@ -283,6 +285,11 @@ class PDE_Trainer(object):
 			SPARSITY_SCHEDULE = jnp.concat((jnp.zeros(WARMUP),jnp.linspace(0,PRUNING["TARGET_SPARSITY"],TRAINING_ITERATIONS-WARMUP)))
 		#x0 = self.DATA_AUGMENTER.data_saved[0][0]
 		
+
+		print("Training nPDE with: ")
+		print(self.PDE_HYPERPARAMETERS)
+		print(json.dumps(self.PDE_HYPERPARAMETERS,sort_keys=True, indent=4))
+
 		for i in tqdm(range(TRAINING_ITERATIONS)):
 			key = jax.random.fold_in(key,i)
 			#print(self.DATA_AUGMENTER.data_saved[0].shape)
@@ -330,7 +337,8 @@ class PDE_Trainer(object):
 					if mean_loss < best_loss:
 						model_saved=True
 						self.PDE_solver = pde
-						self.PDE_solver.save(self.MODEL_PATH,overwrite=True)
+						#self.PDE_solver.save(self.MODEL_PATH,overwrite=True)
+						save(self.MODEL_PATH,self.PDE_HYPERPARAMETERS,self.PDE_solver)
 						best_loss = mean_loss
 						tqdm.write("--- Model saved at "+str(i)+" epochs with loss "+str(mean_loss)+" ---")
 			else:
