@@ -12,12 +12,14 @@ import time
 from PDE.model.reaction_diffusion_advection.advection import V
 from PDE.model.reaction_diffusion_advection.reaction import R
 from PDE.model.reaction_diffusion_advection.diffusion_nonlinear import D
+from PDE.model.reaction_diffusion_advection.identity import I
 from jaxtyping import Array, Float, PyTree, Scalar
 
 class F(eqx.Module):
-	f_v: V
-	f_r: R
-	f_d: D
+	f_v: eqx.Module
+	f_r: eqx.Module
+	f_d: eqx.Module
+	TERMS: list
 	N_CHANNELS: int
 	N_LAYERS: int
 	ORDER: int
@@ -27,8 +29,9 @@ class F(eqx.Module):
 			  	 N_CHANNELS,
 				 PADDING,
 				 dx,
-				 INTERNAL_ACTIVATION=jax.nn.relu,
-				 ADVECTION_OUTER_ACTIVATION=jax.nn.tanh,
+				 TERMS=["reaction","advection","diffusion"],
+				 INTERNAL_ACTIVATION="tanh",
+				 ADVECTION_OUTER_ACTIVATION="tanh",
 				 INIT_SCALE={"reaction":0.5,"advection":0.5,"diffusion":0.5},
 				 INIT_TYPE={"reaction":"normal","advection":"normal","diffusion":"normal"},
 				 USE_BIAS=True,
@@ -38,51 +41,72 @@ class F(eqx.Module):
 				 ZERO_INIT={"reaction":True,"advection":True,"diffusion":False},
 				 key=jax.random.PRNGKey(int(time.time()))):
 		
+		if INTERNAL_ACTIVATION=="tanh":
+			INTERNAL_ACTIVATION = jax.nn.tanh
+		elif INTERNAL_ACTIVATION=="relu":
+			INTERNAL_ACTIVATION = jax.nn.relu
 		
+		if ADVECTION_OUTER_ACTIVATION=="tanh":
+			ADVECTION_OUTER_ACTIVATION = jax.nn.tanh
+		elif ADVECTION_OUTER_ACTIVATION=="relu":
+			ADVECTION_OUTER_ACTIVATION = jax.nn.relu
+		elif ADVECTION_OUTER_ACTIVATION=="linear":
+			ADVECTION_OUTER_ACTIVATION = lambda x:x
+
 		self.N_CHANNELS = N_CHANNELS
 		self.PADDING = PADDING
 		self.dx = dx
 		self.N_LAYERS = N_LAYERS
 		self.ORDER = ORDER
+		self.TERMS = TERMS
 		key1,key2,key3 = jax.random.split(key,3)
-
-		self.f_r = R(N_CHANNELS=N_CHANNELS,
-			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
-					 OUTER_ACTIVATION=jax.nn.relu, # SHOULD BE STRICTLY NON NEGATIVE FOR INTERPRETABILITY
-					 INIT_SCALE=INIT_SCALE["reaction"], # Should be much smaller initial scaling
-					 INIT_TYPE=INIT_TYPE["reaction"],
-					 USE_BIAS=USE_BIAS,
-					 STABILITY_FACTOR=STABILITY_FACTOR,
-					 ORDER=ORDER,
-					 N_LAYERS=N_LAYERS,
-					 ZERO_INIT=ZERO_INIT["reaction"],
-					 key=key1)
-		self.f_v = V(N_CHANNELS=N_CHANNELS,
-			   		 PADDING=PADDING,
-					 dx=dx,
-			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
-			   		 OUTER_ACTIVATION=ADVECTION_OUTER_ACTIVATION, # Can be any activation function
-					 INIT_SCALE=INIT_SCALE["advection"],
-					 INIT_TYPE=INIT_TYPE["advection"],
-					 USE_BIAS=USE_BIAS,
-					 ORDER=ORDER,
-					 N_LAYERS=N_LAYERS,
-					 ZERO_INIT=ZERO_INIT["advection"],
-					 DIM = 2,																
-			   		 key=key2)
-		self.f_d = D(N_CHANNELS=N_CHANNELS,
-			   		 PADDING=PADDING,
-					 dx=dx,
-			   		 INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
-			   		 OUTER_ACTIVATION=jax.nn.relu, # MUST BE STRICTLY NON NEGATIVE FOR NUMERICAL STABILITY
-					 INIT_SCALE=INIT_SCALE["diffusion"],
-					 INIT_TYPE=INIT_TYPE["diffusion"],
-					 USE_BIAS=USE_BIAS,
-					 ORDER=ORDER,
-					 N_LAYERS=N_LAYERS,
-					 ZERO_INIT=ZERO_INIT["diffusion"],
-					 key=key3)
-
+		if "reaction" in self.TERMS:
+			self.f_r = R(N_CHANNELS=N_CHANNELS,
+						INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
+						OUTER_ACTIVATION=jax.nn.relu, # SHOULD BE STRICTLY NON NEGATIVE FOR INTERPRETABILITY
+						INIT_SCALE=INIT_SCALE["reaction"], # Should be much smaller initial scaling
+						INIT_TYPE=INIT_TYPE["reaction"],
+						USE_BIAS=USE_BIAS,
+						STABILITY_FACTOR=STABILITY_FACTOR,
+						ORDER=ORDER,
+						N_LAYERS=N_LAYERS,
+						ZERO_INIT=ZERO_INIT["reaction"],
+						key=key1)
+		else:
+			self.f_r = I(TYPE="reaction")
+		
+		if "advection" in self.TERMS:
+			self.f_v = V(N_CHANNELS=N_CHANNELS,
+						PADDING=PADDING,
+						dx=dx,
+						INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
+						OUTER_ACTIVATION=ADVECTION_OUTER_ACTIVATION, # Can be any activation function
+						INIT_SCALE=INIT_SCALE["advection"],
+						INIT_TYPE=INIT_TYPE["advection"],
+						USE_BIAS=USE_BIAS,
+						ORDER=ORDER,
+						N_LAYERS=N_LAYERS,
+						ZERO_INIT=ZERO_INIT["advection"],
+						DIM = 2,																
+						key=key2)
+		else:
+			self.f_v = I(TYPE="advection")
+		
+		if "diffusion" in self.TERMS:
+			self.f_d = D(N_CHANNELS=N_CHANNELS,
+						PADDING=PADDING,
+						dx=dx,
+						INTERNAL_ACTIVATION=INTERNAL_ACTIVATION,
+						OUTER_ACTIVATION=jax.nn.relu, # MUST BE STRICTLY NON NEGATIVE FOR NUMERICAL STABILITY
+						INIT_SCALE=INIT_SCALE["diffusion"],
+						INIT_TYPE=INIT_TYPE["diffusion"],
+						USE_BIAS=USE_BIAS,
+						ORDER=ORDER,
+						N_LAYERS=N_LAYERS,
+						ZERO_INIT=ZERO_INIT["diffusion"],
+						key=key3)
+		else:
+			self.f_d = I(TYPE="diffusion")
 	@eqx.filter_jit
 	def __call__(self,
 			  	 t: Float[Scalar, ""],
