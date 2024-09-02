@@ -7,13 +7,13 @@ import optax
 from PDE.trainer.optimiser import non_negative_diffusion
 from PDE.trainer.optimiser import multi_learnrate
 from einops import repeat
-from PDE.model.reaction_diffusion.update import F
-from PDE.model.solver.semidiscrete_solver_euler import PDE_solver
+from PDE.model.reaction_diffusion_advection.update import F
+from PDE.model.solver.semidiscrete_solver import PDE_solver
 from PDE.trainer.PDE_trainer import PDE_Trainer
 from PDE.model.fixed_models.update_gray_scott import F as F_gray_scott
-from PDE.model.fixed_models.update_chhabra import F as F_chhabra
-from PDE.model.fixed_models.update_hillen_painter import F as F_hillen_painter
-from PDE.model.fixed_models.update_cahn_hilliard import F as F_cahn_hilliard
+# from PDE.model.fixed_models.update_chhabra import F as F_chhabra
+# from PDE.model.fixed_models.update_hillen_painter import F as F_hillen_painter
+# from PDE.model.fixed_models.update_cahn_hilliard import F as F_cahn_hilliard
 from Common.eddie_indexer import index_to_pde_gray_scott_hyperparameters
 from Common.model.spatial_operators import Ops
 from einops import rearrange
@@ -37,9 +37,33 @@ SIZE = 64
 BATCHES = 8
 PADDING = "CIRCULAR"
 TRAJECTORY_LENGTH = PARAMS["TRAJECTORY_LENGTH"]
+PDE_STR = "gray_scott"
 dt = 1.0
 
-PDE_STR = "gray_scott"
+pde_hyperparameters = {"N_CHANNELS":CHANNELS,
+                       "PADDING":PADDING,
+                       "INTERNAL_ACTIVATION":PARAMS["INTERNAL_ACTIVATIONS"],
+                       "dx":1.0,
+                       "TERMS":["reaction","diffusion"],
+                       "ADVECTION_OUTER_ACTIVATION":"tanh",
+                       "INIT_SCALE":{"reaction":0.1,"diffusion":0.1},
+                       "INIT_TYPE":{"reaction":PARAMS["REACTION_INIT"],"diffusion":PARAMS["DIFFUSION_INIT"]},
+                       "STABILITY_FACTOR":0.01,
+                       "USE_BIAS":True,
+                       "ORDER":PARAMS["ORDER"],
+                       "N_LAYERS":PARAMS["N_LAYERS"],
+                       "ZERO_INIT":{"reaction":False,"diffusion":False}}
+solver_hyperparameters = {"dt":dt,
+                          "SOLVER":"euler",
+                          "rtol":1e-3,
+                          "atol":1e-3,
+                          "ADAPTIVE":False}
+hyperparameters = {"pde":pde_hyperparameters,
+                   "solver":solver_hyperparameters}
+
+
+# ----------------- Define data -----------------
+
 x0 = jr.uniform(key,shape=(BATCHES,2,SIZE,SIZE))
 op = Ops(PADDING=PADDING,dx=1.0,KERNEL_SCALE=2)
 v_av = eqx.filter_vmap(op.Average,in_axes=0,out_axes=0)
@@ -66,22 +90,9 @@ Y = rearrange(Y,"T B C X Y -> B T C X Y")
 Y = Y.at[:,:,0].set(2*(Y[:,:,0]-np.min(Y[:,:,0]))/(np.max(Y[:,:,0])-np.min(Y[:,:,0])) - 1)
 Y = Y.at[:,:,1].set(2*(Y[:,:,1]-np.min(Y[:,:,1]))/(np.max(Y[:,:,1])-np.min(Y[:,:,1])) - 1)
 
-
-# Define PDE model
-func = F(CHANNELS,
-         PADDING=PADDING,
-         dx=1.0,
-         INTERNAL_ACTIVATION=PARAMS["INTERNAL_ACTIVATIONS"],
-         #ADVECTION_OUTER_ACTIVATION=jax.nn.tanh,
-         INIT_SCALE={"reaction":0.1,"diffusion":0.1},
-         INIT_TYPE={"reaction":PARAMS["REACTION_INIT"],"diffusion":PARAMS["DIFFUSION_INIT"]},
-         STABILITY_FACTOR=STABILITY_FACTOR,
-         USE_BIAS=True,
-         ORDER = PARAMS["ORDER"],
-         N_LAYERS=PARAMS["N_LAYERS"],
-         ZERO_INIT={"reaction":False,"diffusion":False},
-         key=key)
-pde = PDE_solver(func,dt=dt)
+# ----------------- Define model -----------------
+func = F(key=key,**hyperparameters["pde"])
+pde = PDE_solver(func,**hyperparameters["solver"])
 
 # Define optimiser and lr schedule
 #iters = 2000
@@ -89,7 +100,7 @@ pde = PDE_solver(func,dt=dt)
 #opt = non_negative_diffusion(schedule,optimiser=OPTIMISER)
 #opt = optax.chain(optax.scale_by_param_block_norm(),
 			#PARAMS["OPTIMISER"](schedule))
-schedule = optax.exponential_decay(1e-4, transition_steps=ITERS, decay_rate=0.99)
+schedule = optax.exponential_decay(1e-3, transition_steps=ITERS, decay_rate=0.99)
 opt = multi_learnrate(
     schedule,
     rate_ratios={"advection": PARAMS["ADVECTION_RATIO"],
@@ -100,6 +111,7 @@ opt = multi_learnrate(
 )
 
 trainer = PDE_Trainer(PDE_solver=pde,
+                      PDE_HYPERPARAMETERS=hyperparameters,
                       data=Y,
                       Ts=T,
                       #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
@@ -115,6 +127,6 @@ trainer.train(SUBTRAJECTORY_LENGTH=TRAJECTORY_LENGTH,
               TRAINING_ITERATIONS=ITERS,
               OPTIMISER=opt,
               LOG_EVERY=50,
-              WARMUP=32,
+              WARMUP=1,
               LOSS_TIME_SAMPLING=PARAMS["LOSS_TIME_SAMPLING"],
               UPDATE_X0_PARAMS=UPDATE_X0_PARAMS)

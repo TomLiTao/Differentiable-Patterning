@@ -1,4 +1,5 @@
 import jax
+import json
 import jax.numpy as jnp
 import equinox as eqx
 import time
@@ -62,7 +63,7 @@ class AbstractModel(eqx.Module):
 		#raise NotImplementedError
 		return jax.tree_util.tree_unflatten(tree_def,weights)
 	
-	def save(self, path: Union[str, Path], overwrite: bool = False):
+	def save(self, path: Union[str, Path], overwrite: bool = False, hyperparams: dict = {}):
 		"""
 		Wrapper for saving model via eqx.tree_serialise_leaves. Taken from https://github.com/google/jax/issues/2116
 
@@ -83,17 +84,21 @@ class AbstractModel(eqx.Module):
 		None.
 
 		"""
-		suffix = ".eqx"
-		path = Path(path)
-		if path.suffix != suffix:
-			path = path.with_suffix(suffix)
-			path.parent.mkdir(parents=True, exist_ok=True)
-		if path.exists():
-			if overwrite:
-				path.unlink()
-			else:
-				raise RuntimeError(f'File {path} already exists.')
-		eqx.tree_serialise_leaves(path,self)
+
+		# suffix = ".eqx"
+		# path = Path(path)
+		# if path.suffix != suffix:
+		# 	path = path.with_suffix(suffix)
+		# 	path.parent.mkdir(parents=True, exist_ok=True)
+		# if path.exists():
+		# 	if overwrite:
+		# 		path.unlink()
+		# 	else:
+		# 		raise RuntimeError(f'File {path} already exists.')
+		with open(path, "wb") as f:
+			hyperparam_str = json.dumps(hyperparams)
+			f.write((hyperparam_str + "\n").encode())
+			eqx.tree_serialise_leaves(path,self)
 
 	
 	def load(self, path: Union[str, Path]):
@@ -122,4 +127,10 @@ class AbstractModel(eqx.Module):
 			raise ValueError(f'Not a file: {path}')
 		if path.suffix != suffix:
 			raise ValueError(f'Not a {suffix} file: {path}')
-		return eqx.tree_deserialise_leaves(path,self)
+		with open(path, "rb") as f:
+			hyperparams = json.loads(f.readline().decode())
+			#func = F_rda(key=jr.PRNGKey(0), **hyperparams["pde"])
+			#pde = PDE_solver(func,**hyperparams["solver"])
+			model = self.__init__(**hyperparams)
+			return eqx.tree_deserialise_leaves(f, model)
+		#return eqx.tree_deserialise_leaves(path,self)
