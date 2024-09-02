@@ -40,7 +40,7 @@ PADDING = "CIRCULAR"
 TRAJECTORY_LENGTH = PARAMS["TRAJECTORY_LENGTH"]
 PDE_STR = "gray_scott"
 dt = 1.0
-MODEL_FILENAME="pde_hyperparameters_reacdiff_"+PDE_STR+"_pruned/lr_5e-4_ch_"+str(CHANNELS)+"_tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_R_"+PARAMS["REACTION_INIT"]+"_lrr_"+PARAMS["REACTION_RATIO_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["TEXT_LABEL"]
+MODEL_FILENAME="pde_hyperparameters_reacdiff_"+PDE_STR+"_pruned/lr_5e-4_ch_"+str(CHANNELS)+"_tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_R_"+PARAMS["REACTION_INIT"]+"_lrr_1e-1_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["TEXT_LABEL"]
 
 pde_hyperparameters = {"N_CHANNELS":CHANNELS,
                        "PADDING":PADDING,

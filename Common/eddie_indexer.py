@@ -358,6 +358,11 @@ def index_to_pde_gray_scott_pruned(index):
 		"REACTION_INIT":["orthogonal","permuted"][indices[4]],
 		"DIFFUSION_INIT":"orthogonal",
 		"TEXT_LABEL":"sparsity_"+["05","075","09","099"][indices[0]]+["euclidean","spectral_weighted"][indices[1]]+["_nadam","_nadamw"][indices[2]]+["","_scale_by_param_block_norm"][indices[3]],
+		"N_LAYERS":2,
+		"ORDER":2,
+		"TIME_RESOLUTION":101,
+		"TRAJECTORY_LENGTH":16,
+		"LOSS_TIME_SAMPLING":1
 	}
 	return params
 
