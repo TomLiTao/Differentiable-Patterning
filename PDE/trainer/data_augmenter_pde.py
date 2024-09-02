@@ -12,13 +12,14 @@ class DataAugmenter(DataAugmenterAbstract):
 	"""
 	def __init__(self,Ts,*args,**kwargs):
 		super().__init__(*args,**kwargs)
-		self.OVERWRITE_OBS_CHANNELS = False
+		self.OVERWRITE_OBS_CHANNELS = True
 		B = len(self.data_saved)
 		Ts = repeat(Ts,"T -> B T",B=B)
 		self.Ts = list(Ts)
 
 	def data_init(self,SHARDING=None):
 		return None
+	
 	
 	
 	def sub_trajectory_split(self,L,key=jax.random.PRNGKey(int(time.time()))):
