@@ -107,6 +107,9 @@ class F(eqx.Module):
 						key=key3)
 		else:
 			self.f_d = I(TYPE="diffusion")
+
+
+
 	@eqx.filter_jit
 	def __call__(self,
 			  	 t: Float[Scalar, ""],

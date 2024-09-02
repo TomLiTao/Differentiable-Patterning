@@ -287,7 +287,7 @@ class PDE_Trainer(object):
 		
 
 		print("Training nPDE with: ")
-		print(self.PDE_HYPERPARAMETERS)
+		#print(self.PDE_HYPERPARAMETERS)
 		print(json.dumps(self.PDE_HYPERPARAMETERS,sort_keys=True, indent=4))
 
 		for i in tqdm(range(TRAINING_ITERATIONS)):
@@ -306,7 +306,7 @@ class PDE_Trainer(object):
 
 			if PRUNING["PRUNE"]:
 				ws,tree_def = pde.get_weights()
-				sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=SPARSITY[i])
+				sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=SPARSITY_SCHEDULE[i])
 				pruner = jaxpruner.MagnitudePruning(
 					sparsity_distribution_fn=sparsity_distribution,
 					skip_gradients=True)

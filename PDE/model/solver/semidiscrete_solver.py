@@ -13,8 +13,8 @@ class PDE_solver(AbstractModel):
 	SOLVER: diffrax.AbstractSolver
 	stepsize_controller: diffrax.AbstractStepSizeController
 	dt0: float
-	def __init__(self,F,dt=0.1,SOLVER="heun",ADAPTIVE=False,rtol=1e-3,atol=1e-3):
-		self.func = F
+	def __init__(self,F,dt=0.1,SOLVER="heun",ADAPTIVE=False,DTYPE="float32",rtol=1e-3,atol=1e-3):
+		
 		self.dt0 = dt
 		if SOLVER=="heun":
 			self.SOLVER = diffrax.Heun()
@@ -27,6 +27,16 @@ class PDE_solver(AbstractModel):
 			self.stepsize_controller=diffrax.PIDController(rtol=rtol, atol=atol)
 		else:
 			self.stepsize_controller=diffrax.ConstantStepSize()
+
+		if DTYPE=="bfloat16":
+			def to_bfloat16(x):
+				if eqx.is_inexact_array(x):
+					return x.astype(jax.dtypes.bfloat16)
+				else:
+					return x	
+			self.func = jax.tree_util.tree_map(to_bfloat16, F)
+		else:
+			self.func = F
 
 	def __call__(self, ts, y0):
 		solution = diffrax.diffeqsolve(diffrax.ODETerm(self.func),

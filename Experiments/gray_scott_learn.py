@@ -5,7 +5,7 @@ import jax.random as jr
 import equinox as eqx
 import optax
 from PDE.trainer.optimiser import non_negative_diffusion
-from PDE.trainer.optimiser import multi_learnrate
+from PDE.trainer.optimiser import multi_learnrate_rd as multi_learnrate
 from einops import repeat
 from PDE.model.reaction_diffusion_advection.update import F
 from PDE.model.solver.semidiscrete_solver import PDE_solver
@@ -14,7 +14,8 @@ from PDE.model.fixed_models.update_gray_scott import F as F_gray_scott
 # from PDE.model.fixed_models.update_chhabra import F as F_chhabra
 # from PDE.model.fixed_models.update_hillen_painter import F as F_hillen_painter
 # from PDE.model.fixed_models.update_cahn_hilliard import F as F_cahn_hilliard
-from Common.eddie_indexer import index_to_pde_gray_scott_hyperparameters
+#from Common.eddie_indexer import index_to_pde_gray_scott_hyperparameters
+from Common.eddie_indexer import index_to_pde_gray_scott_pruned
 from Common.model.spatial_operators import Ops
 from einops import rearrange
 import time
@@ -23,15 +24,15 @@ import sys
 index=int(sys.argv[1])-1
 
 
-PARAMS = index_to_pde_gray_scott_hyperparameters(index)
-# INIT_SCALE = {"reaction":0.1,"advection":0.3,"diffusion":0.3}
+PARAMS = index_to_pde_gray_scott_pruned(index)
+INIT_SCALE = {"reaction":0.1,"advection":0.3,"diffusion":0.3}
 STABILITY_FACTOR = 0.01
 
 
 key = jax.random.PRNGKey(int(time.time()))
 key = jax.random.fold_in(key,index)
 
-CHANNELS = 16
+CHANNELS = 10
 ITERS = 1001
 SIZE = 64
 BATCHES = 8
@@ -39,23 +40,25 @@ PADDING = "CIRCULAR"
 TRAJECTORY_LENGTH = PARAMS["TRAJECTORY_LENGTH"]
 PDE_STR = "gray_scott"
 dt = 1.0
+MODEL_FILENAME="pde_hyperparameters_reacdiff_"+PDE_STR+"_pruned/lr_5e-4_ch_"+str(CHANNELS)+"_tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_R_"+PARAMS["REACTION_INIT"]+"_lrr_"+PARAMS["REACTION_RATIO_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["TEXT_LABEL"]
 
 pde_hyperparameters = {"N_CHANNELS":CHANNELS,
                        "PADDING":PADDING,
-                       "INTERNAL_ACTIVATION":PARAMS["INTERNAL_ACTIVATIONS"],
+                       "INTERNAL_ACTIVATION":"tanh",
                        "dx":1.0,
                        "TERMS":["reaction","diffusion"],
                        "ADVECTION_OUTER_ACTIVATION":"tanh",
-                       "INIT_SCALE":{"reaction":0.1,"diffusion":0.1},
+                       "INIT_SCALE":{"reaction":0.1,"diffusion":0.5},
                        "INIT_TYPE":{"reaction":PARAMS["REACTION_INIT"],"diffusion":PARAMS["DIFFUSION_INIT"]},
                        "STABILITY_FACTOR":0.01,
                        "USE_BIAS":True,
-                       "ORDER":PARAMS["ORDER"],
-                       "N_LAYERS":PARAMS["N_LAYERS"],
+                       "ORDER":2,
+                       "N_LAYERS":2,
                        "ZERO_INIT":{"reaction":False,"diffusion":False}}
 solver_hyperparameters = {"dt":dt,
                           "SOLVER":"euler",
                           "rtol":1e-3,
+                          "DTYPE":"float32",
                           "atol":1e-3,
                           "ADAPTIVE":False}
 hyperparameters = {"pde":pde_hyperparameters,
@@ -100,11 +103,11 @@ pde = PDE_solver(func,**hyperparameters["solver"])
 #opt = non_negative_diffusion(schedule,optimiser=OPTIMISER)
 #opt = optax.chain(optax.scale_by_param_block_norm(),
 			#PARAMS["OPTIMISER"](schedule))
-schedule = optax.exponential_decay(1e-3, transition_steps=ITERS, decay_rate=0.99)
+schedule = optax.exponential_decay(5e-4, transition_steps=ITERS, decay_rate=0.99)
 opt = multi_learnrate(
     schedule,
-    rate_ratios={"advection": PARAMS["ADVECTION_RATIO"],
-                 "reaction": PARAMS["REACTION_RATIO"],
+    rate_ratios={"advection": 0,
+                 "reaction": 0.1,
                  "diffusion": 1},
     optimiser=PARAMS["OPTIMISER"],
     pre_process=PARAMS["OPTIMISER_PRE_PROCESS"],
@@ -114,8 +117,7 @@ trainer = PDE_Trainer(PDE_solver=pde,
                       PDE_HYPERPARAMETERS=hyperparameters,
                       data=Y,
                       Ts=T,
-                      #model_filename="pde_hyperparameters_chemreacdiff_emoji_anisotropic_nca_2/init_scale_"+str(INIT_SCALE)+"_stability_factor_"+str(STABILITY_FACTOR)+"act_"+INTERNAL_TEXT+"_"+OUTER_TEXT)
-                      model_filename="pde_hyperparameters_reacdiff_gray_scott_euler/lr_1e-3_ch_"+str(CHANNELS)+"_tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_act_"+PARAMS["INTERNAL_ACTIVATIONS_TEXT"]+"_R_"+PARAMS["REACTION_INIT"]+PARAMS["REACTION_ZERO_INIT_TEXT"]+"_lrr_"+PARAMS["REACTION_RATIO_TEXT"]+"_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["DIFFUSION_ZERO_INIT_TEXT"]+"_opt_"+PARAMS["OPTIMISER_TEXT"])
+                      model_filename=MODEL_FILENAME)
 
 UPDATE_X0_PARAMS = {"iters":16,
                     "update_every":10000,
@@ -127,6 +129,6 @@ trainer.train(SUBTRAJECTORY_LENGTH=TRAJECTORY_LENGTH,
               TRAINING_ITERATIONS=ITERS,
               OPTIMISER=opt,
               LOG_EVERY=50,
-              WARMUP=1,
+              WARMUP=32,
               LOSS_TIME_SAMPLING=PARAMS["LOSS_TIME_SAMPLING"],
               UPDATE_X0_PARAMS=UPDATE_X0_PARAMS)

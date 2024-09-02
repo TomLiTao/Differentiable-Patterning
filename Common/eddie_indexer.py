@@ -348,6 +348,18 @@ def index_to_pde_gray_scott_hyperparameters(index):
 
 
 
+def index_to_pde_gray_scott_pruned(index):
+	indices = np.unravel_index(index,(4,2,2,2,2))
+	params = {
+		"TARGET_SPARSITY":[0.5,0.75,0.9,0.99][indices[0]],
+		"LOSS_FUNCTION":[euclidean,spectral_weighted][indices[1]],
+		"OPTIMISER":[optax.nadam,optax.nadamw][indices[2]],
+		"OPTIMISER_PRE_PROCESS":[optax.identity(),optax.scale_by_param_block_norm()][indices[3]],
+		"REACTION_INIT":["orthogonal","permuted"][indices[4]],
+		"DIFFUSION_INIT":"orthogonal",
+		"TEXT_LABEL":"sparsity_"+["05","075","09","099"][indices[0]]+["euclidean","spectral_weighted"][indices[1]]+["_nadam","_nadamw"][indices[2]]+["","_scale_by_param_block_norm"][indices[3]],
+	}
+	return params
 
 
 def index_to_pde_texture_hyperparameters(index):
