@@ -204,6 +204,7 @@ class PDE_Trainer(object):
 					  #t: Int[Scalar,""],
 					  ts: Float[Array,"Batches T"],
 					  opt_state,
+					  target_sparsity,
 					  key: Key):	
 			"""
 			
@@ -255,6 +256,20 @@ class PDE_Trainer(object):
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, pde_diff)
 			pde = eqx.apply_updates(pde,updates)
 			(mean_loss,(y,losses)) = loss_y
+
+			if PRUNING["PRUNE"]:
+				ws,tree_def = pde.get_weights()
+				_,pde_static = pde.partition()
+				sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=target_sparsity)
+				pruner = jaxpruner.MagnitudePruning(
+					sparsity_distribution_fn=sparsity_distribution,
+					skip_gradients=True)
+				ws = pruner.instant_sparsify(ws)[0]
+				pde_diff = pde.set_weights(tree_def,ws)
+				pde.combine(pde_static,pde_diff)
+
+
+
 			return pde,x,y,ts,opt_state,mean_loss,losses,key
 		
 		
@@ -302,16 +317,18 @@ class PDE_Trainer(object):
 			# 	losses output is loss for each batch
 			# 	key output is UNCHANGED random key, passe through for argument donation
 			"""
-			pde,x,y,ts,opt_state,mean_loss,losses,key = make_step(pde, x, y, ts, opt_state,key)
+			pde,x,y,ts,opt_state,mean_loss,losses,key = make_step(pde, x, y, ts, opt_state,SPARSITY_SCHEDULE[i],key)
 
-			if PRUNING["PRUNE"]:
-				ws,tree_def = pde.get_weights()
-				sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=SPARSITY_SCHEDULE[i])
-				pruner = jaxpruner.MagnitudePruning(
-					sparsity_distribution_fn=sparsity_distribution,
-					skip_gradients=True)
-				ws = pruner.instant_sparsify(ws)[0]
-				pde = pde.set_weights(tree_def,ws)
+			# if PRUNING["PRUNE"]:
+			# 	ws,tree_def = pde.get_weights()
+			# 	_,pde_static = pde.partition()
+			# 	sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=SPARSITY_SCHEDULE[i])
+			# 	pruner = jaxpruner.MagnitudePruning(
+			# 		sparsity_distribution_fn=sparsity_distribution,
+			# 		skip_gradients=True)
+			# 	ws = pruner.instant_sparsify(ws)[0]
+			# 	pde_diff = pde.set_weights(tree_def,ws)
+			# 	pde.combine(pde_static,pde_diff)
 			
 			if self.IS_LOGGING:
 				self.LOGGER.tb_training_loop_log_sequence(losses, y, i, pde,LOG_EVERY=LOG_EVERY)
