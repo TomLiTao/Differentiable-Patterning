@@ -1,11 +1,13 @@
 import jax
 #jax.config.update("jax_enable_x64", True)
+import jaxpruner
+from functools import partial
 import jax.numpy as np
 import jax.random as jr
 import equinox as eqx
 import optax
 from PDE.trainer.optimiser import non_negative_diffusion
-from PDE.trainer.optimiser import multi_learnrate_rd as multi_learnrate
+from PDE.trainer.optimiser import multi_learnrate_rd,multi_learnrate_rda
 from einops import repeat
 from PDE.model.reaction_diffusion_advection.update import F
 from PDE.model.solver.semidiscrete_solver import PDE_solver
@@ -25,7 +27,7 @@ index=int(sys.argv[1])-1
 
 
 PARAMS = index_to_pde_gray_scott_pruned(index)
-INIT_SCALE = {"reaction":0.1,"advection":0.3,"diffusion":0.3}
+INIT_SCALE = {"reaction":0.01,"advection":0.01,"diffusion":0.1}
 STABILITY_FACTOR = 0.01
 
 
@@ -35,26 +37,29 @@ key = jax.random.fold_in(key,index)
 CHANNELS = 10
 ITERS = 1001
 SIZE = 64
-BATCHES = 8
+BATCHES = 4
 PADDING = "CIRCULAR"
 TRAJECTORY_LENGTH = PARAMS["TRAJECTORY_LENGTH"]
 PDE_STR = "gray_scott"
 dt = 1.0
-MODEL_FILENAME="pde_hyperparameters_reacdiff_"+PDE_STR+"_pruned/lr_5e-4_ch_"+str(CHANNELS)+"_tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_R_"+PARAMS["REACTION_INIT"]+"_lrr_1e-1_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["TEXT_LABEL"]
+if "advection" in PARAMS["TERMS"]:
+    MODEL_FILENAME="pde_hyperparameters_advreacdiff_"+PDE_STR+"_pruned/lr_5e-4_ch_"+str(CHANNELS)+"_tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_R_"+PARAMS["REACTION_INIT"]+"_lrr_1e-1_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["TEXT_LABEL"]
+else:
+    MODEL_FILENAME="pde_hyperparameters_reacdiff_"+PDE_STR+"_pruned/lr_5e-4_ch_"+str(CHANNELS)+"_tl_"+str(PARAMS["TRAJECTORY_LENGTH"])+"_resolution_"+str(PARAMS["TIME_RESOLUTION"])+"_ord_"+str(PARAMS["ORDER"])+"_layers_"+str(PARAMS["N_LAYERS"])+"_R_"+PARAMS["REACTION_INIT"]+"_lrr_1e-1_D_"+PARAMS["DIFFUSION_INIT"]+PARAMS["TEXT_LABEL"]
 
 pde_hyperparameters = {"N_CHANNELS":CHANNELS,
                        "PADDING":PADDING,
                        "INTERNAL_ACTIVATION":"tanh",
                        "dx":1.0,
-                       "TERMS":["reaction","diffusion"],
+                       "TERMS":PARAMS["TERMS"],
                        "ADVECTION_OUTER_ACTIVATION":"tanh",
-                       "INIT_SCALE":{"reaction":0.01,"diffusion":0.1},
-                       "INIT_TYPE":{"reaction":PARAMS["REACTION_INIT"],"diffusion":PARAMS["DIFFUSION_INIT"]},
-                       "STABILITY_FACTOR":0.01,
+                       "INIT_SCALE":INIT_SCALE,
+                       "INIT_TYPE":{"reaction":PARAMS["REACTION_INIT"],"advection":"orthogonal","diffusion":PARAMS["DIFFUSION_INIT"]},
+                       "STABILITY_FACTOR":STABILITY_FACTOR,
                        "USE_BIAS":True,
                        "ORDER":2,
                        "N_LAYERS":2,
-                       "ZERO_INIT":{"reaction":False,"diffusion":False}}
+                       "ZERO_INIT":{"reaction":False,"advection":False,"diffusion":False}}
 solver_hyperparameters = {"dt":dt,
                           "SOLVER":"euler",
                           "rtol":1e-3,
@@ -96,6 +101,40 @@ Y = Y.at[:,:,1].set(2*(Y[:,:,1]-np.min(Y[:,:,1]))/(np.max(Y[:,:,1])-np.min(Y[:,:
 # ----------------- Define model -----------------
 func = F(key=key,**hyperparameters["pde"])
 pde = PDE_solver(func,**hyperparameters["solver"])
+print(pde)
+
+
+# ws,tree_def = pde.get_weights()
+# _,pde_static = pde.partition()
+# sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=0.5)
+# pruner = jaxpruner.MagnitudePruning(
+#     sparsity_distribution_fn=sparsity_distribution,
+#     skip_gradients=True)
+# ws = pruner.instant_sparsify(ws)[0]
+# pde_diff = pde.set_weights(tree_def,ws)
+# pde.combine(pde_static,pde_diff)
+
+# print(pde)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # Define optimiser and lr schedule
 #iters = 2000
@@ -104,14 +143,23 @@ pde = PDE_solver(func,**hyperparameters["solver"])
 #opt = optax.chain(optax.scale_by_param_block_norm(),
 			#PARAMS["OPTIMISER"](schedule))
 schedule = optax.exponential_decay(5e-4, transition_steps=ITERS, decay_rate=0.99)
-opt = multi_learnrate(
-    schedule,
-    rate_ratios={"advection": 0,
-                 "reaction": 0.1,
-                 "diffusion": 1},
-    optimiser=PARAMS["OPTIMISER"],
-    pre_process=PARAMS["OPTIMISER_PRE_PROCESS"],
-)
+if "advection" in PARAMS["TERMS"]:
+    opt = multi_learnrate_rda(
+        schedule,
+        rate_ratios={"advection": 0,
+                    "reaction": 0.1,
+                    "diffusion": 1},
+        optimiser=PARAMS["OPTIMISER"],
+        pre_process=PARAMS["OPTIMISER_PRE_PROCESS"],
+    )
+else:
+    opt = multi_learnrate_rd(
+        schedule,
+        rate_ratios={"reaction": 0.1,
+                    "diffusion": 1},
+        optimiser=PARAMS["OPTIMISER"],
+        pre_process=PARAMS["OPTIMISER_PRE_PROCESS"],
+    )
 
 trainer = PDE_Trainer(PDE_solver=pde,
                       PDE_HYPERPARAMETERS=hyperparameters,
@@ -130,5 +178,6 @@ trainer.train(SUBTRAJECTORY_LENGTH=TRAJECTORY_LENGTH,
               OPTIMISER=opt,
               LOG_EVERY=50,
               WARMUP=32,
+              PRUNING={"PRUNE":True,"TARGET_SPARSITY":PARAMS["TARGET_SPARSITY"]},
               LOSS_TIME_SAMPLING=PARAMS["LOSS_TIME_SAMPLING"],
               UPDATE_X0_PARAMS=UPDATE_X0_PARAMS)
