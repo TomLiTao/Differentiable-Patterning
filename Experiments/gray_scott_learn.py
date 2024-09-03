@@ -101,7 +101,7 @@ Y = Y.at[:,:,1].set(2*(Y[:,:,1]-np.min(Y[:,:,1]))/(np.max(Y[:,:,1])-np.min(Y[:,:
 # ----------------- Define model -----------------
 func = F(key=key,**hyperparameters["pde"])
 pde = PDE_solver(func,**hyperparameters["solver"])
-print(pde)
+#print(pde)
 
 
 # ws,tree_def = pde.get_weights()
