@@ -101,52 +101,15 @@ Y = Y.at[:,:,1].set(2*(Y[:,:,1]-np.min(Y[:,:,1]))/(np.max(Y[:,:,1])-np.min(Y[:,:
 # ----------------- Define model -----------------
 func = F(key=key,**hyperparameters["pde"])
 pde = PDE_solver(func,**hyperparameters["solver"])
-#print(pde)
-
-
-# ws,tree_def = pde.get_weights()
-# _,pde_static = pde.partition()
-# sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=0.5)
-# pruner = jaxpruner.MagnitudePruning(
-#     sparsity_distribution_fn=sparsity_distribution,
-#     skip_gradients=True)
-# ws = pruner.instant_sparsify(ws)[0]
-# pde_diff = pde.set_weights(tree_def,ws)
-# pde.combine(pde_static,pde_diff)
-
-# print(pde)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 # Define optimiser and lr schedule
-#iters = 2000
-#schedule = optax.exponential_decay(PARAMS["LEARN_RATE"], transition_steps=iters, decay_rate=0.99)
-#opt = non_negative_diffusion(schedule,optimiser=OPTIMISER)
-#opt = optax.chain(optax.scale_by_param_block_norm(),
-			#PARAMS["OPTIMISER"](schedule))
+
 schedule = optax.exponential_decay(5e-4, transition_steps=ITERS, decay_rate=0.99)
 if "advection" in PARAMS["TERMS"]:
     opt = multi_learnrate_rda(
         schedule,
-        rate_ratios={"advection": 0,
+        rate_ratios={"advection": 0.1,
                     "reaction": 0.1,
                     "diffusion": 1},
         optimiser=PARAMS["OPTIMISER"],
