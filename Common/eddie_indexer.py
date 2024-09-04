@@ -350,6 +350,7 @@ def index_to_pde_gray_scott_hyperparameters(index):
 
 def index_to_pde_gray_scott_pruned(index):
 	indices = np.unravel_index(index,(3,2,2,2,2))
+	
 	params = {
 		"TARGET_SPARSITY":[0.5,0.75,0.99][indices[0]],
 		"LOSS_FUNCTION":[euclidean,spectral_weighted][indices[1]],
