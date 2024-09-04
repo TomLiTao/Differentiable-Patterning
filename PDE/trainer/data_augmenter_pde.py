@@ -12,13 +12,14 @@ class DataAugmenter(DataAugmenterAbstract):
 	"""
 	def __init__(self,Ts,*args,**kwargs):
 		super().__init__(*args,**kwargs)
-		self.OVERWRITE_OBS_CHANNELS = False
+		self.OVERWRITE_OBS_CHANNELS = True
 		B = len(self.data_saved)
 		Ts = repeat(Ts,"T -> B T",B=B)
 		self.Ts = list(Ts)
 
 	def data_init(self,SHARDING=None):
 		return None
+	
 	
 	
 	def sub_trajectory_split(self,L,key=jax.random.PRNGKey(int(time.time()))):
@@ -73,25 +74,18 @@ class DataAugmenter(DataAugmenterAbstract):
 
 
 		# y input contains important hidden channel information that we want to preserve during training
-		if hasattr(self,"SUBTRAJECTORY_LOCATION"):
-			pos = self.SUBTRAJECTORY_LOCATION
-			preserve_hidden_channels = lambda data,y,p: data.at[p+1:p+1+L,C:].set(y[:,C:])
-			data = jax.tree_util.tree_map(preserve_hidden_channels,data,y,pos)
-			if self.OVERWRITE_OBS_CHANNELS:
-				for b in range(len(data)//2):
-					data[b*2] = data[b*2].at[pos[b*2]+1:pos[b*2]+1+L,:C].set(y[b*2][:,:C])
-
-			self.save_data(data)
-
+		#if hasattr(self,"SUBTRAJECTORY_LOCATION"):
+		pos = self.SUBTRAJECTORY_LOCATION
+		
 		# Update position counters
 		# with 
-		#    probability p=0.25, increment each counter by 1, 
+		#    probability p=0.1, increment each counter by 1, 
 		#	 probability 1-p keep each counter the same,
 		#    probability q=0.01, reset each counter to zero
 		# If a counter reaches the end of the data, reset it to zero
 			
-		reset_counters = jr.bernoulli(keys[0],p=0.01,shape=(B,))
-		increment_counters = jr.bernoulli(keys[1],p=0.25,shape=(B,))
+		reset_counters = jr.bernoulli(keys[0],p=0.01,shape=(B,)) # With very small probability at each step, reset to 0
+		increment_counters = jr.bernoulli(keys[1],p=0.1,shape=(B,)) # With small probability at each step, advance to next step
 		_pos_incremented = np.clip(np.array(self.SUBTRAJECTORY_LOCATION)+increment_counters,min=0,max=N-L-1)
 		_pos_at_end = _pos_incremented == N-L-1
 		reset_counters = np.logical_or(reset_counters,_pos_at_end)
@@ -99,6 +93,18 @@ class DataAugmenter(DataAugmenterAbstract):
 		_pos_reset = np.zeros(shape=(B,)).astype(int)
 		pos = np.where(reset_counters,_pos_reset,_pos_incremented)
 		pos = list(pos)
+		
+		
+		
+		propagate_hidden_channels = lambda data,y,p,inc: data.at[p+1:p+1+L,C:].set(y[:,C:])*inc + data*(1-inc) 
+		data = jax.tree_util.tree_map(propagate_hidden_channels,data,y,pos,increment_counters)
+		
+		if self.OVERWRITE_OBS_CHANNELS:
+			for b in range(len(data)//2):
+				data[b*2] = data[b*2].at[pos[b*2]+1:pos[b*2]+1+L,:C].set(y[b*2][:,:C])*increment_counters[b*2] + data[b*2]*increment_counters[b*2]
+
+		self.save_data(data)
+
 
 		# Sample new x,y and ts
 		x = jax.tree_util.tree_map(lambda data,p:data[p],self.data_saved,pos)
@@ -112,7 +118,8 @@ class DataAugmenter(DataAugmenterAbstract):
 		
 	def data_load(self,L,key):
 		data = self.return_saved_data()
-		pos = list(jax.random.randint(key,shape=(len(data),),minval=0,maxval=data[0].shape[0]-L-1))
+		#pos = list(jax.random.randint(key,shape=(len(data),),minval=0,maxval=data[0].shape[0]-L-1))
+		pos = list(np.zeros(len(data)).astype(int))
 		x0 = jax.tree_util.tree_map(lambda d,p:d[p],data,pos)
 		y0 = jax.tree_util.tree_map(lambda d,p:d[p+1:p+1+L],data,pos)
 		ts = jax.tree_util.tree_map(lambda data,p:data[p:p+1+L],self.Ts,pos)

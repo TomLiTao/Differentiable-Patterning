@@ -1,17 +1,19 @@
 import jax
-jax.config.update("jax_enable_x64", True)
+import json
+#jax.config.update("jax_enable_x64", True)
 import jax.numpy as jnp
 import optax
 import equinox as eqx
 import datetime
 import time
+import jaxpruner
 from PDE.trainer.data_augmenter_pde import DataAugmenter
 import Common.trainer.loss as loss
 from Common.model.boundary import model_boundary
 from Common.trainer.custom_functions import check_training_diverged
 from PDE.trainer.tensorboard_log import PDE_Train_log
 from PDE.trainer.optimiser import non_negative_diffusion_chemotaxis
-from PDE.model.solver.semidiscrete_solver import PDE_solver
+from PDE.model.solver.semidiscrete_solver import PDE_solver,save,load
 from functools import partial
 from Common.model.spatial_operators import Ops
 from jaxtyping import Float, Array, Int, Scalar, Key
@@ -23,6 +25,7 @@ class PDE_Trainer(object):
 	
 	def __init__(self,
 			     PDE_solver,
+				 PDE_HYPERPARAMETERS,
 				 data: Float[Array, "Batches T C W H"],
 				 Ts: Float[Array, "Batches T"],
 				 model_filename=None,
@@ -69,7 +72,7 @@ class PDE_Trainer(object):
 		"""
 		#self.NCA_model = NCA_model
 		self.PDE_solver = PDE_solver
-		
+		self.PDE_HYPERPARAMETERS = PDE_HYPERPARAMETERS
 		# Set up variables 
 
 		self.OBS_CHANNELS = data[0].shape[1]
@@ -158,6 +161,8 @@ class PDE_Trainer(object):
 			  LOG_EVERY=10,
 			  LOSS_TIME_SAMPLING=1,
 			  LOSS_FUNC = loss.euclidean,
+			  PRUNING = {"PRUNE":False,
+						 "TARGET_SPARSITY":0.9},
 			  UPDATE_X0_PARAMS = {"iters":32,
 						 		  "update_every":10,
 								  "optimiser":optax.nadam,
@@ -199,6 +204,7 @@ class PDE_Trainer(object):
 					  #t: Int[Scalar,""],
 					  ts: Float[Array,"Batches T"],
 					  opt_state,
+					  target_sparsity,
 					  key: Key):	
 			"""
 			
@@ -250,6 +256,20 @@ class PDE_Trainer(object):
 			updates,opt_state = self.OPTIMISER.update(grads, opt_state, pde_diff)
 			pde = eqx.apply_updates(pde,updates)
 			(mean_loss,(y,losses)) = loss_y
+
+			if PRUNING["PRUNE"]:
+				ws,tree_def = pde.get_weights()
+				_,pde_static = pde.partition()
+				sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=target_sparsity)
+				pruner = jaxpruner.MagnitudePruning(
+					sparsity_distribution_fn=sparsity_distribution,
+					skip_gradients=True)
+				ws = pruner.instant_sparsify(ws)[0]
+				pde_diff = pde.set_weights(tree_def,ws)
+				pde.combine(pde_static,pde_diff)
+
+
+
 			return pde,x,y,ts,opt_state,mean_loss,losses,key
 		
 		
@@ -276,8 +296,15 @@ class PDE_Trainer(object):
 		model_saved = False
 		error = 0
 		error_at = 0
+		if PRUNING["PRUNE"]:
+			SPARSITY_SCHEDULE = jnp.concat((jnp.zeros(WARMUP),jnp.linspace(0,PRUNING["TARGET_SPARSITY"],TRAINING_ITERATIONS-WARMUP)))
 		#x0 = self.DATA_AUGMENTER.data_saved[0][0]
 		
+
+		print("Training nPDE with: ")
+		#print(self.PDE_HYPERPARAMETERS)
+		print(json.dumps(self.PDE_HYPERPARAMETERS,sort_keys=True, indent=4))
+
 		for i in tqdm(range(TRAINING_ITERATIONS)):
 			key = jax.random.fold_in(key,i)
 			#print(self.DATA_AUGMENTER.data_saved[0].shape)
@@ -290,8 +317,19 @@ class PDE_Trainer(object):
 			# 	losses output is loss for each batch
 			# 	key output is UNCHANGED random key, passe through for argument donation
 			"""
-			pde,x,y,ts,opt_state,mean_loss,losses,key = make_step(pde, x, y, ts, opt_state,key)
+			pde,x,y,ts,opt_state,mean_loss,losses,key = make_step(pde, x, y, ts, opt_state,SPARSITY_SCHEDULE[i],key)
 
+			# if PRUNING["PRUNE"]:
+			# 	ws,tree_def = pde.get_weights()
+			# 	_,pde_static = pde.partition()
+			# 	sparsity_distribution = partial(jaxpruner.sparsity_distributions.uniform, sparsity=SPARSITY_SCHEDULE[i])
+			# 	pruner = jaxpruner.MagnitudePruning(
+			# 		sparsity_distribution_fn=sparsity_distribution,
+			# 		skip_gradients=True)
+			# 	ws = pruner.instant_sparsify(ws)[0]
+			# 	pde_diff = pde.set_weights(tree_def,ws)
+			# 	pde.combine(pde_static,pde_diff)
+			
 			if self.IS_LOGGING:
 				self.LOGGER.tb_training_loop_log_sequence(losses, y, i, pde,LOG_EVERY=LOG_EVERY)
 			
@@ -316,7 +354,8 @@ class PDE_Trainer(object):
 					if mean_loss < best_loss:
 						model_saved=True
 						self.PDE_solver = pde
-						self.PDE_solver.save(self.MODEL_PATH,overwrite=True)
+						#self.PDE_solver.save(self.MODEL_PATH,overwrite=True)
+						save(self.MODEL_PATH,self.PDE_HYPERPARAMETERS,self.PDE_solver)
 						best_loss = mean_loss
 						tqdm.write("--- Model saved at "+str(i)+" epochs with loss "+str(mean_loss)+" ---")
 			else:
